@@ -30,6 +30,78 @@
             position: relative;
         }
 
+        /* LADEANIMATION MIT NEUEM TEXT */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--deep-black);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .loader-content {
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        .loader-logo {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            /* Etwas kleiner als zuvor, da der Text deutlich länger ist */
+            font-size: clamp(22px, 6vw, 42px);
+            color: var(--neon-pink);
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            animation: pulse 1.5s infinite;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+        .loader-text {
+            color: var(--rebel-white);
+            font-family: 'Lato', sans-serif;
+            font-weight: 400;
+            letter-spacing: 4px;
+            font-size: 11px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+        .loader-bar-container {
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        .loader-bar-fill {
+            background: var(--neon-pink);
+            height: 100%;
+            width: 0%;
+            animation: loadProgress 2.2s forwards cubic-bezier(0.42, 0, 0.58, 1);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            40% { width: 60%; }
+            70% { width: 90%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0px var(--neon-pink)); }
+            50% { transform: scale(1.03); opacity: 0.8; filter: drop-shadow(0 0 10px var(--neon-pink)); }
+        }
+
+        .loaded #loading-screen {
+            opacity: 0;
+            visibility: hidden;
+        }
+
         /* BACKGROUND EFFECT */
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.35; }
 
@@ -176,6 +248,17 @@
     </style>
 </head>
 <body onload="initCounters()">
+
+    <!-- LADEANIMATION MIT NEUEM TEXT -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-logo">DIE REBELLION STARTET JETZT</div>
+            <div class="loader-text">Initializing Rebellion...</div>
+            <div class="loader-bar-container">
+                <div class="loader-bar-fill"></div>
+            </div>
+        </div>
+    </div>
 
     <canvas id="bg-canvas"></canvas>
     <canvas id="confetti-canvas"></canvas>
@@ -519,6 +602,14 @@
             const link = document.createElement('a'); link.href = window.URL.createObjectURL(blob);
             link.setAttribute('download', 'PinkRebels_Kickoff.ics'); link.click();
         }
+
+        // AUTO-HIDE LOADER
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+            }, 2500); // 2.5 Sekunden Ladezeit
+        });
+
         updateSlide();
     </script>
 </body>
