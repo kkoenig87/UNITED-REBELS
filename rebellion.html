@@ -30,7 +30,7 @@
             position: relative;
         }
 
-        /* LOADING SCREEN (Verlängerte Animation) */
+        /* LOADING SCREEN */
         #loading-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -57,14 +57,14 @@
             box-shadow: 0 0 15px var(--neon-pink); 
         }
 
-        /* Verlängerte Bar-Animation (5.5s) */
-        .animate-bar { animation: loadProgress 5.5s forwards cubic-bezier(0.42, 0, 0.58, 1); }
+        /* Ladebalken Animation (Jetzt auf 5s eingestellt) */
+        .animate-bar { animation: loadProgress 5s forwards cubic-bezier(0.42, 0, 0.58, 1); }
 
         @keyframes loadProgress { 
             0% { width: 0%; } 
             20% { width: 15%; }
-            50% { width: 45%; }
-            80% { width: 85%; }
+            50% { width: 50%; }
+            85% { width: 90%; }
             100% { width: 100%; } 
         }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.03); opacity: 0.8; } }
@@ -156,7 +156,7 @@
 
         .back-to-start-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 40px; }
 
-        /* AKRONYM */
+        /* HELPERS */
         .pink-acronym-container { display: flex; flex-direction: column; gap: 12px; margin: auto 0; }
         .acronym-row { display: flex; align-items: center; gap: 20px; background: rgba(255, 255, 255, 0.03); padding: 15px 20px; border-radius: 15px; }
         .acronym-letter { font-family: 'Poppins'; font-size: clamp(36px, 8vw, 60px); font-weight: 800; color: var(--neon-pink); width: 60px; text-align: center; flex-shrink: 0; }
@@ -172,7 +172,7 @@
 </head>
 <body onload="initCounters()">
 
-    <!-- LOADING SCREEN (Triggers after Start click) -->
+    <!-- LOADING SCREEN -->
     <div id="loading-screen">
         <div class="loader-content">
             <div class="loader-logo">DIE REBELLION STARTET JETZT</div>
@@ -208,7 +208,7 @@
                 </div>
             </div>
 
-            <!-- FOLIE 1: INTRO (Überschrift angepasst) -->
+            <!-- FOLIE 1: INTRO -->
             <div class="slide">
                 <div style="margin: auto; text-align: center;">
                     <h1>WERDE EIN <span>REBEL!</span></h1>
@@ -481,7 +481,7 @@
 
         function downloadICS() { const icsData = ["BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT","DTSTART:20260214T170000Z","DTEND:20260214T193000Z","SUMMARY:United Rebels Kick-off","LOCATION:Sporthalle Bauschheim","DESCRIPTION:Erstes Meeting!","END:VEVENT","END:VCALENDAR"].join("\r\n"); const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' }); const link = document.createElement('a'); link.href = window.URL.createObjectURL(blob); link.setAttribute('download', 'UnitedRebels_Kickoff.ics'); link.click(); }
 
-        // REBEL LOAD LOGIC (Jetzt 6 Sekunden Verlängerung)
+        // REBEL LOAD LOGIC
         function runRebelLoad() {
             vibrate();
             const loader = document.getElementById('loading-screen');
@@ -491,16 +491,22 @@
             setTimeout(() => {
                 loader.style.opacity = '1';
                 loaderFill.classList.add('animate-bar');
+                
+                // FIX: Während der Loader aktiv ist, springen wir sofort zur nächsten Folie.
+                // Da der Loader z-index 9999 hat, geschieht dies unsichtbar im Hintergrund.
+                currentSlide = 1;
+                updateSlide();
             }, 10);
 
-            // Loader bleibt nun ca. 6 Sekunden aktiv
+            // Loader bleibt nun 5 Sekunden aktiv
             setTimeout(() => {
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.display = 'none';
-                    goToSlide(1); 
+                    // Der goToSlide(1) Aufruf hier ist nicht mehr nötig, da wir es oben 
+                    // bereits im Hintergrund erledigt haben.
                 }, 800);
-            }, 6000); 
+            }, 5000); 
         }
 
         updateSlide();
