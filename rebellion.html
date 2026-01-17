@@ -307,19 +307,26 @@
                 </div>
             </div>
 
-            <!-- FOLIE 7: TEAM & FUN -->
+            <!-- FOLIE 7: TEAM & FUN (MIT SPOTIFY EMBED) -->
             <div class="slide">
                 <h2 class="slide-title">Mehr als 60 Minuten</h2>
                 <div class="content-grid">
                     <div class="tile">
                         <h3>Team-Events</h3>
                         <p>Trainingslager, Teambuilding und legendäre Kabinenpartys sind fest eingeplant.</p>
+                        
+                        <!-- Piktogramm & Slogan -->
                         <div style="text-align: center; margin-top: 25px;">
-                            <div style="font-size: clamp(60px, 12vw, 100px); color: var(--neon-pink); margin-bottom: 15px;"><i class="fas fa-glass-cheers"></i></div>
-                            <p style="font-weight: 800; color: var(--neon-pink); font-size: clamp(16px, 3vw, 22px); line-height: 1.2;">REBELS DON'T JUST PLAY.<br>REBELS CELEBRATE.</p>
+                            <div style="font-size: clamp(60px, 12vw, 100px); color: var(--neon-pink); margin-bottom: 15px;">
+                                <i class="fas fa-glass-cheers"></i>
+                            </div>
+                            <p style="font-weight: 800; color: var(--neon-pink); font-size: clamp(16px, 3vw, 22px); line-height: 1.2;">
+                                REBELS DON'T JUST PLAY.<br>REBELS CELEBRATE.
+                            </p>
                         </div>
                     </div>
                     <div style="text-align: center;">
+                        <!-- Spotify Iframe Integration -->
                         <iframe data-testid="embed-iframe" style="border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" src="https://open.spotify.com/embed/playlist/0ATXpHGpuf8lEEdkH01W9m?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
                     </div>
                 </div>
@@ -344,7 +351,7 @@
                         <p style="font-size: 18px; margin-bottom: 20px;">16:30 Uhr | Sporthalle Bauschheim</p>
                         <div style="display:flex; flex-direction:column; gap:10px;">
                             <button onclick="handleAction('ics')" class="nav-btn" style="width: 100%; border-radius: 10px; font-size: 14px; font-weight: bold;"><i class="fas fa-apple-whole"></i> FÜR APPLE / NATIV (ICS)</button>
-                            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=United+Rebels+Kick-off&details=Erstes+Treffen&location=Sporthalle+Bauschheim" target="_blank" class="nav-btn" style="width: 100%; border-radius: 10px; font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.1);"><i class="fab fa-google"></i> FÜR GOOGLE KALENDER</a>
+                            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=United+Rebels+Kick-off&dates=20260208T153000Z/20260208T173000Z&details=Erstes+Treffen+der+neuen+Damenmannschaft!&location=Sporthalle+Bauschheim" target="_blank" class="nav-btn" style="width: 100%; border-radius: 10px; font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.1);"><i class="fab fa-google"></i> FÜR GOOGLE KALENDER</a>
                         </div>
                     </div>
                 </div>
@@ -479,7 +486,23 @@
             if (e.key === 'ArrowLeft') prevSlide(); 
         });
 
-        function downloadICS() { const icsData = ["BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT","DTSTART:20260214T170000Z","DTEND:20260214T193000Z","SUMMARY:United Rebels Kick-off","LOCATION:Sporthalle Bauschheim","DESCRIPTION:Erstes Meeting!","END:VEVENT","END:VCALENDAR"].join("\r\n"); const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' }); const link = document.createElement('a'); link.href = window.URL.createObjectURL(blob); link.setAttribute('download', 'UnitedRebels_Kickoff.ics'); link.click(); }
+        function downloadICS() { 
+            const icsData = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "BEGIN:VEVENT",
+                "DTSTART:20260208T153000Z",
+                "DTEND:20260208T173000Z",
+                "SUMMARY:United Rebels Kick-off",
+                "LOCATION:Sporthalle Bauschheim",
+                "DESCRIPTION:Erstes Meeting!",
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n"); 
+            const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' }); 
+            const link = document.createElement('a'); link.href = window.URL.createObjectURL(blob); 
+            link.setAttribute('download', 'UnitedRebels_Kickoff.ics'); link.click(); 
+        }
 
         // REBEL LOAD LOGIC
         function runRebelLoad() {
@@ -503,8 +526,6 @@
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.display = 'none';
-                    // Der goToSlide(1) Aufruf hier ist nicht mehr nötig, da wir es oben 
-                    // bereits im Hintergrund erledigt haben.
                 }, 800);
             }, 5000); 
         }
