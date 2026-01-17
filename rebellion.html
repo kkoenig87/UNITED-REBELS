@@ -57,7 +57,7 @@
             box-shadow: 0 0 15px var(--neon-pink); 
         }
 
-        /* Ladebalken Animation (Jetzt auf 5s eingestellt) */
+        /* Ladebalken Animation (5s) */
         .animate-bar { animation: loadProgress 5s forwards cubic-bezier(0.42, 0, 0.58, 1); }
 
         @keyframes loadProgress { 
@@ -277,7 +277,7 @@
                 <div class="content-grid">
                     <div class="tile">
                         <h3>Kein Stress, nur Handball</h3>
-                        <p>Wir kümmern uns um die Orga. Du konzentrierst dich auf dein Spiel und das Team.</p>
+                        <p>Wir kümuren uns um die Orga. Du konzentrierst dich auf dein Spiel und das Team.</p>
                     </div>
                     <div class="tile">
                         <h3>Maximale Sichtbarkeit</h3>
@@ -294,7 +294,7 @@
                         <p style="font-weight: bold; margin-bottom: 10px;">JOIN THE SQUAD</p>
                         <div class="squad-progress-container">
                             <div class="squad-progress-fill" id="squad-fill"></div>
-                            <div class="squad-label"><span class="counter" data-target="7">0</span> / 16 Plätzen belegt</div>
+                            <div class="squad-label"><span class="counter" data-target="9">0</span> / 16 Plätzen belegt</div>
                         </div>
                         <p style="font-size: 14px; color: #AAA;">Werde Teil der Gründungs-Formation!</p>
                     </div>
@@ -465,7 +465,7 @@
                 progressBar.style.display = 'block';
             }
 
-            if (currentSlide === 6) document.getElementById('squad-fill').style.width = "45%"; 
+            if (currentSlide === 6) document.getElementById('squad-fill').style.width = "56%"; 
         }
         
         function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); } }
