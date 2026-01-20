@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Rebels - Squad Wall</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --neon-pink: #FF007F;
+            --deep-black: #050505;
+            --dark-gray: #151515;
+        }
+
+        body {
+            margin: 0; background-color: var(--deep-black); color: white;
+            font-family: 'Lato', sans-serif; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; padding: 40px 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 50px; }
+        .header h1 { font-family: 'Poppins'; font-size: clamp(24px, 6vw, 42px); text-transform: uppercase; margin: 0; }
+        .header h1 span { color: var(--neon-pink); }
+        .header p { color: #888; letter-spacing: 2px; text-transform: uppercase; font-size: 12px; margin-top: 10px; }
+
+        .squad-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 20px; width: 100%; max-width: 800px;
+            margin-bottom: 50px;
+        }
+
+        .jersey-slot {
+            aspect-ratio: 1/1.2; background: var(--dark-gray);
+            border-radius: 15px; position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; transition: all 0.3s ease;
+            border: 1px solid #333;
+        }
+
+        /* BESETZTE PLÄTZE */
+        .jersey-slot.taken {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.2);
+        }
+        .jersey-slot.taken i { color: var(--neon-pink); font-size: 40px; }
+        .jersey-slot.taken .status { background: var(--neon-pink); color: white; }
+
+        /* OFFENE PLÄTZE */
+        .jersey-slot.open {
+            border: 2px dashed #444; opacity: 0.8;
+            cursor: pointer;
+        }
+        .jersey-slot.open:hover { border-color: var(--neon-pink); opacity: 1; transform: scale(1.05); }
+        .jersey-slot.open i { color: #444; font-size: 40px; }
+        .jersey-slot.open .status { background: #444; color: #888; }
+
+        /* BRENNENDER EFFEKT FÜR DIE LETZTEN PLÄTZE */
+        .jersey-slot.burning {
+            animation: glowBurn 1.5s infinite ease-in-out;
+        }
+        @keyframes glowBurn {
+            0%, 100% { box-shadow: 0 0 5px var(--neon-pink); }
+            50% { box-shadow: 0 0 25px var(--neon-pink); }
+        }
+
+        .status {
+            position: absolute; bottom: 10px; font-size: 10px;
+            font-weight: 800; padding: 3px 8px; border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .cta-area { text-align: center; }
+        .btn-claim {
+            background: var(--neon-pink); color: white;
+            padding: 15px 40px; border-radius: 30px;
+            text-decoration: none; font-family: 'Poppins';
+            font-weight: 800; display: inline-block;
+            box-shadow: 0 10px 30px rgba(255, 0, 127, 0.4);
+            transition: transform 0.3s;
+        }
+        .btn-claim:hover { transform: translateY(-5px); }
+
+        .bg-glow {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(255, 0, 127, 0.05) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <div class="header">
+        <h1>SQUAD <span>REVEAL</span></h1>
+        <p>United Rebels Mission 2026</p>
+    </div>
+
+    <div class="squad-grid" id="squadGrid">
+        <!-- JS generiert die 18 Plätze -->
+    </div>
+
+    <div class="cta-area">
+        <h2 style="font-family: 'Poppins'; margin-bottom: 20px;">NUR NOCH 4 PLÄTZE FREI!</h2>
+        <a href="https://wa.me/491637844242?text=Ich%20will%20einen%20der%20allerletzten%20Plätze!" class="btn-claim">JETZT REBEL WERDEN</a>
+    </div>
+
+    <script>
+        // Update: 14 von 18 Plätzen belegt
+        const total = 18;
+        const taken = 14;
+        const grid = document.getElementById('squadGrid');
+
+        for (let i = 1; i <= total; i++) {
+            const slot = document.createElement('div');
+            if (i <= taken) {
+                slot.className = 'jersey-slot taken';
+                slot.innerHTML = `
+                    <i class="fas fa-shirt"></i>
+                    <div style="margin-top: 10px; font-weight: 800; color: var(--neon-pink)">#${i}</div>
+                    <div class="status">BESETZT</div>
+                `;
+            } else {
+                // Die letzten Plätze "brennen" vor Dringlichkeit
+                slot.className = 'jersey-slot open burning';
+                slot.innerHTML = `
+                    <i class="fas fa-shirt"></i>
+                    <div style="margin-top: 10px; font-weight: 800; color: #666">?</div>
+                    <div class="status">FREE</div>
+                `;
+                slot.onclick = () => { window.location.href = 'https://wa.me/491637844242?text=Ich%20habe%20die%20Squad-Wall%20gesehen%20und%20will%20einen%20der%20letzten%204%20Plätze!'; };
+            }
+            grid.appendChild(slot);
+        }
+    </script>
+</body>
+</html>
