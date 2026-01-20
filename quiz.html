@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Bist du ein Rebel? - Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --neon-pink: #FF007F; --deep-black: #050505; --dark-gray: #151515; }
+        body { margin: 0; background: var(--deep-black); color: white; font-family: 'Lato', sans-serif; overflow: hidden; height: 100dvh; display: flex; align-items: center; justify-content: center; }
+        #app { width: 100%; max-width: 450px; height: 100%; padding: 40px 20px; display: flex; flex-direction: column; position: relative; }
+        .bg-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150%; height: 60%; background: radial-gradient(circle, rgba(255, 0, 127, 0.1) 0%, rgba(0,0,0,0) 70%); z-index: -1; }
+        
+        .logo-area { text-align: center; margin-bottom: 30px; }
+        .logo-area svg { width: 60px; height: 60px; filter: drop-shadow(0 0 10px var(--neon-pink)); }
+        
+        h1 { font-family: 'Poppins'; text-transform: uppercase; font-size: 24px; text-align: center; margin: 10px 0; }
+        h1 span { color: var(--neon-pink); }
+
+        .quiz-card { background: var(--dark-gray); border-radius: 20px; padding: 30px 20px; border-bottom: 4px solid var(--neon-pink); flex-grow: 1; display: flex; flex-direction: column; justify-content: center; transition: all 0.4s ease; }
+        
+        .question { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 30px; line-height: 1.3; }
+        
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 12px; font-weight: 700; text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 15px; }
+        .option-btn:hover { background: rgba(255, 0, 127, 0.1); border-color: var(--neon-pink); }
+        .option-btn i { color: var(--neon-pink); opacity: 0.5; }
+
+        .progress { height: 4px; background: rgba(255,255,255,0.1); width: 100%; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--neon-pink); width: 0%; transition: width 0.3s; }
+
+        #result-screen { display: none; text-align: center; }
+        .result-score { font-size: 60px; font-family: 'Poppins'; font-weight: 800; color: var(--neon-pink); line-height: 1; margin: 20px 0; }
+        .result-title { font-size: 22px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; }
+        .share-btn { background: var(--neon-pink); color: white; padding: 15px 30px; border-radius: 30px; text-decoration: none; font-weight: 800; display: inline-block; margin-top: 30px; box-shadow: 0 0 20px rgba(255, 0, 127, 0.4); }
+        .rebel-link { display: block; margin-top: 20px; color: #888; font-size: 12px; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; }
+
+        .fade-out { opacity: 0; transform: translateY(-20px); }
+        .fade-in { animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div class="bg-glow"></div>
+        
+        <div class="logo-area">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="3"/>
+                <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+            </svg>
+            <h1>Bist du ein <span>Rebel?</span></h1>
+        </div>
+
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+        <div class="quiz-card" id="quizCard">
+            <div id="questionArea">
+                <div class="question" id="questionText">Was ist dein wichtigstes Handball-Utensil?</div>
+                <div class="options" id="optionsArea">
+                    <!-- Options inject here -->
+                </div>
+            </div>
+
+            <div id="result-screen">
+                <p>Dein Rebel-Level:</p>
+                <div class="result-score" id="resultScore">98%</div>
+                <div class="result-title" id="resultTitle">Wahre Legende</div>
+                <p id="resultDesc">Du gehörst definitiv in unsere Kabine. Deine Schuhe warten schon auf dich!</p>
+                <a href="https://wa.me/?text=Ich%20bin%20zu%2098%25%20ein%20Rebel!%20Check%20dein%20Level%20hier:" class="share-btn" id="whatsappShare"><i class="fab fa-whatsapp"></i> ERGEBNIS TEILEN</a>
+                <a href="https://kkoenig87.github.io/UNITED-REBELS/rebellion.html" class="rebel-link">Zur Mission 2026</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                q: "Deine Handballschuhe sind aktuell...",
+                a: [
+                    { t: "In meiner Sporttasche, 3x die Woche im Einsatz", s: 10 },
+                    { t: "Irgendwo im Keller, staubig aber bereit", s: 20 },
+                    { t: "Habe ich vor Jahren verschenkt/entsorgt", s: 15 },
+                    { t: "Neu gekauft für das Projekt 2026!", s: 25 }
+                ]
+            },
+            {
+                q: "Was vermissts du am meisten am Sport?",
+                a: [
+                    { t: "Das Klatschen des Balls im Netz", s: 20 },
+                    { t: "Das Lachen in der Kabine nach dem Training", s: 25 },
+                    { t: "Den Geruch von Harz und Schweiß", s: 15 },
+                    { t: "Den Adrenalinkick vor dem Anpfiff", s: 20 }
+                ]
+            },
+            {
+                q: "Wofür steht das 'R' in REBELS für dich?",
+                a: [
+                    { t: "Richtig harter Power-Handball", s: 20 },
+                    { t: "Riesiger Zusammenhalt im Team", s: 25 },
+                    { t: "Rückkehr auf die Platte", s: 20 },
+                    { t: "Rüsselsheims neuer Stolz", s: 15 }
+                ]
+            },
+            {
+                q: "Was sagst du zu pinken Trikots?",
+                a: [
+                    { t: "Endlich mal was Geiles!", s: 25 },
+                    { t: "Hauptsache wir gewinnen darin", s: 15 },
+                    { t: "Mutig – genau mein Ding", s: 20 },
+                    { t: "Ich trage alles für dieses Team", s: 20 }
+                ]
+            }
+        ];
+
+        let currentQ = 0;
+        let totalScore = 0;
+
+        function loadQuestion() {
+            const q = questions[currentQ];
+            const progress = ((currentQ) / questions.length) * 100;
+            document.getElementById('progressFill').style.width = progress + "%";
+            
+            document.getElementById('questionText').innerText = q.q;
+            const area = document.getElementById('optionsArea');
+            area.innerHTML = '';
+            
+            q.a.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<i class="fas fa-chevron-right"></i> ${opt.t}`;
+                btn.onclick = () => selectOption(opt.s);
+                area.appendChild(btn);
+            });
+        }
+
+        function selectOption(score) {
+            totalScore += score;
+            currentQ++;
+            
+            const card = document.getElementById('quizCard');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                if (currentQ < questions.length) {
+                    loadQuestion();
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                } else {
+                    showResult();
+                }
+            }, 400);
+        }
+
+        function showResult() {
+            document.getElementById('questionArea').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            document.getElementById('progressFill').style.width = "100%";
+            
+            const card = document.getElementById('quizCard');
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+
+            let title = "";
+            let desc = "";
+            
+            if (totalScore >= 90) {
+                title = "REBEL-LEGENDE";
+                desc = "Du bist zu 100% bereit. Die Halle ist dein Wohnzimmer und du bist der Albtraum jeder Abwehr!";
+            } else if (totalScore >= 70) {
+                title = "COMEBACK-QUEEN";
+                desc = "Dein Herz schlägt pink! Es ist Zeit, die Schuhe aus dem Keller zu holen. Wir brauchen dich!";
+            } else {
+                title = "NEW GENERATION";
+                desc = "Du hast Bock auf was Neues. Perfekt! Wir bauen das Team um Rebels wie dich auf.";
+            }
+
+            document.getElementById('resultScore').innerText = totalScore + "%";
+            document.getElementById('resultTitle').innerText = title;
+            document.getElementById('resultDesc').innerText = desc;
+            
+            const shareUrl = "https://kkoenig87.github.io/UNITED-REBELS/rebellion.html";
+            const shareText = encodeURIComponent(`Ich bin zu ${totalScore}% ein Rebel! 🤾‍♀️💖 Werde Teil der neuen Damenhandballmannschaft in Rü/Bau/Kö. Hier checken: ${shareUrl}`);
+            document.getElementById('whatsappShare').href = `https://wa.me/?text=${shareText}`;
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
