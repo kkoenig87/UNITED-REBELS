@@ -9,13 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* 1. SETUP & THEME DEFINITION */
         :root {
             --neon-pink: #FF007F;
             --deep-black: #050505;
             --pure-white: #ffffff;
             --glass-bg: rgba(255, 255, 255, 0.05);
-            --neon-glow: 0 0 15px rgba(255, 0, 127, 0.7);
+            --neon-glow: 0 0 20px rgba(255, 0, 127, 0.8);
+            --transition-speed: 0.6s;
         }
 
         * {
@@ -25,80 +25,87 @@
         }
 
         body {
-            background-color: #111;
+            background-color: var(--deep-black);
             font-family: 'Lato', sans-serif;
             color: var(--pure-white);
-            display: grid;
-            gap: 40px;
-            place-items: center;
-            padding: 40px 0;
+            overflow: hidden; /* Verhindert Scrollen, da wir Slides nutzen */
+            height: 100vh;
         }
 
-        .slide-container {
-            width: 1280px;
-            height: 720px;
-            background-color: var(--deep-black);
-            overflow: hidden;
+        /* Präsentations-Container */
+        .presentation-wrapper {
+            width: 100vw;
+            height: 100vh;
             position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             padding: 60px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            margin-bottom: 40px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+            transform: translateY(20px);
+            z-index: 1;
+            background-color: var(--deep-black);
         }
 
-        /* Background Design: Abstract Neon Lines */
-        .slide-container::before {
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            z-index: 10;
+        }
+
+        /* Hintergrund-Effekt */
+        .slide::before {
             content: '';
             position: absolute;
             top: -50%;
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle at 70% 30%, rgba(255, 0, 127, 0.1) 0%, transparent 50%);
-            z-index: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 0, 127, 0.08) 0%, transparent 50%);
+            z-index: -1;
         }
 
-        .slide-container > * {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* 2. TYPOGRAPHY */
+        /* Typografie */
         h1, h2, h3 {
             font-family: 'Poppins', sans-serif;
             text-transform: uppercase;
         }
 
         h1 {
-            font-size: 100px;
+            font-size: clamp(60px, 10vw, 120px);
             font-weight: 900;
             line-height: 0.9;
-            margin-bottom: 20px;
-            color: var(--pure-white);
             text-shadow: var(--neon-glow);
+            margin-bottom: 20px;
         }
 
         .slide-title {
-            font-size: 48px;
+            font-size: clamp(24px, 4vw, 48px);
             font-weight: 700;
             margin-bottom: 40px;
-            text-align: left;
-            width: 100%;
             border-left: 8px solid var(--neon-pink);
             padding-left: 25px;
-            color: var(--pure-white);
         }
 
         h3 {
-            font-size: 32px;
+            font-size: clamp(20px, 2.5vw, 32px);
             color: var(--neon-pink);
             margin-bottom: 15px;
         }
 
-        p, li {
-            font-size: 22px;
-            line-height: 1.4;
+        p {
+            font-size: clamp(16px, 1.8vw, 24px);
+            line-height: 1.5;
             color: #ccc;
         }
 
@@ -107,43 +114,18 @@
             font-weight: 700;
         }
 
-        /* 3. LAYOUTS */
+        /* Layouts */
         .content-area {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            width: 100%;
         }
 
-        .title-layout {
+        .center-layout {
             text-align: center;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-
-        .title-layout h1 span {
-            color: var(--neon-pink);
-        }
-
-        .section-title-layout {
-            text-align: center;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .section-title-layout hr {
-            width: 150px;
-            height: 8px;
-            background: var(--neon-pink);
-            border: none;
-            margin: 30px auto;
-            box-shadow: var(--neon-glow);
         }
 
         .two-column {
@@ -153,31 +135,44 @@
             align-items: center;
         }
 
+        /* Interaktive Kacheln */
         .tiled-content {
             display: flex;
             gap: 30px;
-            width: 100%;
         }
 
         .tile {
             flex: 1;
             background: var(--glass-bg);
-            border: 1px solid rgba(255, 0, 127, 0.3);
+            border: 1px solid rgba(255, 0, 127, 0.2);
             border-radius: 20px;
             padding: 40px;
             text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tile:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 0, 127, 0.05);
+            border-color: var(--neon-pink);
+            box-shadow: var(--neon-glow);
         }
 
         .tile .icon {
             font-size: 50px;
             color: var(--neon-pink);
             margin-bottom: 25px;
-            text-shadow: var(--neon-glow);
+            transition: transform 0.3s ease;
         }
 
-        /* 4. SPECIAL ELEMENTS */
+        .tile:hover .icon {
+            transform: scale(1.2);
+        }
+
+        /* Zahlen-Animation */
         .number-large {
-            font-size: 180px;
+            font-size: clamp(80px, 15vw, 200px);
             font-family: 'Poppins', sans-serif;
             font-weight: 900;
             color: var(--neon-pink);
@@ -185,364 +180,280 @@
             text-shadow: var(--neon-glow);
         }
 
+        /* Bild-Container */
         .image-wrapper {
             border-radius: 20px;
             overflow: hidden;
             border: 2px solid var(--neon-pink);
             height: 400px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
         }
 
         .image-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.5s ease;
         }
 
-        /* Bleed Image Layout Override */
-        .slide-container.bleed-image-layout {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 0;
-            align-items: start;
+        .image-wrapper:hover img {
+            transform: scale(1.05);
         }
 
-        .bleed-image-layout .content-container {
-            padding: 60px;
+        /* Navigation Buttons */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 100%;
+            gap: 15px;
+            z-index: 100;
         }
 
-        .bleed-image-layout .image-container {
-            height: 100%;
-            width: 100%;
-            background: #222;
-        }
-
-        .bleed-image-layout img.bleed-image-side {
-            height: 720px;
-            width: 100%;
-            object-fit: cover;
-        }
-
-        /* Table Styling */
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .nav-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             background: var(--glass-bg);
-            border-radius: 15px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 25px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 0, 127, 0.2);
-        }
-
-        th {
-            background: rgba(255, 0, 127, 0.1);
-            color: var(--neon-pink);
-            font-family: 'Poppins';
-        }
-
-        /* Timeline */
-        .timeline-layout {
+            border: 1px solid var(--neon-pink);
+            color: var(--pure-white);
             display: flex;
-            justify-content: space-between;
-            position: relative;
-            padding-top: 100px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
-        .timeline-line {
-            position: absolute;
-            top: 150px;
-            left: 0;
-            width: 100%;
-            height: 4px;
+        .nav-btn:hover {
             background: var(--neon-pink);
             box-shadow: var(--neon-glow);
         }
 
-        .timeline-item {
-            width: 22%;
-            text-align: center;
-            position: relative;
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: var(--neon-pink);
+            box-shadow: var(--neon-glow);
+            z-index: 1000;
+            transition: width 0.3s ease;
         }
 
-        .timeline-item::after {
-            content: '';
-            position: absolute;
-            top: 41px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 24px;
-            height: 24px;
-            background: var(--pure-white);
-            border: 5px solid var(--neon-pink);
-            border-radius: 50%;
+        /* Chart Animation */
+        .chart-path {
+            stroke-dasharray: 1200;
+            stroke-dashoffset: 1200;
+            transition: stroke-dashoffset 2s ease-in-out;
         }
 
-        /* Area Chart SVG */
-        .area-chart-container {
-            width: 100%;
-            height: 350px;
+        .active .chart-path {
+            stroke-dashoffset: 0;
         }
 
-        .chart-svg {
-            width: 100%;
+        /* Spezielle Layouts */
+        .bleed-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 0 !important;
+        }
+
+        .bleed-layout .content-side {
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .bleed-layout .image-side {
             height: 100%;
-        }
-
-        .chart-line {
-            fill: none;
-            stroke: var(--neon-pink);
-            stroke-width: 6;
-        }
-
-        .chart-area {
-            fill: url(#pink-gradient);
-            opacity: 0.3;
+            background-size: cover;
+            background-position: center;
         }
     </style>
 </head>
 <body>
 
-<!-- Slide 1: Titel-Slide -->
-<div class="slide-container" id="slide1">
-    <div class="title-layout">
-        <h1>UNITED<br><span>REBELS</span></h1>
-        <p style="font-size: 32px; letter-spacing: 5px; color: var(--neon-pink); font-weight: 700;">DIE REBELLION BEGINNT JETZT</p>
-        <p style="margin-top: 40px; font-style: italic;">HSG Rüsselsheim / Bauschheim / Königstädten</p>
-    </div>
-</div>
+<div class="progress-bar" id="progressBar"></div>
 
-<!-- Slide 2: Sektions-Titel -->
-<div class="slide-container" id="slide2">
-    <div class="section-title-layout">
-        <h2 style="font-size: 80px;">HANDBALL<br><span class="highlight-text">NEU GEDACHT</span></h2>
-        <hr>
-        <p>Vergiss verstaubte Strukturen. Wir bauen die Zukunft.</p>
+<div class="presentation-wrapper">
+    <!-- Slide 1: Intro -->
+    <div class="slide active center-layout" id="slide-1">
+        <h1>UNITED<br><span style="color: var(--neon-pink)">REBELS</span></h1>
+        <p style="font-size: 28px; letter-spacing: 8px; color: var(--neon-pink); font-weight: 700;">DIE REBELLION BEGINNT JETZT</p>
+        <p style="margin-top: 50px; opacity: 0.6;">HSG Rüsselsheim / Bauschheim / Königstädten</p>
+        <p style="margin-top: 20px; font-size: 16px;">(Nutze Pfeiltasten oder Buttons zum Navigieren)</p>
     </div>
-</div>
 
-<!-- Slide 3: Status-Zahlen -->
-<div class="slide-container" id="slide3">
-    <h2 class="slide-title">Der Status Quo</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div style="text-align: center;">
-                <div class="number-large">14/18</div>
-                <p class="highlight-text" style="font-size: 30px; font-weight: 700;">SLOTS BELEGT</p>
-            </div>
-            <div>
-                <h3>77% Fortschritt</h3>
-                <p>Innerhalb kürzester Zeit haben wir 14 Rebellinnen für unsere Vision gewonnen. Der Hype ist real.</p>
-                <p style="margin-top: 20px;">Nur noch 4 Plätze trennen uns vom kompletten Kader für die Saison 2026.</p>
-            </div>
-        </div>
+    <!-- Slide 2: Vision -->
+    <div class="slide center-layout" id="slide-2">
+        <h2 style="font-size: clamp(40px, 8vw, 90px);">HANDBALL<br><span class="highlight-text">NEU GEDACHT</span></h2>
+        <div style="width: 150px; height: 8px; background: var(--neon-pink); margin: 30px auto; box-shadow: var(--neon-glow);"></div>
+        <p style="max-width: 800px;">Wir lassen verstaubte Vereinsmeierei hinter uns. UNITED REBELS steht für Energie, Style und eine echte Community.</p>
     </div>
-</div>
 
-<!-- Slide 4: Unsere DNA -->
-<div class="slide-container" id="slide4">
-    <h2 class="slide-title">Unsere DNA</h2>
-    <div class="content-area">
-        <div class="tiled-content">
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-bolt"></i></div>
-                <h3>ENERGIE</h3>
-                <p>Kein langweiliges Training. Wir setzen auf Speed, moderne Übungen und echtes Power-Coaching.</p>
-            </div>
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-shirt"></i></div>
-                <h3>STYLE</h3>
-                <p>Wir treten auf wie Profis. Modernstes Equipment und Trikots, die man auch nach dem Spiel tragen will.</p>
-            </div>
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-users-rays"></i></div>
-                <h3>COMMUNITY</h3>
-                <p>Teamgeist über alles. Events, Partys und Zusammenhalt auch abseits des Spielfelds.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide 5: Der Vibe -->
-<div class="slide-container bleed-image-layout" id="slide5">
-    <div class="content-container">
-        <h2 class="slide-title" style="border: none; padding: 0;">DER VIBE</h2>
+    <!-- Slide 3: Status -->
+    <div class="slide" id="slide-3">
+        <h2 class="slide-title">Status Quo</h2>
         <div class="content-area">
-            <h3>NICHT NUR EIN TEAM.</h3>
-            <p>Wir rebellieren gegen den grauen Vereinsalltag. Bei uns zählt die Action, der Spaß am Spiel und die krasse Atmosphäre.</p>
-            <p style="margin-top: 20px;">Bist du bereit, deine Schuhe aus dem Keller zu holen und Teil von etwas Großem zu werden?</p>
-        </div>
-    </div>
-    <div class="image-container">
-        <img class="bleed-image-side" src="https://images.unsplash.com/photo-1547441753-41c88344e8ec?q=80&w=1280&auto=format&fit=crop" alt="[Handballerin in Action]">
-    </div>
-</div>
-
-<!-- Slide 6: Der Vergleich -->
-<div class="slide-container" id="slide6">
-    <h2 class="slide-title">Der Unterschied</h2>
-    <div class="content-area">
-        <table>
-            <thead>
-                <tr>
-                    <th>Aspekt</th>
-                    <th>Standard Verein</th>
-                    <th>UNITED REBELS</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Strukturen</td>
-                    <td>"Das war schon immer so"</td>
-                    <td>Modern & Dynamisch</td>
-                </tr>
-                <tr>
-                    <td>Branding</td>
-                    <td>Funktionell</td>
-                    <td>Cinematic & High-End</td>
-                </tr>
-                <tr>
-                    <td>Fokus</td>
-                    <td>Verwaltung</td>
-                    <td>Energie & Community</td>
-                </tr>
-                <tr>
-                    <td>Ziel</td>
-                    <td>Spielbetrieb</td>
-                    <td>Rebellion & Erfolg</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Slide 7: Timeline -->
-<div class="slide-container" id="slide7">
-    <h2 class="slide-title">Mission 2026</h2>
-    <div class="content-area">
-        <div class="timeline-layout">
-            <div class="timeline-line"></div>
-            <div class="timeline-item">
-                <p style="margin-bottom: 50px;">HEUTE</p>
-                <h3>KICK-OFF</h3>
-                <p>Vision-Drop & Team-Building</p>
-            </div>
-            <div class="timeline-item">
-                <p style="margin-bottom: 50px;">MÄRZ 26</p>
-                <h3>TRAINING</h3>
-                <p>Start der Performance-Phase</p>
-            </div>
-            <div class="timeline-item">
-                <p style="margin-bottom: 50px;">MAI 26</p>
-                <h3>LAUNCH</h3>
-                <p>Trikot-Release & Media-Day</p>
-            </div>
-            <div class="timeline-item">
-                <p style="margin-bottom: 50px;">SEPT 26</p>
-                <h3>SEASON</h3>
-                <p>Der Angriff auf die Liga</p>
+            <div class="two-column">
+                <div style="text-align: center;">
+                    <div class="number-large" id="counter">14/18</div>
+                    <p class="highlight-text" style="font-size: 24px;">REBELLINNEN AN BORD</p>
+                </div>
+                <div>
+                    <h3>77% READY</h3>
+                    <p>Der Hype ist real. In Rekordzeit haben wir den Kern des Teams geformt.</p>
+                    <p style="margin-top: 20px;">Es fehlen nur noch **4 Puzzleteile**, um die Liga im Bezirk Darmstadt das Fürchten zu lehren.</p>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Slide 8: Momentum Chart -->
-<div class="slide-container" id="slide8">
-    <h2 class="slide-title">Das Momentum</h2>
-    <div class="content-area">
-        <div class="area-chart-container">
-            <svg class="chart-svg" viewBox="0 0 1000 350">
+    <!-- Slide 4: DNA Tiles -->
+    <div class="slide" id="slide-4">
+        <h2 class="slide-title">Unsere DNA</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3>ENERGIE</h3>
+                    <p>Modernes Coaching, High-Speed Handball und volle Power in jeder Sekunde.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-shirt"></i></div>
+                    <h3>STYLE</h3>
+                    <p>Custom Gear, das ballert. Wir sehen aus wie Profis und fühlen uns auch so.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-users-rays"></i></div>
+                    <h3>COMMUNITY</h3>
+                    <p>Kein Zwang, sondern Zusammenhalt. Events, Vibes und echte Freundschaft.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Vibe Bleed -->
+    <div class="slide bleed-layout" id="slide-5">
+        <div class="content-side">
+            <h2 class="slide-title" style="border: none; padding: 0; margin-bottom: 20px;">DER VIBE</h2>
+            <h3>REBELLION IM BLUT.</h3>
+            <p>Wir spielen nicht nur Handball, wir zelebrieren den Sport. Weg von "Haben wir schon immer so gemacht", hin zu "Lass uns alles zerreißen".</p>
+        </div>
+        <div class="image-side" style="background-image: url('https://images.unsplash.com/photo-1547441753-41c88344e8ec?q=80&w=1280&auto=format&fit=crop');"></div>
+    </div>
+
+    <!-- Slide 6: Chart -->
+    <div class="slide" id="slide-6">
+        <h2 class="slide-title">Das Momentum</h2>
+        <div class="content-area center-layout">
+            <svg viewBox="0 0 1000 300" style="width: 80%; height: auto;">
                 <defs>
-                    <linearGradient id="pink-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FF007F" />
-                        <stop offset="100%" stop-color="transparent" />
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--neon-pink);stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:var(--neon-pink);stop-opacity:0" />
                     </linearGradient>
                 </defs>
-                <path class="chart-area" d="M0,300 Q200,280 400,150 T800,50 T1000,20 L1000,350 L0,350 Z" />
-                <path class="chart-line" d="M0,300 Q200,280 400,150 T800,50 T1000,20" />
-                <circle cx="1000" cy="20" r="10" fill="#FF007F" />
+                <path class="chart-path" fill="url(#grad)" stroke="var(--neon-pink)" stroke-width="6" d="M0,250 Q150,230 300,180 T600,100 T1000,20 L1000,300 L0,300 Z" />
             </svg>
+            <p style="margin-top: 40px; font-style: italic; opacity: 0.7;">Anfragen und Reichweite steigen täglich. Wir sind das Gesprächsthema.</p>
         </div>
-        <p style="text-align: center; font-style: italic;">Wachsendes Interesse und Anfragen seit Projektstart 2025.</p>
     </div>
-</div>
 
-<!-- Slide 9: Deliverables -->
-<div class="slide-container" id="slide9">
-    <h2 class="slide-title">Die Deliverables</h2>
-    <div class="content-area">
-        <div class="tiled-content">
-            <div style="flex: 1;">
-                <div class="image-wrapper"><img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=500&auto=format&fit=crop" alt="[Handball Trikot]"></div>
-                <h3 style="text-align: center; margin-top: 15px;">CUSTOM GEAR</h3>
-            </div>
-            <div style="flex: 1;">
-                <div class="image-wrapper"><img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=500&auto=format&fit=crop" alt="[Handball in der Hand]"></div>
-                <h3 style="text-align: center; margin-top: 15px;">PRO QUALITY</h3>
-            </div>
-            <div style="flex: 1;">
-                <div class="image-wrapper"><img src="https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=500&auto=format&fit=crop" alt="[Team Spirit]"></div>
-                <h3 style="text-align: center; margin-top: 15px;">SQUAD SPIRIT</h3>
-            </div>
+    <!-- Slide 7: The Final Four -->
+    <div class="slide center-layout" id="slide-7">
+        <h2 style="font-size: 60px; margin-bottom: 30px;">BIST DU EINE VON DEN <span class="highlight-text">FINAL FOUR</span>?</h2>
+        <div style="background: var(--glass-bg); padding: 40px; border-radius: 30px; border: 2px dashed var(--neon-pink); max-width: 600px;">
+            <p style="color: var(--pure-white);">Nur noch 4 Plätze an der Squad Wall frei. Werde Teil der Geschichte, bevor der Vorhang aufgeht.</p>
+            <button class="nav-btn" style="width: auto; padding: 0 40px; border-radius: 10px; margin: 30px auto 0;" onclick="window.location.reload()">REBELLION STARTEN</button>
         </div>
     </div>
 </div>
 
-<!-- Slide 10: Quote -->
-<div class="slide-container" id="slide10">
-    <div class="content-area" style="text-align: center;">
-        <p style="font-size: 80px; color: var(--neon-pink); opacity: 0.5;"><i class="fa-solid fa-quote-left"></i></p>
-        <h2 style="font-size: 60px; line-height: 1.2; margin-bottom: 40px;">WIR BAUEN KEIN TEAM.<br>WIR STARTEN EINE BEWEGUNG.</h2>
-        <p class="highlight-text" style="font-size: 32px;">#UNITEDREBELS</p>
-    </div>
+<div class="nav-controls">
+    <div class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></div>
+    <div class="nav-btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></div>
 </div>
 
-<!-- Slide 11: The Final Four -->
-<div class="slide-container" id="slide11">
-    <h2 class="slide-title">The Final Four</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div style="text-align: center;">
-                <div class="image-wrapper" style="border-radius: 50%; width: 400px; height: 400px; margin: 0 auto; border-width: 5px;">
-                    <img src="https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=400&auto=format&fit=crop" alt="[Feierndes Team]">
-                </div>
-            </div>
-            <div>
-                <h3>Deine Chance</h3>
-                <p>Wir suchen noch genau 4 Rebellinnen, die den Unterschied machen wollen. Egal ob Tor, Außen oder Kreis.</p>
-                <p style="margin-top: 20px;">Sichere dir heute einen der letzten Slots und schreib Geschichte im Bezirk Darmstadt.</p>
-                <div style="margin-top: 30px; padding: 20px; background: var(--glass-bg); border-radius: 10px; border: 1px dashed var(--neon-pink);">
-                    <p style="color: var(--neon-pink); font-weight: 700; text-align: center;">SQUAD WALL JETZT SIGNIEREN</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
 
-<!-- Slide 12: Q&A -->
-<div class="slide-container" id="slide12">
-    <div class="title-layout">
-        <h2 style="font-size: 60px; margin-bottom: 20px;">FRAGEN?</h2>
-        <p class="highlight-text" style="font-size: 32px; margin-bottom: 60px;">DEINE REBELLION BEGINNT JETZT.</p>
-        <div style="display: flex; gap: 40px;">
-            <p><i class="fa-brands fa-instagram"></i> @united_rebels</p>
-            <p><i class="fa-brands fa-whatsapp"></i> Rebel-Chat</p>
-        </div>
-        <div style="margin-top: 50px; text-align: center;">
-            <p style="font-size: 16px; opacity: 0.5;">UNITED REBELS 2026 | Kick-off Bauschheim</p>
-        </div>
-    </div>
-</div>
+    function updateSlide() {
+        slides.forEach((slide, index) => {
+            slide.classList.remove('active');
+            if (index === currentSlide) {
+                slide.classList.add('active');
+            }
+        });
+        
+        // Progress Bar Update
+        const progress = ((currentSlide + 1) / slides.length) * 100;
+        progressBar.style.width = progress + '%';
+
+        // Counter Animation on Slide 3
+        if (currentSlide === 2) {
+            animateCounter();
+        }
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            updateSlide();
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updateSlide();
+        }
+    }
+
+    function animateCounter() {
+        const counterEl = document.getElementById('counter');
+        let count = 0;
+        const target = 14;
+        const duration = 1500;
+        const startTime = performance.now();
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const currentCount = Math.floor(progress * target);
+            counterEl.innerText = currentCount + '/18';
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                counterEl.innerText = '14/18';
+            }
+        }
+        requestAnimationFrame(update);
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Touch Support for Mobile
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+    document.addEventListener('touchend', e => {
+        const touchEndX = e.changedTouches[0].clientX;
+        if (touchStartX - touchEndX > 50) nextSlide();
+        if (touchEndX - touchStartX > 50) prevSlide();
+    });
+
+    // Initial Progress
+    updateSlide();
+</script>
 
 </body>
 </html>
