@@ -6,7 +6,8 @@
     <title>United Rebels - Interactive Squad Wall</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Fix: Import von Poppins sowohl in Regular (0) als auch Italic (1) für maximale Safari-Kompatibilität -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;0,900;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -22,6 +23,8 @@
             background-color: var(--deep-black);
             color: var(--rebel-white);
             font-family: 'Lato', sans-serif;
+            -webkit-font-smoothing: antialiased; /* Safari Fix für schärfere Schriften */
+            -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
@@ -46,7 +49,7 @@
         /* Header Bereich */
         .header { text-align: center; margin-bottom: 40px; }
         .header h1 { 
-            font-family: 'Poppins'; 
+            font-family: 'Poppins', sans-serif; 
             font-size: clamp(32px, 8vw, 64px); 
             font-style: italic;
             font-weight: 900;
@@ -70,7 +73,7 @@
         }
 
         .stats-numbers {
-            font-family: 'Poppins';
+            font-family: 'Poppins', sans-serif;
             font-size: 48px;
             font-weight: 900;
             font-style: italic;
@@ -89,7 +92,7 @@
 
         .progress-bar-fill {
             height: 100%;
-            width: 0%; /* Start bei 0 für Animation */
+            width: 0%; 
             background: var(--neon-pink);
             box-shadow: 0 0 15px var(--neon-pink);
             transition: width 2s cubic-bezier(0.19, 1, 0.22, 1);
@@ -132,7 +135,7 @@
         }
         .jersey-slot.taken .name-tag {
             margin-top: 12px;
-            font-family: 'Poppins';
+            font-family: 'Poppins', sans-serif;
             font-weight: 900;
             font-size: 14px;
             text-transform: uppercase;
@@ -207,7 +210,7 @@
             padding: 20px 50px;
             border-radius: 40px;
             text-decoration: none;
-            font-family: 'Poppins';
+            font-family: 'Poppins', sans-serif;
             font-weight: 900;
             font-style: italic;
             font-size: 18px;
@@ -252,7 +255,7 @@
     </div>
 
     <div class="cta-container">
-        <h2 style="font-family: 'Poppins'; font-weight: 900; font-style: italic; margin-bottom: 25px; font-size: 28px;">DIE LETZTEN 4 SLOTS BRENNEN!</h2>
+        <h2 style="font-family: 'Poppins', sans-serif; font-weight: 900; font-style: italic; margin-bottom: 25px; font-size: 28px;">DIE LETZTEN 4 SLOTS BRENNEN!</h2>
         <a href="https://wa.me/491637844242?text=Ich%20habe%20die%20Squad-Wall%20gesehen%20und%20will%20einen%20der%20allerletzten%20Plätze!" class="btn-join">
             <i class="fa-solid fa-fire-flame-curved mr-2"></i> JETZT REBEL WERDEN
         </a>
