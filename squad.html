@@ -3,91 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>United Rebels - Squad Wall</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <title>United Rebels - Interactive Squad Wall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
             --neon-pink: #FF007F;
             --deep-black: #050505;
             --dark-gray: #151515;
+            --rebel-white: #F5F5F5;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            margin: 0; background-color: var(--deep-black); color: white;
-            font-family: 'Lato', sans-serif; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; padding: 40px 20px;
+            background-color: var(--deep-black);
+            color: var(--rebel-white);
+            font-family: 'Lato', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
         }
 
-        .header { text-align: center; margin-bottom: 50px; }
-        .header h1 { font-family: 'Poppins'; font-size: clamp(24px, 6vw, 42px); text-transform: uppercase; margin: 0; }
-        .header h1 span { color: var(--neon-pink); }
-        .header p { color: #888; letter-spacing: 2px; text-transform: uppercase; font-size: 12px; margin-top: 10px; }
+        /* Hintergrund Glow */
+        .bg-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(255, 0, 127, 0.08) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
 
+        /* Header Bereich */
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { 
+            font-family: 'Poppins'; 
+            font-size: clamp(32px, 8vw, 64px); 
+            font-style: italic;
+            font-weight: 900;
+            text-transform: uppercase; 
+            line-height: 0.9;
+        }
+        .header h1 span { color: var(--neon-pink); text-shadow: 0 0 20px rgba(255, 0, 127, 0.5); }
+        .header p { color: #666; letter-spacing: 4px; text-transform: uppercase; font-size: 14px; margin-top: 15px; font-weight: 900; }
+
+        /* Counter Section */
+        .stats-container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 50px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-numbers {
+            font-family: 'Poppins';
+            font-size: 48px;
+            font-weight: 900;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 0, 127, 0.2);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%; /* Start bei 0 für Animation */
+            background: var(--neon-pink);
+            box-shadow: 0 0 15px var(--neon-pink);
+            transition: width 2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* Squad Grid */
         .squad-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 20px; width: 100%; max-width: 800px;
-            margin-bottom: 50px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 60px;
         }
 
         .jersey-slot {
-            aspect-ratio: 1/1.2; background: var(--dark-gray);
-            border-radius: 15px; position: relative;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; transition: all 0.3s ease;
-            border: 1px solid #333;
+            aspect-ratio: 1 / 1.3;
+            background: var(--dark-gray);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #222;
+            overflow: hidden;
         }
 
-        /* BESETZTE PLÄTZE */
+        /* Besetzte Slots */
         .jersey-slot.taken {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 20px rgba(255, 0, 127, 0.2);
+            border-color: rgba(255, 0, 127, 0.4);
+            background: linear-gradient(135deg, #151515 0%, #0a0a0a 100%);
         }
-        .jersey-slot.taken i { color: var(--neon-pink); font-size: 40px; }
-        .jersey-slot.taken .status { background: var(--neon-pink); color: white; }
+        .jersey-slot.taken i { 
+            color: var(--neon-pink); 
+            font-size: 45px; 
+            opacity: 0.8;
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+        }
+        .jersey-slot.taken .name-tag {
+            margin-top: 12px;
+            font-family: 'Poppins';
+            font-weight: 900;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--rebel-white);
+            letter-spacing: 1px;
+        }
+        .jersey-slot.taken .number-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            font-weight: 900;
+            color: var(--neon-pink);
+            opacity: 0.5;
+        }
 
-        /* OFFENE PLÄTZE */
+        /* Offene Slots */
         .jersey-slot.open {
-            border: 2px dashed #444; opacity: 0.8;
+            border: 2px dashed #333;
+            opacity: 0.6;
             cursor: pointer;
         }
-        .jersey-slot.open:hover { border-color: var(--neon-pink); opacity: 1; transform: scale(1.05); }
-        .jersey-slot.open i { color: #444; font-size: 40px; }
-        .jersey-slot.open .status { background: #444; color: #888; }
+        .jersey-slot.open:hover {
+            opacity: 1;
+            border-color: var(--neon-pink);
+            transform: scale(1.08) rotate(2deg);
+            background: rgba(255, 0, 127, 0.05);
+        }
+        .jersey-slot.open i { color: #333; font-size: 40px; transition: color 0.3s; }
+        .jersey-slot.open:hover i { color: var(--neon-pink); }
 
-        /* BRENNENDER EFFEKT FÜR DIE LETZTEN PLÄTZE */
+        /* Burning Animation */
         .jersey-slot.burning {
-            animation: glowBurn 1.5s infinite ease-in-out;
+            animation: intensityBurn 2s infinite ease-in-out;
         }
-        @keyframes glowBurn {
-            0%, 100% { box-shadow: 0 0 5px var(--neon-pink); }
-            50% { box-shadow: 0 0 25px var(--neon-pink); }
+        @keyframes intensityBurn {
+            0%, 100% { box-shadow: 0 0 5px var(--neon-pink), inset 0 0 5px var(--neon-pink); border-color: #333; }
+            50% { box-shadow: 0 0 25px var(--neon-pink), inset 0 0 10px var(--neon-pink); border-color: var(--neon-pink); }
         }
 
-        .status {
-            position: absolute; bottom: 10px; font-size: 10px;
-            font-weight: 800; padding: 3px 8px; border-radius: 4px;
+        .status-badge {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 5px 0;
+            text-align: center;
             text-transform: uppercase;
+            background: #222;
+            color: #555;
+            letter-spacing: 1px;
+        }
+        .jersey-slot.taken .status-badge {
+            background: var(--neon-pink);
+            color: var(--deep-black);
         }
 
-        .cta-area { text-align: center; }
-        .btn-claim {
-            background: var(--neon-pink); color: white;
-            padding: 15px 40px; border-radius: 30px;
-            text-decoration: none; font-family: 'Poppins';
-            font-weight: 800; display: inline-block;
-            box-shadow: 0 10px 30px rgba(255, 0, 127, 0.4);
-            transition: transform 0.3s;
+        /* CTA Bereich */
+        .cta-container {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(to top, rgba(255, 0, 127, 0.1), transparent);
+            width: 100%;
+            border-top: 1px solid rgba(255, 0, 127, 0.1);
         }
-        .btn-claim:hover { transform: translateY(-5px); }
 
-        .bg-glow {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100vw; height: 100vh;
-            background: radial-gradient(circle, rgba(255, 0, 127, 0.05) 0%, rgba(0,0,0,0) 70%);
-            z-index: -1; pointer-events: none;
+        .btn-join {
+            background: var(--neon-pink);
+            color: white;
+            padding: 20px 50px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-family: 'Poppins';
+            font-weight: 900;
+            font-style: italic;
+            font-size: 18px;
+            display: inline-block;
+            text-transform: uppercase;
+            box-shadow: 0 15px 35px rgba(255, 0, 127, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-join:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 45px rgba(255, 0, 127, 0.6);
+        }
+
+        @media (max-width: 480px) {
+            .squad-grid { grid-template-columns: repeat(3, 1fr); }
+            .header h1 { font-size: 40px; }
         }
     </style>
 </head>
@@ -97,45 +233,120 @@
 
     <div class="header">
         <h1>SQUAD <span>REVEAL</span></h1>
-        <p>United Rebels Mission 2026</p>
+        <p>United Rebels // Mission 2026</p>
+    </div>
+
+    <!-- Animated Stats Section -->
+    <div class="stats-container">
+        <div class="stats-numbers">
+            <span id="takenCounter">0</span> <span style="color: var(--neon-pink)">/</span> 18
+        </div>
+        <p id="percentageText" style="text-transform: uppercase; font-weight: 900; letter-spacing: 2px; color: var(--neon-pink);">0% READY</p>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
     </div>
 
     <div class="squad-grid" id="squadGrid">
-        <!-- JS generiert die 18 Plätze -->
+        <!-- JS generiert die Slots -->
     </div>
 
-    <div class="cta-area">
-        <h2 style="font-family: 'Poppins'; margin-bottom: 20px;">NUR NOCH 4 PLÄTZE FREI!</h2>
-        <a href="https://wa.me/491637844242?text=Ich%20will%20einen%20der%20allerletzten%20Plätze!" class="btn-claim">JETZT REBEL WERDEN</a>
+    <div class="cta-container">
+        <h2 style="font-family: 'Poppins'; font-weight: 900; font-style: italic; margin-bottom: 25px; font-size: 28px;">DIE LETZTEN 4 SLOTS BRENNEN!</h2>
+        <a href="https://wa.me/491637844242?text=Ich%20habe%20die%20Squad-Wall%20gesehen%20und%20will%20einen%20der%20allerletzten%20Plätze!" class="btn-join">
+            <i class="fa-solid fa-fire-flame-curved mr-2"></i> JETZT REBEL WERDEN
+        </a>
     </div>
 
     <script>
-        // Update: 14 von 18 Plätzen belegt
-        const total = 18;
-        const taken = 14;
-        const grid = document.getElementById('squadGrid');
+        // Kader-Daten (Stand 22.01.2026)
+        const totalSlots = 18;
+        const takenCount = 14;
+        
+        // Die offiziellen Namen für die "Mystery" Anzeige
+        const rebelNamesRaw = [
+            "Astrid", "Andrea", "Jana", "Emily", "Jolene", 
+            "Franzi", "Nina", "Alicia", "Shari", "Nora", 
+            "Muri", "Yvonne", "Ayleen", "Jannika"
+        ];
 
-        for (let i = 1; i <= total; i++) {
-            const slot = document.createElement('div');
-            if (i <= taken) {
-                slot.className = 'jersey-slot taken';
-                slot.innerHTML = `
-                    <i class="fas fa-shirt"></i>
-                    <div style="margin-top: 10px; font-weight: 800; color: var(--neon-pink)">#${i}</div>
-                    <div class="status">BESETZT</div>
-                `;
-            } else {
-                // Die letzten Plätze "brennen" vor Dringlichkeit
-                slot.className = 'jersey-slot open burning';
-                slot.innerHTML = `
-                    <i class="fas fa-shirt"></i>
-                    <div style="margin-top: 10px; font-weight: 800; color: #666">?</div>
-                    <div class="status">FREE</div>
-                `;
-                slot.onclick = () => { window.location.href = 'https://wa.me/491637844242?text=Ich%20habe%20die%20Squad-Wall%20gesehen%20und%20will%20einen%20der%20letzten%204%20Plätze!'; };
-            }
-            grid.appendChild(slot);
+        // Funktion zum Maskieren der Namen: A****
+        function maskName(name) {
+            if (!name) return "";
+            return name[0] + "*".repeat(name.length - 1);
         }
+
+        const grid = document.getElementById('squadGrid');
+        const takenCounter = document.getElementById('takenCounter');
+        const percentageText = document.getElementById('percentageText');
+        const progressBar = document.getElementById('progressBar');
+
+        // Initialisierung der Slots
+        function initGrid() {
+            for (let i = 1; i <= totalSlots; i++) {
+                const slot = document.createElement('div');
+                
+                if (i <= takenCount) {
+                    // Besetzte Slots (Maskiert)
+                    const maskedName = maskName(rebelNamesRaw[i-1]);
+                    slot.className = 'jersey-slot taken';
+                    slot.innerHTML = `
+                        <div class="number-tag">#${i.toString().padStart(2, '0')}</div>
+                        <i class="fa-solid fa-shirt"></i>
+                        <div class="name-tag">${maskedName}</div>
+                        <div class="status-badge">REBEL SIGNED</div>
+                    `;
+                } else {
+                    // Offene / Brennende Slots
+                    slot.className = 'jersey-slot open burning';
+                    slot.innerHTML = `
+                        <div class="number-tag" style="color: #444">#${i.toString().padStart(2, '0')}</div>
+                        <i class="fa-solid fa-shirt"></i>
+                        <div class="name-tag" style="color: #444; font-size: 10px;">? ? ?</div>
+                        <div class="status-badge">CLAIM NOW</div>
+                    `;
+                    slot.onclick = () => { 
+                        window.location.href = `https://wa.me/491637844242?text=Ich%20interessiere%20mich%20für%20Slot%20Nummer%20${i}!`; 
+                    };
+                }
+                grid.appendChild(slot);
+            }
+        }
+
+        // Animation der Statistiken
+        function startAnimations() {
+            let current = 0;
+            const target = takenCount;
+            const duration = 2000; // 2 Sekunden
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease out effect
+                const easedProgress = 1 - Math.pow(1 - progress, 3);
+                
+                const currentCount = Math.floor(easedProgress * target);
+                const currentPercent = Math.floor(easedProgress * (target / totalSlots * 100));
+
+                takenCounter.innerText = currentCount;
+                percentageText.innerText = `${currentPercent}% READY`;
+                progressBar.style.width = `${(target / totalSlots * 100)}%`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start
+        window.onload = () => {
+            initGrid();
+            setTimeout(startAnimations, 300);
+        };
     </script>
 </body>
 </html>
