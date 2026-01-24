@@ -293,14 +293,14 @@
                         <p style="font-weight: bold; margin-bottom: 10px;">JOIN THE SQUAD</p>
                         <div class="squad-progress-container">
                             <div class="squad-progress-fill" id="squad-fill"></div>
-                            <div class="squad-label"><span class="counter" data-target="9">0</span> / 16 Plätzen belegt</div>
+                            <div class="squad-label"><span class="counter" data-target="14">0</span> / 18 Plätzen belegt</div>
                         </div>
                         <p style="font-size: 14px; color: #AAA;">Werde Teil der Gründungs-Formation!</p>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Branding & Logo fix</div>
                         <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Trainerteam fix</div>
-                        <div class="roadmap-item pending"><i class="fas fa-clock"></i> Hallenzeiten (In Planung)</div>
+                        <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Hallenzeiten fix</div>
                         <div class="roadmap-item pending"><i class="fas fa-clock"></i> Trikot-Design Finalisierung</div>
                     </div>
                 </div>
@@ -463,20 +463,21 @@
                 progressBar.style.display = 'block';
             }
 
-            if (currentSlide === 6) document.getElementById('squad-fill').style.width = "56%"; 
+            // Update Progress Bar on Slide 6 (14/18 = approx 77%)
+            if (currentSlide === 6) document.getElementById('squad-fill').style.width = "77%"; 
         }
         
         function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); } }
         function prevSlide() { if (currentSlide > 0) { currentSlide--; updateSlide(); } }
         function goToSlide(index) { currentSlide = index; updateSlide(); }
 
-        let touchstartX = 0; document.addEventListener('touchstart', e => touchstartX = e.changedTouches[0].screenX, {passive: true});
+        let touchstartX = 0; document.addEventListener('touchstart', e => touchstartX = e.touches[0].clientX);
         document.addEventListener('touchend', e => { 
             if (currentSlide === 0) return;
-            let x = e.changedTouches[0].screenX; 
+            let x = e.changedTouches[0].clientX; 
             if (x < touchstartX - 50) nextSlide(); 
             if (x > touchstartX + 50) prevSlide(); 
-        }, {passive: true});
+        });
 
         document.addEventListener('keydown', e => { 
             if (currentSlide === 0) return;
