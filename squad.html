@@ -2,354 +2,533 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>United Rebels - Interactive Squad Wall</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Werde ein Rebel - UNITED REBELS Mission 2026</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤾‍♀️</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Fix: Import von Poppins sowohl in Regular (0) als auch Italic (1) für maximale Safari-Kompatibilität -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;0,900;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
             --neon-pink: #FF007F;
             --deep-black: #050505;
-            --dark-gray: #151515;
             --rebel-white: #F5F5F5;
+            --dark-gray: #1A1A1A;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background-color: var(--deep-black);
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; padding: 0; 
+            background-color: var(--deep-black); 
             color: var(--rebel-white);
             font-family: 'Lato', sans-serif;
-            -webkit-font-smoothing: antialiased; /* Safari Fix für schärfere Schriften */
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-
-        /* Hintergrund Glow */
-        .bg-glow {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle, rgba(255, 0, 127, 0.08) 0%, rgba(0,0,0,0) 70%);
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* Header Bereich */
-        .header { text-align: center; margin-bottom: 40px; }
-        .header h1 { 
-            font-family: 'Poppins', sans-serif; 
-            font-size: clamp(32px, 8vw, 64px); 
-            font-style: italic;
-            font-weight: 900;
-            text-transform: uppercase; 
-            line-height: 0.9;
-        }
-        .header h1 span { color: var(--neon-pink); text-shadow: 0 0 20px rgba(255, 0, 127, 0.5); }
-        .header p { color: #666; letter-spacing: 4px; text-transform: uppercase; font-size: 14px; margin-top: 15px; font-weight: 900; }
-
-        /* Counter Section */
-        .stats-container {
-            width: 100%;
-            max-width: 600px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 50px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-
-        .stats-numbers {
-            font-family: 'Poppins', sans-serif;
-            font-size: 48px;
-            font-weight: 900;
-            font-style: italic;
-            margin-bottom: 10px;
-        }
-
-        .progress-bar-bg {
-            width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 15px;
-            border: 1px solid rgba(255, 0, 127, 0.2);
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            width: 0%; 
-            background: var(--neon-pink);
-            box-shadow: 0 0 15px var(--neon-pink);
-            transition: width 2s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-
-        /* Squad Grid */
-        .squad-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 900px;
-            margin-bottom: 60px;
-        }
-
-        .jersey-slot {
-            aspect-ratio: 1 / 1.3;
-            background: var(--dark-gray);
-            border-radius: 20px;
+            overflow: hidden; 
+            height: 100dvh;
             position: relative;
-            display: flex;
-            flex-direction: column;
+        }
+
+        /* LOGO COMPONENT */
+        .rebel-logo {
+            width: 80px; height: 80px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .rebel-logo svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px var(--neon-pink)); }
+
+        /* LOADING SCREEN */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--deep-black);
+            z-index: 9999;
+            display: none; 
             align-items: center;
             justify-content: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid #222;
-            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        .loader-content { text-align: center; width: 90%; max-width: 500px; }
+        .loader-logo-text {
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: clamp(22px, 6vw, 38px);
+            color: var(--neon-pink); letter-spacing: 1px; margin-bottom: 25px;
+            animation: pulse 1.5s infinite; text-transform: uppercase; line-height: 1.2;
+        }
+        .loader-text { color: var(--rebel-white); font-family: 'Lato', sans-serif; letter-spacing: 4px; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; opacity: 0.7; }
+        .loader-bar-container { background: rgba(255, 255, 255, 0.1); height: 4px; border-radius: 10px; overflow: hidden; max-width: 300px; margin: 0 auto; }
+        .loader-bar-fill { 
+            background: var(--neon-pink); 
+            height: 100%; 
+            width: 0%; 
+            box-shadow: 0 0 15px var(--neon-pink); 
         }
 
-        /* Besetzte Slots */
-        .jersey-slot.taken {
-            border-color: rgba(255, 0, 127, 0.4);
-            background: linear-gradient(135deg, #151515 0%, #0a0a0a 100%);
+        .animate-bar { animation: loadProgress 5s forwards cubic-bezier(0.42, 0, 0.58, 1); }
+
+        @keyframes loadProgress { 
+            0% { width: 0%; } 
+            20% { width: 15%; }
+            50% { width: 50%; }
+            85% { width: 90%; }
+            100% { width: 100%; } 
         }
-        .jersey-slot.taken i { 
-            color: var(--neon-pink); 
-            font-size: 45px; 
-            opacity: 0.8;
-            filter: drop-shadow(0 0 10px var(--neon-pink));
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.03); opacity: 0.8; } }
+
+        /* BACKGROUND EFFECT */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.35; }
+
+        /* NAVIGATION */
+        .controls { 
+            position: fixed; 
+            bottom: max(20px, env(safe-area-inset-bottom)); 
+            right: 20px; 
+            display: none; 
+            gap: 10px; 
+            z-index: 1000; 
         }
-        .jersey-slot.taken .name-tag {
-            margin-top: 12px;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 900;
-            font-size: 14px;
-            text-transform: uppercase;
-            color: var(--rebel-white);
-            letter-spacing: 1px;
+        .nav-btn {
+            background: rgba(255, 0, 127, 0.15); backdrop-filter: blur(5px);
+            border: 2px solid var(--neon-pink); color: var(--neon-pink);
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .jersey-slot.taken .number-tag {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--neon-pink);
-            opacity: 0.5;
+        @media (max-width: 768px) { .nav-btn { width: 60px; height: 60px; } }
+        .nav-btn:hover { background: var(--neon-pink); color: white; box-shadow: 0 0 15px var(--neon-pink); transform: scale(1.1); }
+
+        .progress-bar { 
+            position: fixed; top: 0; left: 0; height: 5px; 
+            background: var(--neon-pink); transition: width 0.3s ease; 
+            z-index: 1001; display: none;
         }
 
-        /* Offene Slots */
-        .jersey-slot.open {
-            border: 2px dashed #333;
-            opacity: 0.6;
-            cursor: pointer;
+        /* SLIDE SYSTEM */
+        .slides-container { width: 100vw; height: 100%; overflow: hidden; }
+        .slides-wrapper { width: 100vw; height: 100%; display: flex; transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1); }
+        .slide {
+            min-width: 100vw; height: 100%; padding: 40px 20px;
+            display: flex; flex-direction: column; position: relative;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
-        .jersey-slot.open:hover {
-            opacity: 1;
-            border-color: var(--neon-pink);
-            transform: scale(1.08) rotate(2deg);
-            background: rgba(255, 0, 127, 0.05);
-        }
-        .jersey-slot.open i { color: #333; font-size: 40px; transition: color 0.3s; }
-        .jersey-slot.open:hover i { color: var(--neon-pink); }
+        @media (min-width: 769px) { .slide { padding: 60px 80px; } }
 
-        /* Burning Animation */
-        .jersey-slot.burning {
-            animation: intensityBurn 2s infinite ease-in-out;
-        }
-        @keyframes intensityBurn {
-            0%, 100% { box-shadow: 0 0 5px var(--neon-pink), inset 0 0 5px var(--neon-pink); border-color: #333; }
-            50% { box-shadow: 0 0 25px var(--neon-pink), inset 0 0 10px var(--neon-pink); border-color: var(--neon-pink); }
-        }
+        /* TYPOGRAPHY */
+        h1, h2, h3 { font-family: 'Poppins', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        h1 { font-size: clamp(32px, 8vw, 80px); font-weight: 800; line-height: 1.1; }
+        h1 span { color: var(--neon-pink); display: block; }
+        .slide-title { font-size: clamp(22px, 4vw, 44px); font-weight: 800; margin-bottom: 25px; border-left: 8px solid var(--neon-pink); padding-left: 15px; text-align: left; }
+        p, li { font-size: clamp(16px, 2vw, 22px); line-height: 1.4; color: #DDD; }
+        strong { color: var(--neon-pink); }
 
-        .status-badge {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            font-size: 9px;
-            font-weight: 900;
-            padding: 5px 0;
-            text-align: center;
-            text-transform: uppercase;
-            background: #222;
-            color: #555;
-            letter-spacing: 1px;
-        }
-        .jersey-slot.taken .status-badge {
-            background: var(--neon-pink);
-            color: var(--deep-black);
+        /* COMPONENTS */
+        .content-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: center; flex-grow: 1; }
+        @media (min-width: 1024px) { .content-grid { grid-template-columns: 1fr 1fr; gap: 40px; } }
+
+        .tile {
+            background: var(--dark-gray); padding: 30px; border-radius: 20px;
+            border-bottom: 6px solid var(--neon-pink); display: flex;
+            flex-direction: column; justify-content: center;
         }
 
-        /* CTA Bereich */
-        .cta-container {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(to top, rgba(255, 0, 127, 0.1), transparent);
-            width: 100%;
-            border-top: 1px solid rgba(255, 0, 127, 0.1);
+        /* SQUAD PROGRESS */
+        .squad-progress-container {
+            background: rgba(255, 255, 255, 0.1); border-radius: 15px; height: 25px;
+            width: 100%; margin: 15px 0; position: relative; overflow: hidden; border: 1px solid var(--neon-pink);
         }
+        .squad-progress-fill { background: linear-gradient(90deg, var(--neon-pink), #ff5eb3); height: 100%; width: 0%; transition: width 1.5s ease-out; box-shadow: 0 0 10px var(--neon-pink); }
+        .squad-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 12px; color: white; width: 100%; text-align: center; }
 
-        .btn-join {
-            background: var(--neon-pink);
-            color: white;
-            padding: 20px 50px;
-            border-radius: 40px;
-            text-decoration: none;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 900;
-            font-style: italic;
-            font-size: 18px;
-            display: inline-block;
-            text-transform: uppercase;
-            box-shadow: 0 15px 35px rgba(255, 0, 127, 0.4);
-            transition: all 0.3s;
-        }
-        .btn-join:hover {
-            transform: translateY(-8px) scale(1.05);
-            box-shadow: 0 20px 45px rgba(255, 0, 127, 0.6);
-        }
+        /* CONTACT CARDS */
+        .compact-contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .compact-card { background: var(--dark-gray); border-radius: 15px; padding: 12px 5px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .qr-small { width: 110px; height: 110px; background: white; padding: 8px; border-radius: 12px; margin-bottom: 8px; }
+        .qr-small img { width: 100%; height: 100%; }
+        .wa-btn-small { display: inline-flex; align-items: center; gap: 8px; background: #25D366; color: white; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 8px; }
 
-        @media (max-width: 480px) {
-            .squad-grid { grid-template-columns: repeat(3, 1fr); }
-            .header h1 { font-size: 40px; }
+        .back-to-start-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 40px; }
+
+        /* AKRONYM */
+        .pink-acronym-container { display: flex; flex-direction: column; gap: 12px; margin: auto 0; }
+        .acronym-row { display: flex; align-items: center; gap: 20px; background: rgba(255, 255, 255, 0.03); padding: 15px 20px; border-radius: 15px; }
+        .acronym-letter { font-family: 'Poppins'; font-size: clamp(36px, 8vw, 60px); font-weight: 800; color: var(--neon-pink); width: 60px; text-align: center; flex-shrink: 0; }
+        .acronym-content h3 { font-size: clamp(18px, 4vw, 26px); color: var(--rebel-white); margin-bottom: 4px; }
+        .acronym-content p { font-size: clamp(14px, 2.5vw, 18px); color: #AAA; margin: 0; }
+
+        .profile-card { display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 20px; border-radius: 20px; margin-bottom: 20px; border-left: 5px solid transparent; }
+        .profile-img { width: 70px; height: 70px; border: 3px solid var(--neon-pink); border-radius: 15px; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; background: rgba(255, 0, 127, 0.1); flex-shrink: 0; }
+        .profile-img i { transform: rotate(-45deg); font-size: 30px; color: var(--neon-pink); }
+
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2000; }
+
+        .swipe-hint {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: var(--neon-pink); font-weight: bold; opacity: 0;
+            animation: fadeInOut 3s infinite; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
         }
+        @keyframes fadeInOut { 0%, 100% { opacity: 0; transform: translate(-50%, 0); } 50% { opacity: 0.8; transform: translate(-50%, -10px); } }
+
+        .roadmap-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        .roadmap-item.done { border-left: 4px solid #25D366; }
+        .roadmap-item.done i { color: #25D366; }
+        .roadmap-item.pending { border-left: 4px solid var(--neon-pink); color: #888; }
     </style>
 </head>
-<body>
+<body onload="initCounters()">
 
-    <div class="bg-glow"></div>
-
-    <div class="header">
-        <h1>SQUAD <span>REVEAL</span></h1>
-        <p>United Rebels // Mission 2026</p>
-    </div>
-
-    <!-- Animated Stats Section -->
-    <div class="stats-container">
-        <div class="stats-numbers">
-            <span id="takenCounter">0</span> <span style="color: var(--neon-pink)">/</span> 18
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="rebel-logo">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="3"/>
+                    <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+                </svg>
+            </div>
+            <div class="loader-logo-text">DIE REBELLION STARTET JETZT</div>
+            <div class="loader-text">UNITED REBELS powered by HSG RÜ/BAU/KÖ</div>
+            <div class="loader-bar-container">
+                <div class="loader-bar-fill" id="loader-fill"></div>
+            </div>
         </div>
-        <p id="percentageText" style="text-transform: uppercase; font-weight: 900; letter-spacing: 2px; color: var(--neon-pink);">0% READY</p>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="controls" id="navControls">
+        <button class="nav-btn" onclick="prevSlide()"><i class="fas fa-chevron-left"></i></button>
+        <button class="nav-btn" onclick="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div class="slides-container" id="slidesContainer">
+        <div class="slides-wrapper" id="slidesWrapper">
+            
+            <!-- FOLIE 0: DECKBLATT -->
+            <div class="slide">
+                <div style="margin: auto; text-align: center; width: 100%;">
+                    <div class="rebel-logo" style="width: 120px; height: 120px;">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="3"/>
+                            <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+                        </svg>
+                    </div>
+                    <h1>DEINE <span>REBELLION</span></h1>
+                    <h2 style="font-size: 28px; margin-top: 10px;">BEGINNT JETZT.</h2>
+                    <div class="back-to-start-container">
+                        <button class="nav-btn" style="width: auto; border-radius: 10px; padding: 0 60px; font-weight: bold; margin: 0 auto; background: var(--neon-pink); color: white;" onclick="runRebelLoad()">
+                            START
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLIE 1: INTRO -->
+            <div class="slide">
+                <div style="margin: auto; text-align: center;">
+                    <h1>WERDE EIN <span>REBEL!</span></h1>
+                    <p style="margin-top: 30px; color: #AAA; font-size: clamp(18px, 3vw, 24px);">Schluss mit langweiligem Handball. Starte deine neue Ära.</p>
+                    <div style="margin-top: 50px;">
+                        <p style="font-weight: 800; color: var(--rebel-white); font-size: clamp(24px, 5vw, 32px);">UNITED REBELS</p>
+                        <p style="color: var(--neon-pink); text-transform: uppercase; letter-spacing: 2px; font-size: 14px;">powered by HSG Rü/Bau/Kö | Damenhandball Neustart <span class="counter" data-target="2026">0</span></p>
+                    </div>
+                </div>
+                <div class="swipe-hint"><span>Wische zum Starten</span><i class="fas fa-chevron-right"></i></div>
+            </div>
+
+            <!-- FOLIE 2: DAS MANIFEST -->
+            <div class="slide">
+                <div style="margin: auto; text-align: center; max-width: 900px;">
+                    <p style="font-family: 'Poppins'; font-size: clamp(24px, 5vw, 40px); font-weight: 800; line-height: 1.2;">Gegen den Strom. <br> Gegen verstaubte Strukturen. <br> Für den Sport, den wir lieben – nach unseren Regeln.</p>
+                    <span style="color: var(--neon-pink); font-size: clamp(30px, 6vw, 50px); font-weight: 800; display: block; margin-top: 30px;">WIR SIND DER NEUSTART.</span>
+                </div>
+            </div>
+
+            <!-- FOLIE 3: DER VIBE -->
+            <div class="slide">
+                <h2 class="slide-title">Warum die Rebels?</h2>
+                <div class="content-grid">
+                    <div>
+                        <p>Du hast keine Lust mehr auf verstaubte Vereinsstrukturen? Wir auch nicht.</p>
+                        <ul style="list-style: none; padding: 0; margin-top: 20px;">
+                            <li style="margin-bottom: 15px;"><strong style="color:var(--neon-pink); font-size: 1.2em;">#ENERGY:</strong> Power-Handball, der rockt.</li>
+                            <li style="margin-bottom: 15px;"><strong style="color:var(--neon-pink); font-size: 1.2em;">#STYLE:</strong> Die geilsten Trikots der Region.</li>
+                            <li style="margin-bottom: 15px;"><strong style="color:var(--neon-pink); font-size: 1.2em;">#COMMUNITY:</strong> Echter Zusammenhalt.</li>
+                        </ul>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: clamp(100px, 25vw, 150px); color: var(--neon-pink);"><i class="fas fa-hand-fist"></i></div>
+                        <p style="font-family: 'Poppins'; font-weight: 800; font-size: 24px;">DEIN TEAM. DEIN STYLE.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLIE 4: P.I.N.K. -->
+            <div class="slide">
+                <h2 class="slide-title">Das Versprechen: P.I.N.K.</h2>
+                <div class="pink-acronym-container">
+                    <div class="acronym-row"><div class="acronym-letter">P</div><div class="acronym-content"><h3>Performance</h3><p>Wir fördern deine Stärken mit modernem Coaching.</p></div></div>
+                    <div class="acronym-row"><div class="acronym-letter">I</div><div class="acronym-content"><h3>Individualität</h3><p>Egal ob du reaktivieren willst oder Top-Talent bist – du zählst.</p></div></div>
+                    <div class="acronym-row"><div class="acronym-letter">N</div><div class="acronym-content"><h3>Next Level</h3><p>Bring dein Spiel auf eine neue Stufe.</p></div></div>
+                    <div class="acronym-row"><div class="acronym-letter">K</div><div class="acronym-content"><h3>Kampfgeist</h3><p>Gemeinsam wachsen. Gemeinsam gewinnen. Gemeinsam feiern.</p></div></div>
+                </div>
+            </div>
+
+            <!-- FOLIE 5: UNSER VERSPRECHEN -->
+            <div class="slide">
+                <h2 class="slide-title">Unser Versprechen an dich</h2>
+                <div class="content-grid">
+                    <div class="tile"><h3>Kein Stress, nur Handball</h3><p>Wir kümmern uns um die Orga. Du konzentrierst dich auf dein Spiel und das Team.</p></div>
+                    <div class="tile"><h3>Maximale Sichtbarkeit</h3><p>Professionalisierung auf Social Media. Wir machen euch zu den Gesichtern der HSG.</p></div>
+                </div>
+            </div>
+
+            <!-- FOLIE 6: ROADMAP & SQUAD -->
+            <div class="slide">
+                <h2 class="slide-title">Roadmap & Squad</h2>
+                <div class="content-grid">
+                    <div>
+                        <p style="font-weight: bold; margin-bottom: 10px;">JOIN THE SQUAD</p>
+                        <div class="squad-progress-container">
+                            <div class="squad-progress-fill" id="squad-fill"></div>
+                            <div class="squad-label"><span class="counter" data-target="14">0</span> / 18 Plätzen belegt</div>
+                        </div>
+                        <p style="font-size: 14px; color: #AAA;">Werde Teil der Gründungs-Formation!</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Branding & Logo fix</div>
+                        <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Trainerteam fix</div>
+                        <div class="roadmap-item done"><i class="fas fa-check-circle"></i> Hallenzeiten fix</div>
+                        <div class="roadmap-item pending"><i class="fas fa-clock"></i> Trikot-Design Finalisierung</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLIE 7: TEAM & FUN -->
+            <div class="slide">
+                <h2 class="slide-title">Mehr als 60 Minuten</h2>
+                <div class="content-grid">
+                    <div class="tile">
+                        <h3>Team-Events</h3>
+                        <p>Trainingslager, Teambuilding und legendäre Kabinenpartys sind fest eingeplant.</p>
+                        <div style="text-align: center; margin-top: 25px;">
+                            <div style="font-size: clamp(60px, 12vw, 100px); color: var(--neon-pink); margin-bottom: 15px;"><i class="fas fa-glass-cheers"></i></div>
+                            <p style="font-weight: 800; color: var(--neon-pink); font-size: clamp(16px, 3vw, 22px); line-height: 1.2;">REBELS DON'T JUST PLAY.<br>REBELS CELEBRATE.</p>
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <iframe data-testid="embed-iframe" style="border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" src="https://open.spotify.com/embed/playlist/0ATXpHGpuf8lEEdkH01W9m?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLIE 8: SAISONPLANUNG -->
+            <div class="slide">
+                <h2 class="slide-title">Unser Plan: Saison & Groove</h2>
+                <div class="content-grid">
+                    <div class="tile"><h3>Start: Bezirksliga</h3><p>Bewusster Start ohne Druck, um als Team Automatismen zu festigen.</p></div>
+                    <div class="tile"><h3>Einzugrooven</h3><p>Wir wollen als Einheit zusammenwachsen und unsere Rebel-Identität entwickeln.</p></div>
+                </div>
+            </div>
+
+            <!-- FOLIE 9: SAVE THE DATE -->
+            <div class="slide">
+                <h2 class="slide-title">Save the Date</h2>
+                <div style="margin: auto; text-align: center; width: 100%;">
+                    <div class="tile" style="max-width: 500px; margin: 0 auto; border-bottom-color: white;">
+                        <h3 style="color: white;">Erstes Rebel-Meeting</h3>
+                        <p style="font-size: 24px; font-weight: 800; color: var(--neon-pink); margin: 10px 0;">Sonntag, 08.02.2026</p>
+                        <p style="font-size: 18px; margin-bottom: 20px;">16:30 Uhr | Sporthalle Bauschheim</p>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <button onclick="handleAction('ics')" class="nav-btn" style="width: 100%; border-radius: 10px; font-size: 14px; font-weight: bold;"><i class="fas fa-apple-whole"></i> FÜR APPLE / NATIV (ICS)</button>
+                            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=United+Rebels+Kick-off&dates=20260208T153000Z/20260208T173000Z&details=Erstes+Treffen+der+neuen+Damenmannschaft!&location=Sporthalle+Bauschheim" target="_blank" class="nav-btn" style="width: 100%; border-radius: 10px; font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.1);"><i class="fab fa-google"></i> FÜR GOOGLE KALENDER</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLIE 10: SUPPORT TEAM -->
+            <div class="slide">
+                <h2 class="slide-title">Support Team</h2>
+                <div class="content-grid">
+                    <div>
+                        <div class="profile-card" style="display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 20px; border-radius: 20px; margin-bottom: 20px;">
+                            <div style="width: 70px; height: 70px; border: 3px solid var(--neon-pink); border-radius: 15px; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; background: rgba(255, 0, 127, 0.1); flex-shrink: 0;"><i class="fas fa-users-gear" style="transform: rotate(-45deg); font-size: 30px; color: var(--neon-pink);"></i></div>
+                            <div><h3>Lena Kugies</h3><p style="font-size: 16px; margin:0;">Orga & Spirit.</p></div>
+                        </div>
+                        <div class="profile-card" style="display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 20px; border-radius: 20px;">
+                            <div style="width: 70px; height: 70px; border: 3px solid var(--neon-pink); border-radius: 15px; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; background: rgba(255, 0, 127, 0.1); flex-shrink: 0;"><i class="fas fa-chess-knight" style="transform: rotate(-45deg); font-size: 30px; color: var(--neon-pink);"></i></div>
+                            <div><h3>Kai-Uwe König</h3><p style="font-size: 16px; margin:0;">Strategie.</p></div>
+                        </div>
+                    </div>
+                    <div class="tile"><h3>Euer Support</h3><p>Wir halten euch den Rücken frei. <strong>UNITED REBELS</strong> powered by HSG Rü/Bau/Kö.</p></div>
+                </div>
+            </div>
+
+            <!-- FOLIE 11: KONTAKT -->
+            <div class="slide">
+                <h2 class="slide-title">Werde ein Rebel!</h2>
+                <div class="compact-contact-grid">
+                    <div class="compact-card"><div class="qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://wa.me/491637844242" alt="QR Lena"></div><strong style="color: var(--neon-pink); font-size: 14px;">LENA</strong><a href="https://wa.me/491637844242?text=Hey%20Lena,%20ich%20habe%20die%20Rebels%20Pr%C3%A4si%20gesehen%20und%20hab%20Bock!" class="wa-btn-small" target="_blank" onclick="handleAction('wa')"><i class="fab fa-whatsapp"></i> WhatsApp</a></div>
+                    <div class="compact-card"><div class="qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://wa.me/4915123008915" alt="QR Kai"></div><strong style="color: var(--neon-pink); font-size: 14px;">KAI</strong><a href="https://wa.me/4915123008915?text=Hi%20Kai,%20ich%20habe%20Interesse%20an%20den%20United%20Rebels!" class="wa-btn-small" target="_blank" onclick="handleAction('wa')"><i class="fab fa-whatsapp"></i> WhatsApp</a></div>
+                </div>
+                <div class="action-row" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <a href="https://wa.me/?text=Hey!%20Schau%20dir%20mal%20die%20United%20Rebels%20an.%20Kommst%20du%20mit?%20https://kkoenig87.github.io/Pink-Rebels/rebellion.html" class="wa-btn-small" style="background: var(--neon-pink); border-radius: 30px; width: 80%; justify-content: center; padding: 12px 0;" onclick="vibrate()"><i class="fas fa-users"></i> FREUNDIN EINLADEN</a>
+                    <button onclick="quickShare()" style="background:none; border:none; color:#888; font-size: 12px; font-weight: bold; cursor:pointer; padding: 10px;"><i class="fas fa-share-nodes"></i> PRÄSI WEITERSCHICKEN</button>
+                </div>
+            </div>
+
+            <!-- FOLIE 12: OUTRO -->
+            <div class="slide">
+                <div style="margin: auto; text-align: center; width: 100%;">
+                    <div class="rebel-logo">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="3"/>
+                            <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+                        </svg>
+                    </div>
+                    <h1>DEINE <span>REBELLION</span></h1>
+                    <h2 style="font-size: 28px; margin-top: 10px;">BEGINNT JETZT.</h2>
+                    <div class="back-to-start-container">
+                        <button class="nav-btn" style="width: auto; border-radius: 10px; padding: 0 40px; font-weight: bold; margin: 0 auto;" onclick="goToSlide(0); vibrate();">
+                            ZURÜCK ZUM START
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </div>
-
-    <div class="squad-grid" id="squadGrid">
-        <!-- JS generiert die Slots -->
-    </div>
-
-    <div class="cta-container">
-        <h2 style="font-family: 'Poppins', sans-serif; font-weight: 900; font-style: italic; margin-bottom: 25px; font-size: 28px;">DIE LETZTEN 4 SLOTS BRENNEN!</h2>
-        <a href="https://wa.me/491637844242?text=Ich%20habe%20die%20Squad-Wall%20gesehen%20und%20will%20einen%20der%20allerletzten%20Plätze!" class="btn-join">
-            <i class="fa-solid fa-fire-flame-curved mr-2"></i> JETZT REBEL WERDEN
-        </a>
     </div>
 
     <script>
-        // Kader-Daten (Stand 22.01.2026)
-        const totalSlots = 18;
-        const takenCount = 14;
+        // BACKGROUND ANIMATION
+        const canvas = document.getElementById('bg-canvas'); const ctx = canvas.getContext('2d'); let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        class Particle { constructor() { this.reset(); } reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 80 + 40; this.speedX = Math.random() * 0.4 - 0.2; this.speedY = Math.random() * 0.4 - 0.2; this.opacity = Math.random() * 0.4; } update() { this.x += this.speedX; this.y += this.speedY; if (this.x < -100 || this.x > canvas.width + 100) this.reset(); } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 0, 127, ${this.opacity * 0.1})`; ctx.fill(); } }
+        for (let i = 0; i < 15; i++) particles.push(new Particle());
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); } animate();
+
+        // CONFETTI
+        const confCanvas = document.getElementById('confetti-canvas'); const confCtx = confCanvas.getContext('2d'); let pieces = [];
+        function resizeConf() { confCanvas.width = window.innerWidth; confCanvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeConf); resizeConf();
+        function fireConfetti() { for (let i = 0; i < 50; i++) { pieces.push({ x: Math.random() * confCanvas.width, y: -20, size: Math.random() * 10 + 5, color: i % 2 === 0 ? '#FF007F' : '#ffffff', speedY: Math.random() * 3 + 2, speedX: Math.random() * 4 - 2, rot: Math.random() * 360 }); } }
+        function updateConfetti() { confCtx.clearRect(0,0,confCanvas.width, confCanvas.height); pieces.forEach((p, i) => { p.y += p.speedY; p.x += p.speedX; p.rot += 5; confCtx.save(); confCtx.translate(p.x, p.y); confCtx.rotate(p.rot * Math.PI / 180); confCtx.fillStyle = p.color; confCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size); confCtx.restore(); if (p.y > confCanvas.height) pieces.splice(i, 1); }); requestAnimationFrame(updateConfetti); } updateConfetti();
+
+        function handleAction(type) { vibrate(); fireConfetti(); if (type === 'ics') downloadICS(); }
+        function vibrate() { if (navigator.vibrate) navigator.vibrate(50); }
+
+        function initCounters() {
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) { 
+                        let count = 0;
+                        const timer = setInterval(() => {
+                            count += Math.ceil(target / 40);
+                            if (count >= target) { counter.innerText = target; clearInterval(timer); }
+                            else counter.innerText = count;
+                        }, 30);
+                        observer.unobserve(counter); 
+                    }
+                });
+                observer.observe(counter);
+            });
+        }
+
+        async function quickShare() {
+            vibrate();
+            const shareData = { title: 'United Rebels 2026', text: 'Werde Teil der Rebellion!', url: 'https://kkoenig87.github.io/Pink-Rebels/rebellion.html' };
+            try { if (navigator.share) await navigator.share(shareData); else alert("Link kopiert!"); } catch (err) {}
+        }
+
+        // SLIDE NAVIGATION
+        let currentSlide = 0; const slides = document.querySelectorAll('.slide'); const wrapper = document.getElementById('slidesWrapper'); const progressBar = document.getElementById('progressBar');
+        const navControls = document.getElementById('navControls');
+
+        function updateSlide() { 
+            wrapper.style.transform = `translateX(-${currentSlide * 100}vw)`; 
+            progressBar.style.width = `${((currentSlide + 1) / slides.length) * 100}%`; 
+            slides[currentSlide].scrollTop = 0; 
+            
+            if (currentSlide === 0) {
+                navControls.style.display = 'none';
+                progressBar.style.display = 'none';
+            } else {
+                navControls.style.display = 'flex';
+                progressBar.style.display = 'block';
+            }
+
+            // Update Progress Bar on Slide 6 (14/18 = approx 77%)
+            if (currentSlide === 6) document.getElementById('squad-fill').style.width = "77%"; 
+        }
         
-        // Die offiziellen Namen für die "Mystery" Anzeige
-        const rebelNamesRaw = [
-            "Astrid", "Andrea", "Jana", "Emily", "Jolene", 
-            "Franzi", "Nina", "Alicia", "Shari", "Nora", 
-            "Muri", "Yvonne", "Ayleen", "Jannika"
-        ];
+        function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); } }
+        function prevSlide() { if (currentSlide > 0) { currentSlide--; updateSlide(); } }
+        function goToSlide(index) { currentSlide = index; updateSlide(); }
 
-        // Funktion zum Maskieren der Namen: A****
-        function maskName(name) {
-            if (!name) return "";
-            return name[0] + "*".repeat(name.length - 1);
+        let touchstartX = 0; document.addEventListener('touchstart', e => touchstartX = e.touches[0].clientX);
+        document.addEventListener('touchend', e => { 
+            if (currentSlide === 0) return;
+            let x = e.changedTouches[0].clientX; 
+            if (x < touchstartX - 50) nextSlide(); 
+            if (x > touchstartX + 50) prevSlide(); 
+        });
+
+        document.addEventListener('keydown', e => { 
+            if (currentSlide === 0) return;
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide(); 
+            if (e.key === 'ArrowLeft') prevSlide(); 
+        });
+
+        function downloadICS() { 
+            const icsData = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "BEGIN:VEVENT",
+                "DTSTART:20260208T153000Z",
+                "DTEND:20260208T173000Z",
+                "SUMMARY:United Rebels Kick-off",
+                "LOCATION:Sporthalle Bauschheim",
+                "DESCRIPTION:Erstes Meeting!",
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n"); 
+            const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' }); 
+            const link = document.createElement('a'); link.href = window.URL.createObjectURL(blob); 
+            link.setAttribute('download', 'UnitedRebels_Kickoff.ics'); link.click(); 
         }
 
-        const grid = document.getElementById('squadGrid');
-        const takenCounter = document.getElementById('takenCounter');
-        const percentageText = document.getElementById('percentageText');
-        const progressBar = document.getElementById('progressBar');
-
-        // Initialisierung der Slots
-        function initGrid() {
-            for (let i = 1; i <= totalSlots; i++) {
-                const slot = document.createElement('div');
+        // REBEL LOAD LOGIC
+        function runRebelLoad() {
+            vibrate();
+            const loader = document.getElementById('loading-screen');
+            const loaderFill = document.getElementById('loader-fill');
+            
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                loader.style.opacity = '1';
+                loaderFill.classList.add('animate-bar');
                 
-                if (i <= takenCount) {
-                    // Besetzte Slots (Maskiert)
-                    const maskedName = maskName(rebelNamesRaw[i-1]);
-                    slot.className = 'jersey-slot taken';
-                    slot.innerHTML = `
-                        <div class="number-tag">#${i.toString().padStart(2, '0')}</div>
-                        <i class="fa-solid fa-shirt"></i>
-                        <div class="name-tag">${maskedName}</div>
-                        <div class="status-badge">REBEL SIGNED</div>
-                    `;
-                } else {
-                    // Offene / Brennende Slots
-                    slot.className = 'jersey-slot open burning';
-                    slot.innerHTML = `
-                        <div class="number-tag" style="color: #444">#${i.toString().padStart(2, '0')}</div>
-                        <i class="fa-solid fa-shirt"></i>
-                        <div class="name-tag" style="color: #444; font-size: 10px;">? ? ?</div>
-                        <div class="status-badge">CLAIM NOW</div>
-                    `;
-                    slot.onclick = () => { 
-                        window.location.href = `https://wa.me/491637844242?text=Ich%20interessiere%20mich%20für%20Slot%20Nummer%20${i}!`; 
-                    };
-                }
-                grid.appendChild(slot);
-            }
+                // Übergang im Hintergrund vorbereiten
+                currentSlide = 1;
+                updateSlide();
+            }, 10);
+
+            // Loader bleibt 5 Sekunden aktiv
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 800);
+            }, 5000); 
         }
 
-        // Animation der Statistiken
-        function startAnimations() {
-            let current = 0;
-            const target = takenCount;
-            const duration = 2000; // 2 Sekunden
-            const startTime = performance.now();
-
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Ease out effect
-                const easedProgress = 1 - Math.pow(1 - progress, 3);
-                
-                const currentCount = Math.floor(easedProgress * target);
-                const currentPercent = Math.floor(easedProgress * (target / totalSlots * 100));
-
-                takenCounter.innerText = currentCount;
-                percentageText.innerText = `${currentPercent}% READY`;
-                progressBar.style.width = `${(target / totalSlots * 100)}%`;
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-
-            requestAnimationFrame(animate);
-        }
-
-        // Start
-        window.onload = () => {
-            initGrid();
-            setTimeout(startAnimations, 300);
-        };
+        updateSlide();
     </script>
 </body>
 </html>
