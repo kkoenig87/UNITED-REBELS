@@ -25,26 +25,46 @@
         }
 
         body {
-            background-color: #1e293b;
+            background-color: #000;
             margin: 0;
-            padding: 20px 0;
-            display: grid;
-            gap: 40px;
-            place-items: center;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Lato', sans-serif;
+        }
+
+        /* SLIDE SYSTEM */
+        .presentation-wrapper {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
         }
 
         .slide-container {
-            width: 1280px;
-            height: 720px;
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-color);
             color: var(--text-primary);
-            font-family: 'Lato', sans-serif;
-            position: relative;
-            overflow: hidden;
-            display: flex;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none; /* Hide by default */
             flex-direction: column;
             padding: 60px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .slide-container.active {
+            display: flex;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         /* Hintergrund-Design-Elemente */
@@ -73,14 +93,14 @@
             margin-bottom: 40px;
             border-left: 8px solid var(--accent-color);
             padding-left: 20px;
-            z-index: 1;
+            z-index: 2;
         }
 
         p, li {
-            font-size: 20px;
+            font-size: 22px;
             line-height: 1.5;
             color: var(--text-primary);
-            z-index: 1;
+            z-index: 2;
         }
 
         .content-area {
@@ -88,10 +108,60 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            z-index: 1;
+            z-index: 2;
         }
 
-        /* 3. LAYOUTS */
+        /* 3. NAVIGATION CONTROLS */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background: var(--accent-color);
+            z-index: 101;
+            transition: width 0.3s ease;
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 35px;
+            left: 30px;
+            color: var(--text-secondary);
+            font-size: 18px;
+            z-index: 100;
+            font-family: 'Urbanist', sans-serif;
+        }
+
+        /* 4. LAYOUTS */
         .title-layout {
             text-align: center;
             height: 100%;
@@ -116,7 +186,6 @@
             color: var(--text-secondary);
         }
 
-        /* Tiled Content */
         .tiled-content {
             display: flex;
             gap: 30px;
@@ -138,7 +207,6 @@
             margin-bottom: 20px;
         }
 
-        /* Table Style */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -158,10 +226,9 @@
         td {
             padding: 18px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 18px;
+            font-size: 20px;
         }
 
-        /* Image Layouts */
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -175,20 +242,46 @@
             border-radius: 15px;
             overflow: hidden;
             border: 2px solid var(--accent-color);
+            background: #24344d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
         }
 
+        /* Bild-Fallback-System */
         .image-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
-        /* Bleed Image Layout */
+        .img-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: var(--accent-color);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .img-fallback i {
+            font-size: 80px;
+            margin-bottom: 15px;
+        }
+
         .bleed-image-layout {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr 1fr;
             padding: 0;
-            align-items: start;
         }
 
         .bleed-image-layout .content-container {
@@ -196,20 +289,20 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            height: 100%;
         }
 
         .bleed-image-layout .image-container {
-            height: 720px;
+            height: 100vh;
+            background: #24344d;
+            position: relative;
         }
 
         .bleed-image-layout img {
             width: 100%;
-            height: 720px;
+            height: 100%;
             object-fit: cover;
         }
 
-        /* Styled Bullets */
         .bullet-list {
             list-style: none;
             padding: 0;
@@ -230,7 +323,6 @@
             font-size: 28px;
         }
 
-        /* Section Title */
         .section-title-layout {
             text-align: center;
             justify-content: center;
@@ -278,305 +370,380 @@
             margin-top: 10px;
             font-size: 24px;
         }
-
     </style>
 </head>
 <body>
 
-<!-- Slide 1: Titel-Slide -->
-<div class="slide-container" id="slide1">
-    <div class="title-layout">
-        <h1>Handball <span>Roadmap</span></h1>
-        <p class="subtitle">Leitfaden für das Training der weiblichen A-Jugend</p>
-    </div>
-</div>
+<div class="presentation-wrapper">
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="slide-counter" id="slideCounter">Slide 1 / 15</div>
 
-<!-- Slide 2: Die 3 Säulen -->
-<div class="slide-container" id="slide2">
-    <h2 class="slide-title">Die 3 Säulen der Saison</h2>
-    <div class="content-area">
-        <div class="tiled-content">
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
-                <h3>Proaktive 6:0</h3>
-                <p>Stören des Spielflusses durch intelligentes Heraustreten und Binden.</p>
-            </div>
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-bolt"></i></div>
-                <h3>Strukturierte 2. Welle</h3>
-                <p>Konsequente Bestrafung der gegnerischen Unordnung nach Ballgewinn.</p>
-            </div>
-            <div class="tile">
-                <div class="icon"><i class="fa-solid fa-brain"></i></div>
-                <h3>Decision Making</h3>
-                <p>Wahrnehmungstaktik und Automatisierung der Wenn-Dann Logik.</p>
-            </div>
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="nav-btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <!-- Slide 1: Titel-Slide -->
+    <div class="slide-container active">
+        <div class="title-layout">
+            <h1>Handball <span>Roadmap</span></h1>
+            <p class="subtitle">Leitfaden für das Training der weiblichen A-Jugend</p>
+            <p style="margin-top: 40px; font-size: 18px; color: var(--accent-color);">Nutze die Pfeiltasten oder die Buttons zum Navigieren</p>
         </div>
     </div>
-</div>
 
-<!-- Slide 3: Didaktik -->
-<div class="slide-container" id="slide3">
-    <h2 class="slide-title">Didaktische Prinzipien</h2>
-    <div class="content-area">
-        <ul class="bullet-list">
-            <li><i class="fa-solid fa-check-double"></i> <strong>Vom Einfachen zum Komplexen:</strong> Technik vor Taktik.</li>
-            <li><i class="fa-solid fa-check-double"></i> <strong>Vom Bekannten zum Unbekannten:</strong> Muster verknüpfen.</li>
-            <li><i class="fa-solid fa-check-double"></i> <strong>Vom Langsamen zum Schnellen:</strong> Präzision als Basis.</li>
-            <li><i class="fa-solid fa-check-double"></i> <strong>Prävention:</strong> Fokus auf Knie- und Sprunggelenkstabilität.</li>
-        </ul>
-    </div>
-</div>
-
-<!-- Slide 4: Struktur -->
-<div class="slide-container" id="slide4">
-    <h2 class="slide-title">Struktur der Einheiten</h2>
-    <div class="content-area">
-        <table>
-            <thead>
-                <tr>
-                    <th>Phase</th>
-                    <th>Fokus</th>
-                    <th>Dauer</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Warm-up</td>
-                    <td>Aktivierung & Kognition</td>
-                    <td>15 Min.</td>
-                </tr>
-                <tr>
-                    <td>Technik-Teil</td>
-                    <td>Isoliertes Lernziel</td>
-                    <td>20 Min.</td>
-                </tr>
-                <tr>
-                    <td>Kleingruppe</td>
-                    <td>Kooperation (2:2 / 3:3)</td>
-                    <td>25 Min.</td>
-                </tr>
-                <tr>
-                    <td>Großgruppe</td>
-                    <td>Anwendung (6:6)</td>
-                    <td>20 Min.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Slide 5: Section Title Modul 1 -->
-<div class="slide-container" id="slide5">
-    <div class="title-layout section-title-layout">
-        <hr>
-        <h2>Modul 1:<br>Proaktive 6:0</h2>
-        <hr>
-    </div>
-</div>
-
-<!-- Slide 6: Modul 1 Content -->
-<div class="slide-container bleed-image-layout" id="slide6">
-    <div class="content-container">
-        <h2 class="slide-title">Taktische Tiefe</h2>
+    <!-- Slide 2: Die 3 Säulen -->
+    <div class="slide-container">
+        <h2 class="slide-title">Die 3 Säulen der Saison</h2>
         <div class="content-area">
-            <h3>Stören statt Reagieren</h3>
-            <p>Die 6:0 Abwehr ist ein dynamisches System. Wir nutzen die V-Stellung, um den Rückraum frühzeitig zu stören.</p>
-            <p><strong>Ziel:</strong> Den Ballführer vor der 9m-Linie binden.</p>
-        </div>
-    </div>
-    <div class="image-container">
-        <img src="http://googleusercontent.com/image_collection/image_retrieval/420442942901236758" alt="Handball Abwehrformation">
-    </div>
-</div>
-
-<!-- Slide 7: Troubleshooting Modul 1 -->
-<div class="slide-container" id="slide7">
-    <h2 class="slide-title">Troubleshooting: Abwehr</h2>
-    <div class="content-area">
-        <div class="troubleshooting-grid">
-            <div class="ts-item">
-                <h4>Fehler: Passivität</h4>
-                <p>Abwehr bleibt an der 6m-Linie stehen.</p>
-                <span class="correction">„Geh ihr entgegen!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: KM-Verlust</h4>
-                <p>Kreisläufer wird beim Heraustreten frei.</p>
-                <span class="correction">„V-Stellung halten!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Timing</h4>
-                <p>Heraustreten erfolgt zu spät.</p>
-                <span class="correction">„Schon beim Pass raus!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Kontakt</h4>
-                <p>Zu viel Griff von hinten.</p>
-                <span class="correction">„Frontal binden!“</span>
+            <div class="tiled-content">
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3>Proaktive 6:0</h3>
+                    <p>Stören des Spielflusses durch intelligentes Heraustreten und Binden.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3>Strukturierte 2. Welle</h3>
+                    <p>Konsequente Bestrafung der gegnerischen Unordnung nach Ballgewinn.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-brain"></i></div>
+                    <h3>Decision Making</h3>
+                    <p>Wahrnehmungstaktik und Automatisierung der Wenn-Dann Logik.</p>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Slide 8: Section Title Modul 2 -->
-<div class="slide-container" id="slide8">
-    <div class="title-layout section-title-layout">
-        <hr>
-        <h2>Modul 2:<br>Die 2. Welle</h2>
-        <hr>
+    <!-- Slide 3: Didaktik -->
+    <div class="slide-container">
+        <h2 class="slide-title">Didaktische Prinzipien</h2>
+        <div class="content-area">
+            <ul class="bullet-list">
+                <li><i class="fa-solid fa-check-double"></i> <strong>Vom Einfachen zum Komplexen:</strong> Technik vor Taktik.</li>
+                <li><i class="fa-solid fa-check-double"></i> <strong>Vom Bekannten zum Unbekannten:</strong> Muster verknüpfen.</li>
+                <li><i class="fa-solid fa-check-double"></i> <strong>Vom Langsamen zum Schnellen:</strong> Präzision als Basis.</li>
+                <li><i class="fa-solid fa-check-double"></i> <strong>Prävention:</strong> Fokus auf Knie- und Sprunggelenkstabilität.</li>
+            </ul>
+        </div>
     </div>
-</div>
 
-<!-- Slide 9: Modul 2 Content -->
-<div class="slide-container" id="slide9">
-    <h2 class="slide-title">Organisierter Tempogegenstoß</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div>
-                <h3>Breit-Lang Prinzip</h3>
-                <p>Außenspielerinnen ziehen die Abwehr durch Läufe bis zur Grundlinie auseinander.</p>
-                <ul class="bullet-list" style="font-size: 18px;">
-                    <li><i class="fa-solid fa-arrow-right"></i> Schneller Ballvortrieb</li>
-                    <li><i class="fa-solid fa-arrow-right"></i> Minimale Bodenkontakte</li>
-                </ul>
+    <!-- Slide 4: Struktur -->
+    <div class="slide-container">
+        <h2 class="slide-title">Struktur der Einheiten</h2>
+        <div class="content-area">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Fokus</th>
+                        <th>Dauer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Warm-up</td>
+                        <td>Aktivierung & Kognition</td>
+                        <td>15 Min.</td>
+                    </tr>
+                    <tr>
+                        <td>Technik-Teil</td>
+                        <td>Isoliertes Lernziel</td>
+                        <td>20 Min.</td>
+                    </tr>
+                    <tr>
+                        <td>Kleingruppe</td>
+                        <td>Kooperation (2:2 / 3:3)</td>
+                        <td>25 Min.</td>
+                    </tr>
+                    <tr>
+                        <td>Großgruppe</td>
+                        <td>Anwendung (6:6)</td>
+                        <td>20 Min.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Slide 5: Section Title Modul 1 -->
+    <div class="slide-container">
+        <div class="title-layout section-title-layout">
+            <hr>
+            <h2>Modul 1:<br>Proaktive 6:0</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Slide 6: Modul 1 Content -->
+    <div class="slide-container bleed-image-layout">
+        <div class="content-container">
+            <h2 class="slide-title">Taktische Tiefe</h2>
+            <div class="content-area">
+                <h3>Stören statt Reagieren</h3>
+                <p>Die 6:0 Abwehr ist ein dynamisches System. Wir nutzen die V-Stellung, um den Rückraum frühzeitig zu stören.</p>
+                <p><strong>Ziel:</strong> Den Ballführer vor der 9m-Linie binden.</p>
             </div>
-            <div class="image-wrapper">
-                <img src="http://googleusercontent.com/image_collection/image_retrieval/7096674417580414257" alt="Handball Tempogegenstoß">
+        </div>
+        <div class="image-container">
+            <img src="http://googleusercontent.com/image_collection/image_retrieval/420442942901236758" 
+                 onerror="handleImageError(this, 'fa-shield-halved', 'Abwehr-Formation')" alt="Abwehrformation">
+        </div>
+    </div>
+
+    <!-- Slide 7: Troubleshooting Modul 1 -->
+    <div class="slide-container">
+        <h2 class="slide-title">Troubleshooting: Abwehr</h2>
+        <div class="content-area">
+            <div class="troubleshooting-grid">
+                <div class="ts-item">
+                    <h4>Fehler: Passivität</h4>
+                    <p>Abwehr bleibt an der 6m-Linie stehen.</p>
+                    <span class="correction">„Geh ihr entgegen!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: KM-Verlust</h4>
+                    <p>Kreisläufer wird beim Heraustreten frei.</p>
+                    <span class="correction">„V-Stellung halten!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Timing</h4>
+                    <p>Heraustreten erfolgt zu spät.</p>
+                    <span class="correction">„Schon beim Pass raus!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Kontakt</h4>
+                    <p>Zu viel Griff von hinten.</p>
+                    <span class="correction">„Frontal binden!“</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Section Title Modul 2 -->
+    <div class="slide-container">
+        <div class="title-layout section-title-layout">
+            <hr>
+            <h2>Modul 2:<br>Die 2. Welle</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Slide 9: Modul 2 Content -->
+    <div class="slide-container">
+        <h2 class="slide-title">Organisierter Tempogegenstoß</h2>
+        <div class="content-area">
+            <div class="two-column">
+                <div>
+                    <h3>Breit-Lang Prinzip</h3>
+                    <p>Außenspielerinnen ziehen die Abwehr durch Läufe bis zur Grundlinie auseinander.</p>
+                    <ul class="bullet-list" style="font-size: 18px;">
+                        <li><i class="fa-solid fa-arrow-right"></i> Schneller Ballvortrieb</li>
+                        <li><i class="fa-solid fa-arrow-right"></i> Minimale Bodenkontakte</li>
+                    </ul>
+                </div>
+                <div class="image-wrapper">
+                    <img src="http://googleusercontent.com/image_collection/image_retrieval/7096674417580414257" 
+                         onerror="handleImageError(this, 'fa-bolt', 'Tempogegenstoß')" alt="Tempogegenstoß">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Troubleshooting Modul 2 -->
+    <div class="slide-container">
+        <h2 class="slide-title">Troubleshooting: Umschaltspiel</h2>
+        <div class="content-area">
+            <div class="troubleshooting-grid">
+                <div class="ts-item">
+                    <h4>Fehler: Mitte voll</h4>
+                    <p>Alle rennen ins Zentrum.</p>
+                    <span class="correction">„Außen bis zur Grundlinie!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Ball festmachen</h4>
+                    <p>Zu frühes Foul provoziert.</p>
+                    <span class="correction">„Weiterspielen statt Freiwurf!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Passqualität</h4>
+                    <p>Ballverluste im hohen Tempo.</p>
+                    <span class="correction">„Präzision vor Speed!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Kopf unten</h4>
+                    <p>Lücken werden nicht gesehen.</p>
+                    <span class="correction">„Blick nach vorne!“</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 11: Section Title Modul 3 -->
+    <div class="slide-container">
+        <div class="title-layout section-title-layout">
+            <hr>
+            <h2>Modul 3:<br>Decision Making</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Slide 12: Modul 3 Content -->
+    <div class="slide-container">
+        <h2 class="slide-title">Die Wenn-Dann Logik</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile" style="text-align: left;">
+                    <h3 style="color: var(--accent-color);">Situation (Reiz)</h3>
+                    <p>1. Verteidigerin tritt aggressiv raus.</p>
+                    <p>2. Verteidigerin sinkt ab zum Kreis.</p>
+                </div>
+                <div class="tile" style="text-align: left;">
+                    <h3 style="color: var(--accent-color);">Reaktion (Lösung)</h3>
+                    <p>1. Parallelstoß oder Durchbruch.</p>
+                    <p>2. Fernwurf oder Schlagwurf.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 13: Troubleshooting Modul 3 -->
+    <div class="slide-container">
+        <h2 class="slide-title">Troubleshooting: Entscheidung</h2>
+        <div class="content-area">
+            <div class="troubleshooting-grid">
+                <div class="ts-item">
+                    <h4>Fehler: Tunnelblick</h4>
+                    <p>Nur Blick auf den Ball.</p>
+                    <span class="correction">„Kopf hoch!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Zögern</h4>
+                    <p>Zu spätes Handeln.</p>
+                    <span class="correction">„Pre-Decision!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Standhandball</h4>
+                    <p>Kein Druck auf die Lücke.</p>
+                    <span class="correction">„Tempo in die Lücke!“</span>
+                </div>
+                <div class="ts-item">
+                    <h4>Fehler: Falsche Wahl</h4>
+                    <p>Wurf statt Pass (oder umgekehrt).</p>
+                    <span class="correction">„Lies die Abwehr-Hüfte!“</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 14: Evaluation -->
+    <div class="slide-container">
+        <h2 class="slide-title">Evaluation & Kontrolle</h2>
+        <div class="content-area">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bereich</th>
+                        <th>Metrik (Test)</th>
+                        <th>Zielwert</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Abwehr 6:0</td>
+                        <td>Stopp-Quote (vor 7m)</td>
+                        <td>> 60%</td>
+                    </tr>
+                    <tr>
+                        <td>Angriff (Welle)</td>
+                        <td>Effizienz vs. Positionsspiel</td>
+                        <td>+ 20%</td>
+                    </tr>
+                    <tr>
+                        <td>Taktik</td>
+                        <td>Entscheidungs-Index (3:3)</td>
+                        <td>4 von 5 korrekt</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Slide 15: Q&A -->
+    <div class="slide-container">
+        <div class="title-layout">
+            <h2 style="font-size: 60px;">Fragen & <span>Diskussion</span></h2>
+            <p class="subtitle" style="margin-top: 20px;">Gemeinsam auf das nächste Level.</p>
+            <div style="margin-top: 50px; font-size: 24px; color: var(--accent-color);">
+                Trainer-Team A-Jugend | Leitfaden 2024
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 10: Troubleshooting Modul 2 -->
-<div class="slide-container" id="slide10">
-    <h2 class="slide-title">Troubleshooting: Umschaltspiel</h2>
-    <div class="content-area">
-        <div class="troubleshooting-grid">
-            <div class="ts-item">
-                <h4>Fehler: Mitte voll</h4>
-                <p>Alle rennen ins Zentrum.</p>
-                <span class="correction">„Außen bis zur Grundlinie!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Ball festmachen</h4>
-                <p>Zu frühes Foul provoziert.</p>
-                <span class="correction">„Weiterspielen statt Freiwurf!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Passqualität</h4>
-                <p>Ballverluste im hohen Tempo.</p>
-                <span class="correction">„Präzision vor Speed!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Kopf unten</h4>
-                <p>Lücken werden nicht gesehen.</p>
-                <span class="correction">„Blick nach vorne!“</span>
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.slide-container');
+    const progressBar = document.getElementById('progressBar');
+    const slideCounter = document.getElementById('slideCounter');
 
-<!-- Slide 11: Section Title Modul 3 -->
-<div class="slide-container" id="slide11">
-    <div class="title-layout section-title-layout">
-        <hr>
-        <h2>Modul 3:<br>Decision Making</h2>
-        <hr>
-    </div>
-</div>
+    function showSlide(index) {
+        if (index < 0) index = 0;
+        if (index >= slides.length) index = slides.length - 1;
 
-<!-- Slide 12: Modul 3 Content -->
-<div class="slide-container" id="slide12">
-    <h2 class="slide-title">Die Wenn-Dann Logik</h2>
-    <div class="content-area">
-        <div class="tiled-content">
-            <div class="tile" style="text-align: left;">
-                <h3 style="color: var(--accent-color);">Situation (Reiz)</h3>
-                <p>1. Verteidigerin tritt aggressiv raus.</p>
-                <p>2. Verteidigerin sinkt ab zum Kreis.</p>
-            </div>
-            <div class="tile" style="text-align: left;">
-                <h3 style="color: var(--accent-color);">Reaktion (Lösung)</h3>
-                <p>1. Parallelstoß oder Durchbruch.</p>
-                <p>2. Fernwurf oder Schlagwurf.</p>
-            </div>
-        </div>
-    </div>
-</div>
+        slides.forEach(slide => slide.classList.remove('active'));
+        slides[index].classList.add('active');
+        
+        currentSlideIndex = index;
+        
+        // Update UI
+        const progress = ((index + 1) / slides.length) * 100;
+        progressBar.style.width = progress + '%';
+        slideCounter.innerText = `Slide ${index + 1} / ${slides.length}`;
+    }
 
-<!-- Slide 13: Troubleshooting Modul 3 -->
-<div class="slide-container" id="slide13">
-    <h2 class="slide-title">Troubleshooting: Entscheidung</h2>
-    <div class="content-area">
-        <div class="troubleshooting-grid">
-            <div class="ts-item">
-                <h4>Fehler: Tunnelblick</h4>
-                <p>Nur Blick auf den Ball.</p>
-                <span class="correction">„Kopf hoch!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Zögern</h4>
-                <p>Zu spätes Handeln.</p>
-                <span class="correction">„Pre-Decision!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Standhandball</h4>
-                <p>Kein Druck auf die Lücke.</p>
-                <span class="correction">„Tempo in die Lücke!“</span>
-            </div>
-            <div class="ts-item">
-                <h4>Fehler: Falsche Wahl</h4>
-                <p>Wurf statt Pass (oder umgekehrt).</p>
-                <span class="correction">„Lies die Abwehr-Hüfte!“</span>
-            </div>
-        </div>
-    </div>
-</div>
+    function nextSlide() {
+        if (currentSlideIndex < slides.length - 1) {
+            showSlide(currentSlideIndex + 1);
+        }
+    }
 
-<!-- Slide 14: Evaluation -->
-<div class="slide-container" id="slide14">
-    <h2 class="slide-title">Evaluation & Kontrolle</h2>
-    <div class="content-area">
-        <table>
-            <thead>
-                <tr>
-                    <th>Bereich</th>
-                    <th>Metrik (Test)</th>
-                    <th>Zielwert</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Abwehr 6:0</td>
-                    <td>Stopp-Quote (vor 7m)</td>
-                    <td>> 60%</td>
-                </tr>
-                <tr>
-                    <td>Angriff (Welle)</td>
-                    <td>Effizienz vs. Positionsspiel</td>
-                    <td>+ 20%</td>
-                </tr>
-                <tr>
-                    <td>Taktik</td>
-                    <td>Entscheidungs-Index (3:3)</td>
-                    <td>4 von 5 korrekt</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+    function prevSlide() {
+        if (currentSlideIndex > 0) {
+            showSlide(currentSlideIndex - 1);
+        }
+    }
 
-<!-- Slide 15: Q&A -->
-<div class="slide-container" id="slide15">
-    <div class="title-layout">
-        <h2 style="font-size: 60px;">Fragen & <span>Diskussion</span></h2>
-        <p class="subtitle" style="margin-top: 20px;">Gemeinsam auf das nächste Level.</p>
-        <div style="margin-top: 50px; font-size: 24px; color: var(--accent-color);">
-            Trainer-Team A-Jugend | Leitfaden 2024
-        </div>
-    </div>
-</div>
+    // Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+            nextSlide();
+        } else if (e.key === 'ArrowLeft') {
+            prevSlide();
+        }
+    });
+
+    // Image Error Handling
+    function handleImageError(img, iconClass, label) {
+        const parent = img.parentElement;
+        img.style.display = 'none';
+        
+        const fallback = document.createElement('div');
+        fallback.className = 'img-fallback';
+        fallback.innerHTML = `
+            <i class="fa-solid ${iconClass}"></i>
+            <p style="color: white; font-weight: bold;">${label}</p>
+            <p style="font-size: 14px; opacity: 0.7;">(Bild konnte nicht geladen werden)</p>
+        `;
+        parent.appendChild(fallback);
+    }
+
+    // Initialize
+    window.onload = () => {
+        showSlide(0);
+    };
+</script>
 
 </body>
 </html>
