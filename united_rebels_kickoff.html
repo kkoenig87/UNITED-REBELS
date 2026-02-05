@@ -6,7 +6,7 @@
     <title>UNITED REBELS - Kick-off 2026</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -18,21 +18,23 @@
             --transition-speed: 0.6s;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             background-color: var(--deep-black);
             font-family: 'Lato', sans-serif;
             color: var(--pure-white);
-            overflow: hidden; /* Verhindert Scrollen, da wir Slides nutzen */
+            overflow: hidden;
             height: 100vh;
         }
 
-        /* Präsentations-Container */
+        .bg-glow {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 0, 127, 0.08) 0%, transparent 50%);
+            z-index: -1;
+        }
+
         .presentation-wrapper {
             width: 100vw;
             height: 100vh;
@@ -41,10 +43,7 @@
 
         .slide {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             padding: 60px;
@@ -53,7 +52,7 @@
             transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
             transform: translateY(20px);
             z-index: 1;
-            background-color: var(--deep-black);
+            justify-content: center;
         }
 
         .slide.active {
@@ -63,116 +62,70 @@
             z-index: 10;
         }
 
-        /* Hintergrund-Effekt */
-        .slide::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 70% 30%, rgba(255, 0, 127, 0.08) 0%, transparent 50%);
-            z-index: -1;
-        }
-
-        /* Typografie */
-        h1, h2, h3 {
-            font-family: 'Poppins', sans-serif;
-            text-transform: uppercase;
-        }
-
+        h1, h2, h3 { font-family: 'Poppins', sans-serif; text-transform: uppercase; }
         h1 {
-            font-size: clamp(60px, 10vw, 120px);
+            font-size: clamp(50px, 8vw, 100px);
             font-weight: 900;
             line-height: 0.9;
             text-shadow: var(--neon-glow);
             margin-bottom: 20px;
         }
 
+        .pulse-text {
+            animation: rebelPulse 3s infinite ease-in-out;
+        }
+
+        @keyframes rebelPulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 0, 127, 0.8); transform: scale(1); }
+            50% { text-shadow: 0 0 40px rgba(255, 0, 127, 1), 0 0 60px rgba(255, 0, 127, 0.4); transform: scale(1.02); }
+        }
+
         .slide-title {
-            font-size: clamp(24px, 4vw, 48px);
+            font-size: clamp(24px, 4vw, 42px);
             font-weight: 700;
             margin-bottom: 40px;
             border-left: 8px solid var(--neon-pink);
             padding-left: 25px;
+            text-align: left;
         }
 
-        h3 {
-            font-size: clamp(20px, 2.5vw, 32px);
-            color: var(--neon-pink);
-            margin-bottom: 15px;
-        }
+        h3 { font-size: clamp(20px, 2.5vw, 32px); color: var(--neon-pink); margin-bottom: 15px; }
+        p { font-size: clamp(16px, 1.8vw, 24px); line-height: 1.5; color: #ccc; }
+        .highlight { color: var(--neon-pink); font-weight: 700; }
 
-        p {
-            font-size: clamp(16px, 1.8vw, 24px);
-            line-height: 1.5;
-            color: #ccc;
-        }
-
-        .highlight-text {
-            color: var(--neon-pink);
-            font-weight: 700;
-        }
-
-        /* Layouts */
-        .content-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .center-layout {
-            text-align: center;
-            justify-content: center;
-            align-items: center;
-        }
-
+        .center-layout { text-align: center; align-items: center; }
         .two-column {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.2fr 0.8fr;
             gap: 60px;
             align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        /* Interaktive Kacheln */
-        .tiled-content {
-            display: flex;
-            gap: 30px;
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .tile {
-            flex: 1;
             background: var(--glass-bg);
             border: 1px solid rgba(255, 0, 127, 0.2);
             border-radius: 20px;
-            padding: 40px;
+            padding: 30px;
             text-align: center;
             transition: all 0.3s ease;
-            cursor: pointer;
         }
+        .tile:hover { transform: translateY(-5px); border-color: var(--neon-pink); box-shadow: var(--neon-glow); }
+        .tile i { font-size: 40px; color: var(--neon-pink); margin-bottom: 20px; }
 
-        .tile:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 0, 127, 0.05);
-            border-color: var(--neon-pink);
-            box-shadow: var(--neon-glow);
-        }
-
-        .tile .icon {
-            font-size: 50px;
-            color: var(--neon-pink);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
-        }
-
-        .tile:hover .icon {
-            transform: scale(1.2);
-        }
-
-        /* Zahlen-Animation */
         .number-large {
-            font-size: clamp(80px, 15vw, 200px);
+            font-size: clamp(80px, 12vw, 160px);
             font-family: 'Poppins', sans-serif;
             font-weight: 900;
             color: var(--neon-pink);
@@ -180,194 +133,287 @@
             text-shadow: var(--neon-glow);
         }
 
-        /* Bild-Container */
-        .image-wrapper {
-            border-radius: 20px;
-            overflow: hidden;
-            border: 2px solid var(--neon-pink);
-            height: 400px;
-            position: relative;
+        .progress-bar-top {
+            position: fixed; top: 0; left: 0; height: 5px;
+            background: var(--neon-pink); box-shadow: var(--neon-glow);
+            z-index: 1000; transition: width 0.3s ease;
         }
 
-        .image-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
+        .local-progress {
+            width: 100%; height: 12px; background: rgba(255,255,255,0.1);
+            border-radius: 6px; overflow: hidden; margin-top: 20px;
+            border: 1px solid rgba(255,0,127,0.3);
         }
 
-        .image-wrapper:hover img {
-            transform: scale(1.05);
+        .local-progress-fill {
+            height: 100%; width: 0%; background: var(--neon-pink);
+            box-shadow: 0 0 15px var(--neon-pink); transition: width 2s ease-out;
         }
 
-        /* Navigation Buttons */
         .nav-controls {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            gap: 15px;
-            z-index: 100;
+            position: fixed; bottom: 30px; right: 30px;
+            display: flex; gap: 15px; z-index: 100;
         }
 
         .nav-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--glass-bg);
-            border: 1px solid var(--neon-pink);
-            color: var(--pure-white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            width: 55px; height: 55px; border-radius: 50%;
+            background: var(--glass-bg); border: 1px solid var(--neon-pink);
+            color: var(--pure-white); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.3s ease;
             backdrop-filter: blur(5px);
         }
+        .nav-btn:hover { background: var(--neon-pink); box-shadow: var(--neon-glow); }
 
-        .nav-btn:hover {
-            background: var(--neon-pink);
-            box-shadow: var(--neon-glow);
+        .logo-hexagon {
+            width: 100px; height: 100px; margin-bottom: 20px;
+            animation: floatLogo 4s infinite ease-in-out;
         }
 
-        .progress-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 5px;
-            background: var(--neon-pink);
-            box-shadow: var(--neon-glow);
-            z-index: 1000;
-            transition: width 0.3s ease;
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0) rotate(0deg); filter: drop-shadow(0 0 10px var(--neon-pink)); }
+            50% { transform: translateY(-10px) rotate(2deg); filter: drop-shadow(0 0 25px var(--neon-pink)); }
         }
 
-        /* Chart Animation */
-        .chart-path {
-            stroke-dasharray: 1200;
-            stroke-dashoffset: 1200;
-            transition: stroke-dashoffset 2s ease-in-out;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--glass-bg); border-radius: 15px; overflow: hidden; }
+        th { text-align: left; padding: 20px; color: var(--neon-pink); border-bottom: 2px solid var(--neon-pink); text-transform: uppercase; font-size: 14px; }
+        td { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 18px; }
 
-        .active .chart-path {
-            stroke-dashoffset: 0;
+        /* REBEL CARD STYLES */
+        .card-perspective { perspective: 1000px; width: 320px; height: 480px; margin: 0 auto; position: relative; }
+        .rebel-card {
+            width: 100%; height: 100%; background: #050505; border-radius: 20px;
+            border: 2px solid rgba(255, 0, 127, 0.3); overflow: hidden;
+            display: flex; flex-direction: column; position: relative;
+            transform-style: preserve-3d; transition: border-color 0.3s;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
+        .rebel-card:hover { border-color: var(--neon-pink); }
+        .card-glint {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.3) 0%, transparent 60%);
+            z-index: 30; transition: opacity 0.3s;
+        }
+        .rebel-card:hover .card-glint { opacity: 0.3; }
+        
+        .card-header { padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 20; }
+        .rating-box { display: flex; flex-direction: column; align-items: center; }
+        .rating-val { font-size: 48px; font-weight: 900; font-family: 'Poppins'; font-style: italic; line-height: 1; }
+        .pos-label { font-size: 10px; font-weight: 800; color: var(--neon-pink); letter-spacing: 2px; }
+        
+        .card-visual { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 320px; 
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .visual-bg-num { 
+            position: absolute; bottom: -20px; right: -20px; font-size: 200px; 
+            font-weight: 900; font-style: italic; color: rgba(255,0,127,0.05); pointer-events: none; 
+        }
+        .visual-icon { font-size: 120px; color: var(--neon-pink); filter: drop-shadow(0 0 20px var(--neon-pink)); opacity: 0.7; z-index: 10; }
 
-        /* Spezielle Layouts */
-        .bleed-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            padding: 0 !important;
+        .card-footer { margin-top: auto; padding: 20px; z-index: 20; text-align: center; }
+        .card-name { font-size: 28px; font-weight: 900; font-style: italic; letter-spacing: -1px; margin-bottom: 5px; }
+        .card-trait { font-size: 10px; font-weight: 800; color: var(--neon-pink); letter-spacing: 3px; text-transform: uppercase; }
+        
+        .stats-grid { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; 
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,0,127,0.2);
+            border-bottom: 5px solid var(--neon-pink);
         }
+        .stat-row { display: flex; flex-direction: column; gap: 4px; }
+        .stat-info { display: flex; justify-content: space-between; font-size: 9px; font-weight: 900; text-transform: uppercase; color: #666; }
+        .stat-bar-bg { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; background: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); transition: width 1s ease; }
 
-        .bleed-layout .content-side {
-            padding: 60px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .card-nav { display: flex; gap: 15px; align-items: center; margin-top: 30px; }
+        .card-btn { 
+            background: var(--neon-pink); border: none; color: white; padding: 12px 25px; 
+            border-radius: 30px; font-family: 'Poppins'; font-weight: 800; text-transform: uppercase; 
+            cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(255,0,127,0.3);
         }
-
-        .bleed-layout .image-side {
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-        }
+        .card-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(255,0,127,0.5); }
+        .card-btn-icon { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--glass-bg); border: 1px solid var(--neon-pink); color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="progress-bar" id="progressBar"></div>
+<div class="progress-bar-top" id="progressBar"></div>
+<div class="bg-glow"></div>
 
 <div class="presentation-wrapper">
+    
     <!-- Slide 1: Intro -->
     <div class="slide active center-layout" id="slide-1">
-        <h1>UNITED<br><span style="color: var(--neon-pink)">REBELS</span></h1>
-        <p style="font-size: 28px; letter-spacing: 8px; color: var(--neon-pink); font-weight: 700;">DIE REBELLION BEGINNT JETZT</p>
-        <p style="margin-top: 50px; opacity: 0.6;">HSG Rüsselsheim / Bauschheim / Königstädten</p>
-        <p style="margin-top: 20px; font-size: 16px;">(Nutze Pfeiltasten oder Buttons zum Navigieren)</p>
+        <div class="logo-hexagon">
+            <svg viewBox="0 0 100 100">
+                <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="4"/>
+                <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+            </svg>
+        </div>
+        <h1 class="pulse-text">UNITED<br><span style="color: var(--neon-pink)">REBELS</span></h1>
+        <p style="font-size: 24px; letter-spacing: 6px; color: var(--neon-pink); font-weight: 700; text-transform: uppercase;" class="pulse-text">Kick-off Meeting 2026</p>
+        <p style="margin-top: 40px; opacity: 0.5;">08.02.2026 | Sporthalle Bauschheim | 16:30 Uhr</p>
     </div>
 
-    <!-- Slide 2: Vision -->
+    <!-- Slide 2: Manifest -->
     <div class="slide center-layout" id="slide-2">
-        <h2 style="font-size: clamp(40px, 8vw, 90px);">HANDBALL<br><span class="highlight-text">NEU GEDACHT</span></h2>
-        <div style="width: 150px; height: 8px; background: var(--neon-pink); margin: 30px auto; box-shadow: var(--neon-glow);"></div>
-        <p style="max-width: 800px;">Wir lassen verstaubte Vereinsmeierei hinter uns. UNITED REBELS steht für Energie, Style und eine echte Community.</p>
+        <h2 class="slide-title" style="border:none; text-align:center; padding:0;">Das Manifest</h2>
+        <p style="max-width: 900px; font-size: clamp(24px, 4vw, 38px); font-family: 'Poppins'; font-weight: 800; line-height: 1.2; color: white;">
+            Gegen den Strom. <br>
+            Gegen verstaubte Strukturen. <br>
+            <span class="highlight">Wir sind der Neustart.</span>
+        </p>
+        <div style="width: 100px; height: 4px; background: var(--neon-pink); margin-top: 30px;"></div>
     </div>
 
-    <!-- Slide 3: Status -->
+    <!-- Slide 3: Status Quo -->
     <div class="slide" id="slide-3">
         <h2 class="slide-title">Status Quo</h2>
-        <div class="content-area">
-            <div class="two-column">
-                <div style="text-align: center;">
-                    <div class="number-large" id="counter">14/18</div>
-                    <p class="highlight-text" style="font-size: 24px;">REBELLINNEN AN BORD</p>
+        <div class="two-column">
+            <div style="text-align: center;">
+                <div class="number-large" id="counter">0/18</div>
+                <p class="highlight" style="font-size: 24px; letter-spacing: 4px; margin-top: 10px;">REBELLINNEN INTERESSIERT</p>
+            </div>
+            <div>
+                <h3>94% READY</h3>
+                <p>17 lose Zusagen bilden unser Fundament. Die Rebellion hat bereits vor dem Anpfiff eine gewaltige Dynamik entwickelt.</p>
+                <div class="local-progress">
+                    <div class="local-progress-fill" id="squadFill"></div>
                 </div>
-                <div>
-                    <h3>77% READY</h3>
-                    <p>Der Hype ist real. In Rekordzeit haben wir den Kern des Teams geformt.</p>
-                    <p style="margin-top: 20px;">Es fehlen nur noch **4 Puzzleteile**, um die Liga im Bezirk Darmstadt das Fürchten zu lehren.</p>
-                </div>
+                <p style="margin-top: 20px; font-style: italic;">Noch genau <span class="highlight">1 SLOT</span> bis zum vollen Kader.</p>
             </div>
         </div>
     </div>
 
-    <!-- Slide 4: DNA Tiles -->
+    <!-- Slide 4: DNA -->
     <div class="slide" id="slide-4">
         <h2 class="slide-title">Unsere DNA</h2>
-        <div class="content-area">
-            <div class="tiled-content">
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-bolt"></i></div>
-                    <h3>ENERGIE</h3>
-                    <p>Modernes Coaching, High-Speed Handball und volle Power in jeder Sekunde.</p>
+        <div class="tile-grid">
+            <div class="tile"><i class="fa-solid fa-bolt"></i><h3>ENERGIE</h3><p>Modernes Coaching, High-Speed Handball und volle Power.</p></div>
+            <div class="tile"><i class="fa-solid fa-shirt"></i><h3>STYLE</h3><p>Custom Gear, das ballert. Wir sehen aus wie Profis.</p></div>
+            <div class="tile"><i class="fa-solid fa-users-rays"></i><h3>COMMUNITY</h3><p>Zusammenhalt ohne Drama. Events und echte Freundschaft.</p></div>
+        </div>
+    </div>
+
+    <!-- Slide 5: P.I.N.K. -->
+    <div class="slide" id="slide-5">
+        <h2 class="slide-title">Das Versprechen: P.I.N.K.</h2>
+        <div class="tile-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="tile" style="text-align: left; display: flex; align-items: center; gap: 20px;"><span style="font-size: 60px; font-weight: 900; color: var(--neon-pink); font-family: 'Poppins';">P</span><div><strong>Performance:</strong> Wir fördern deine Stärken.</div></div>
+            <div class="tile" style="text-align: left; display: flex; align-items: center; gap: 20px;"><span style="font-size: 60px; font-weight: 900; color: var(--neon-pink); font-family: 'Poppins';">I</span><div><strong>Individualität:</strong> Du zählst – egal ob Star oder Wiedereinsteiger.</div></div>
+            <div class="tile" style="text-align: left; display: flex; align-items: center; gap: 20px;"><span style="font-size: 60px; font-weight: 900; color: var(--neon-pink); font-family: 'Poppins';">N</span><div><strong>Next Level:</strong> Wir professionalisieren den Damenhandball.</div></div>
+            <div class="tile" style="text-align: left; display: flex; align-items: center; gap: 20px;"><span style="font-size: 60px; font-weight: 900; color: var(--neon-pink); font-family: 'Poppins';">K</span><div><strong>Kampfgeist:</strong> Gemeinsam gewinnen, gemeinsam feiern.</div></div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Fixtermine -->
+    <div class="slide" id="slide-6">
+        <h2 class="slide-title">Fakten & Fixtermine</h2>
+        <div class="center-layout" style="width: 100%;">
+            <table>
+                <thead><tr><th>Was</th><th>Wann / Wo</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>Training</td><td>Mittwochs, 20:00 - 22:00 (Hasengrundhalle)</td><td><span class="highlight">FIX ✅</span></td></tr>
+                    <tr><td>Kick-off Phase</td><td>Intensivierung der Einheiten nach Kick-off</td><td>IN PLANUNG</td></tr>
+                    <tr><td>Saisonstart</td><td>Bezirksliga Damen 2026/27</td><td>MELDUNG LÄUFT</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 30px; font-size: 18px; opacity: 0.7;">Wir haben die Prime-Time am Mittwoch sicher. Voller Fokus auf die Hasengrundhalle.</p>
+        </div>
+    </div>
+
+    <!-- Slide 7: Interactive Rebel Card -->
+    <div class="slide" id="slide-7">
+        <h2 class="slide-title">Deine Rebel Card</h2>
+        <div class="two-column">
+            <div class="flex flex-col items-center">
+                <div class="card-perspective" id="cardContainer">
+                    <div class="rebel-card" id="mainCard">
+                        <div class="card-glint" id="cardGlint"></div>
+                        <div class="card-header">
+                            <div class="rating-box">
+                                <span class="rating-val" id="cardRating">99</span>
+                                <span class="pos-label" id="cardPos">Lead</span>
+                            </div>
+                            <div style="width: 40px; height: 40px;">
+                                <svg viewBox="0 0 100 100">
+                                    <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="6"/>
+                                    <text x="50" y="65" font-family="Poppins" font-size="30" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="card-visual">
+                            <div class="visual-bg-num" id="cardBgNum">99</div>
+                            <i class="fa-solid fa-users-gear visual-icon" id="cardIcon"></i>
+                        </div>
+                        <div class="card-footer">
+                            <h3 class="card-name" id="cardName">Lena Kugies</h3>
+                            <div style="height:1px; width:100%; background: linear-gradient(90deg, transparent, var(--neon-pink), transparent); margin: 5px 0;"></div>
+                            <p class="card-trait" id="cardTrait">Spirit & Lead</p>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-row"><div class="stat-info"><span>Grip</span><span id="statGripVal">88</span></div><div class="stat-bar-bg"><div class="stat-bar-fill" id="statGripFill" style="width: 88%"></div></div></div>
+                            <div class="stat-row"><div class="stat-info"><span>Vibe</span><span id="statVibeVal">99</span></div><div class="stat-bar-bg"><div class="stat-bar-fill" id="statVibeFill" style="width: 99%"></div></div></div>
+                            <div class="stat-row"><div class="stat-info"><span>Power</span><span id="statPowerVal">85</span></div><div class="stat-bar-bg"><div class="stat-bar-fill" id="statPowerFill" style="width: 85%"></div></div></div>
+                            <div class="stat-row"><div class="stat-info"><span>Soul</span><span id="statSoulVal">95</span></div><div class="stat-bar-bg"><div class="stat-bar-fill" id="statSoulFill" style="width: 95%"></div></div></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-shirt"></i></div>
-                    <h3>STYLE</h3>
-                    <p>Custom Gear, das ballert. Wir sehen aus wie Profis und fühlen uns auch so.</p>
+                <div class="card-nav">
+                    <div class="card-btn-icon" onclick="changeRebel(-1)"><i class="fa-solid fa-chevron-left"></i></div>
+                    <button class="card-btn" onclick="shareCard()"><i class="fa-solid fa-share-nodes mr-2"></i> Karte Teilen</button>
+                    <div class="card-btn-icon" onclick="changeRebel(1)"><i class="fa-solid fa-chevron-right"></i></div>
                 </div>
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-users-rays"></i></div>
-                    <h3>COMMUNITY</h3>
-                    <p>Kein Zwang, sondern Zusammenhalt. Events, Vibes und echte Freundschaft.</p>
-                </div>
+            </div>
+            <div>
+                <h3>Das digitale Unikat</h3>
+                <p>Jede Rebellin bekommt ihr eigenes Sammlerstück mit individuellen Stats. Diese Karte ist euer Ticket für die Squad Wall und Social Media.</p>
+                <p style="margin-top: 20px;">Entdecke deinen Vibe. <span class="highlight">Sei keine Nummer, sei eine Legende.</span></p>
             </div>
         </div>
     </div>
 
-    <!-- Slide 5: Vibe Bleed -->
-    <div class="slide bleed-layout" id="slide-5">
-        <div class="content-side">
-            <h2 class="slide-title" style="border: none; padding: 0; margin-bottom: 20px;">DER VIBE</h2>
-            <h3>REBELLION IM BLUT.</h3>
-            <p>Wir spielen nicht nur Handball, wir zelebrieren den Sport. Weg von "Haben wir schon immer so gemacht", hin zu "Lass uns alles zerreißen".</p>
+    <!-- NEUE SLIDE 8: YOUR CHOICE -->
+    <div class="slide center-layout" id="slide-8">
+        <h2 class="slide-title" style="border:none; text-align:center; padding:0;">Your Choice</h2>
+        <h3 style="font-size: 50px; margin-bottom: 40px;">WIR ENTSCHEIDEN GEMEINSAM</h3>
+        <div class="tile-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="tile">
+                <i class="fa-solid fa-socks"></i>
+                <h3>TEAM-DETAILS</h3>
+                <p>Socken, Taschen, Accessoires – ihr wählt das finale Design.</p>
+            </div>
+            <div class="tile">
+                <i class="fa-solid fa-camera-retro"></i>
+                <h3>SOCIAL VIBES</h3>
+                <p>Welchen Stil wollen wir auf Insta? Cinematic Dark oder High Energy?</p>
+            </div>
         </div>
-        <div class="image-side" style="background-image: url('https://images.unsplash.com/photo-1547441753-41c88344e8ec?q=80&w=1280&auto=format&fit=crop');"></div>
+        <p style="margin-top: 40px; font-style: italic;">Die Rebellion gehört euch. Gestaltet sie mit.</p>
     </div>
 
-    <!-- Slide 6: Chart -->
-    <div class="slide" id="slide-6">
-        <h2 class="slide-title">Das Momentum</h2>
-        <div class="content-area center-layout">
-            <svg viewBox="0 0 1000 300" style="width: 80%; height: auto;">
-                <defs>
-                    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:var(--neon-pink);stop-opacity:0.3" />
-                        <stop offset="100%" style="stop-color:var(--neon-pink);stop-opacity:0" />
-                    </linearGradient>
-                </defs>
-                <path class="chart-path" fill="url(#grad)" stroke="var(--neon-pink)" stroke-width="6" d="M0,250 Q150,230 300,180 T600,100 T1000,20 L1000,300 L0,300 Z" />
+    <!-- NEUE SLIDE 9: THE SIGNING -->
+    <div class="slide center-layout" id="slide-9">
+        <div class="logo-hexagon">
+            <svg viewBox="0 0 100 100">
+                <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="4"/>
+                <text x="50" y="65" font-family="Poppins" font-size="35" font-weight="800" fill="#FF007F" text-anchor="middle">UR</text>
             </svg>
-            <p style="margin-top: 40px; font-style: italic; opacity: 0.7;">Anfragen und Reichweite steigen täglich. Wir sind das Gesprächsthema.</p>
         </div>
+        <h1>THE<br><span class="highlight">SIGNING</span></h1>
+        <div style="background: var(--glass-bg); padding: 40px; border-radius: 30px; border: 2px dashed var(--neon-pink); max-width: 800px; margin-top: 30px;">
+            <p style="color: white; font-size: 28px; font-weight: 800;">MACH ES OFFIZIELL.</p>
+            <p style="margin-top: 15px;">Unterschreibe jetzt auf der physischen Squad Wall und sichere dir dein Starter-Kit.</p>
+        </div>
+        <p style="margin-top: 40px; letter-spacing: 4px; font-weight: 700; color: var(--neon-pink);">WELCOME TO THE UNITED REBELS.</p>
     </div>
 
-    <!-- Slide 7: The Final Four -->
-    <div class="slide center-layout" id="slide-7">
-        <h2 style="font-size: 60px; margin-bottom: 30px;">BIST DU EINE VON DEN <span class="highlight-text">FINAL FOUR</span>?</h2>
-        <div style="background: var(--glass-bg); padding: 40px; border-radius: 30px; border: 2px dashed var(--neon-pink); max-width: 600px;">
-            <p style="color: var(--pure-white);">Nur noch 4 Plätze an der Squad Wall frei. Werde Teil der Geschichte, bevor der Vorhang aufgeht.</p>
-            <button class="nav-btn" style="width: auto; padding: 0 40px; border-radius: 10px; margin: 30px auto 0;" onclick="window.location.reload()">REBELLION STARTEN</button>
+    <!-- Slide 10: Q&A -->
+    <div class="slide center-layout" id="slide-10">
+        <h1>FRAGEN?</h1>
+        <p class="highlight" style="letter-spacing: 8px; font-weight: 900; margin-top: 20px;">EURE REBELLION. EURE STIMMEN.</p>
+        <div style="margin-top: 60px; display: flex; gap: 50px;">
+            <div style="text-align: left; border-left: 3px solid var(--neon-pink); padding-left: 20px;"><p style="font-weight: 800; color: white;">LENA KUGIES</p><p style="font-size: 14px;">Orga & Spirit</p></div>
+            <div style="text-align: left; border-left: 3px solid var(--neon-pink); padding-left: 20px;"><p style="font-weight: 800; color: white;">KAI KÖNIG</p><p style="font-size: 14px;">Strategie</p></div>
         </div>
     </div>
 </div>
@@ -382,76 +428,80 @@
     const slides = document.querySelectorAll('.slide');
     const progressBar = document.getElementById('progressBar');
 
+    const rebelData = [
+        { name: "Lena Kugies", rating: 99, pos: "Lead", icon: "fa-users-gear", trait: "Spirit & Lead", stats: { grip: 88, vibe: 99, power: 85, soul: 95 } },
+        { name: "Kai König", rating: 87, pos: "Strat", icon: "fa-bolt", trait: "Mastermind", stats: { grip: 75, vibe: 92, power: 80, soul: 98 } },
+        { name: "New Rebel", rating: "?", pos: "Squad", icon: "fa-fire", trait: "Werde zur Legende", stats: { grip: 10, vibe: 100, power: 10, soul: 100 } }
+    ];
+    let rebelIdx = 0;
+
     function updateSlide() {
         slides.forEach((slide, index) => {
             slide.classList.remove('active');
-            if (index === currentSlide) {
-                slide.classList.add('active');
-            }
+            if (index === currentSlide) slide.classList.add('active');
         });
-        
-        // Progress Bar Update
         const progress = ((currentSlide + 1) / slides.length) * 100;
         progressBar.style.width = progress + '%';
-
-        // Counter Animation on Slide 3
-        if (currentSlide === 2) {
-            animateCounter();
-        }
+        if (currentSlide === 2) setTimeout(animateStats, 400);
     }
 
-    function nextSlide() {
-        if (currentSlide < slides.length - 1) {
-            currentSlide++;
-            updateSlide();
-        }
-    }
+    function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); } }
+    function prevSlide() { if (currentSlide > 0) { currentSlide--; updateSlide(); } }
 
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            updateSlide();
-        }
-    }
-
-    function animateCounter() {
+    function animateStats() {
         const counterEl = document.getElementById('counter');
-        let count = 0;
-        const target = 14;
-        const duration = 1500;
-        const startTime = performance.now();
-
+        const fillEl = document.getElementById('squadFill');
+        let count = 0; const target = 17; const duration = 2000; const startTime = performance.now();
         function update(currentTime) {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            const currentCount = Math.floor(progress * target);
-            counterEl.innerText = currentCount + '/18';
-
-            if (progress < 1) {
-                requestAnimationFrame(update);
-            } else {
-                counterEl.innerText = '14/18';
-            }
+            const eased = 1 - Math.pow(1 - progress, 3);
+            counterEl.innerText = Math.floor(eased * target) + '/18';
+            if (progress < 1) requestAnimationFrame(update);
+            else counterEl.innerText = '17/18';
         }
         requestAnimationFrame(update);
+        fillEl.style.width = '94.4%';
     }
 
-    // Keyboard Navigation
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
+    const card = document.getElementById('mainCard');
+    const glint = document.getElementById('cardGlint');
+    document.getElementById('cardContainer').addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.transform = `rotateX(${((y / rect.height) - 0.5) * -30}deg) rotateY(${((x / rect.width) - 0.5) * 30}deg)`;
+        glint.style.background = `radial-gradient(circle at ${(x/rect.width)*100}% ${(y/rect.height)*100}%, rgba(255,255,255,0.4) 0%, transparent 60%)`;
+    });
+    document.getElementById('cardContainer').addEventListener('mouseleave', () => {
+        card.style.transform = `rotateX(0) rotateY(0)`;
+        card.style.transition = "transform 0.5s ease";
+        setTimeout(() => card.style.transition = "none", 500);
     });
 
-    // Touch Support for Mobile
-    let touchStartX = 0;
-    document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
-    document.addEventListener('touchend', e => {
-        const touchEndX = e.changedTouches[0].clientX;
-        if (touchStartX - touchEndX > 50) nextSlide();
-        if (touchEndX - touchStartX > 50) prevSlide();
-    });
+    function changeRebel(dir) {
+        rebelIdx = (rebelIdx + dir + rebelData.length) % rebelData.length;
+        const p = rebelData[rebelIdx];
+        document.getElementById('cardName').innerText = p.name;
+        document.getElementById('cardRating').innerText = p.rating;
+        document.getElementById('cardBgNum').innerText = p.rating;
+        document.getElementById('cardPos').innerText = p.pos;
+        document.getElementById('cardTrait').innerText = p.trait;
+        document.getElementById('cardIcon').className = `fa-solid ${p.icon} visual-icon`;
+        ['Grip', 'Vibe', 'Power', 'Soul'].forEach(s => {
+            document.getElementById(`stat${s}Val`).innerText = p.stats[s.toLowerCase()];
+            document.getElementById(`stat${s}Fill`).style.width = p.stats[s.toLowerCase()] + '%';
+        });
+    }
 
-    // Initial Progress
+    async function shareCard() {
+        const p = rebelData[rebelIdx];
+        const text = `Check die United Rebels Karte von ${p.name} aus! 🤘⚫💖 Werde Teil der Rebellion 2026.`;
+        if (navigator.share) { try { await navigator.share({ title: 'United Rebels', text: text, url: window.location.href }); } catch (err) {} }
+        else { const el = document.createElement('textarea'); el.value = text + " " + window.location.href; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert("Link kopiert!"); }
+    }
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === ' ') nextSlide(); if (e.key === 'ArrowLeft') prevSlide(); });
     updateSlide();
 </script>
 
