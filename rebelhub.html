@@ -9,8 +9,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Wir nutzen lucide (Core) statt lucide-react für bessere Stabilität im Browser -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/lucide-react@latest"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;1,800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 
@@ -33,14 +33,21 @@
 <body>
     <div id="root"></div>
 
+    <script type="module">
+        // Firebase SDKs importieren
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global verfügbar machen für den React Teil
+        window.FB = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection };
+    </script>
+
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
         // --- KONFIGURATION ---
         const ANONYMOUS_MODE = false; 
-
-        // --- KOMPLETTER SQUAD MIT INDIVIDUELLEN PASSWÖRTERN ---
-        // Du kannst die Passwörter hier unten in der Liste ganz einfach ändern!
         const SQUAD_DATA = [
             { id: 'hc', name: "Heiko", pos: "Headcoach", trait: "Mastermind", icon: "zap", pw: "RebelHeiko26" },
             { id: 'tm', name: "Kai", pos: "Teammanager", trait: "Strategie & Orga", icon: "users", pw: "RebelKai26" },
@@ -64,83 +71,70 @@
             stats: { pwr: 80, vbe: 80, sol: 80, grp: 80 }
         }));
 
-        // --- SUB-KOMPONENTEN ---
-
-        const RebelCard = ({ member, isMe = false }) => {
-            useEffect(() => { lucide.createIcons(); }, []);
-            
-            const displayName = (ANONYMOUS_MODE && !isMe) ? "REBEL MEMBER" : member.name;
-            const displayTrait = (ANONYMOUS_MODE && !isMe) ? "MISSION 2026" : member.trait;
-
-            return (
-                <div className={`relative group w-full ${isMe ? 'max-w-[320px]' : 'max-w-[280px]'} mx-auto mb-8 h-[400px]`}>
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-50 transition duration-500"></div>
-                    
-                    <div className="relative h-full w-full bg-[#050505] rounded-2xl border border-[#FF007F]/30 overflow-hidden flex flex-col card-shadow">
-                        <div className="flex justify-between items-start p-4 z-20">
-                            <div className="flex flex-col items-center">
-                                <span className="text-3xl rebel-font font-black italic text-white leading-none">{member.rating}</span>
-                                <span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">{member.pos}</span>
-                            </div>
-                            <div className="w-8 h-8 border border-[#FF007F]/50 rounded flex items-center justify-center bg-black/50 text-[#FF007F]">
-                                <svg viewBox="0 0 100 100" className="w-5 h-5 fill-current">
-                                    <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" strokeWidth="6"/>
-                                    <text x="50" y="65" font-family="Poppins" font-size="30" font-weight="800" text-anchor="middle">UR</text>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div className="absolute top-0 left-0 w-full h-56 flex items-center justify-center pointer-events-none overflow-hidden">
-                            <div className="text-[#FF007F]/5 text-[150px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{member.rating}</div>
-                            <div className="relative z-10 opacity-70 group-hover:opacity-100 transition-opacity">
-                                <i data-lucide={member.icon} style={{width: '80px', height: '80px', color: '#FF007F'}}></i>
-                            </div>
-                        </div>
-
-                        <div className="mt-auto relative z-20">
-                            <div className="px-4 pb-2 text-center">
-                                <h3 className="text-xl rebel-font font-black italic text-white uppercase tracking-tighter">{displayName}</h3>
-                                <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div>
-                                <p className="text-[9px] text-[#FF007F] font-bold uppercase tracking-widest">{displayTrait}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-4 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F]">
-                                <StatItem label="Pwr" val={member.stats.pwr} />
-                                <StatItem label="Vbe" val={member.stats.vbe} />
-                                <StatItem label="Sol" val={member.stats.sol} />
-                                <StatItem label="Grp" val={member.stats.grp} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
+        // Icon Helper (Fix für den Lucide-React Fehler)
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
-
-        const StatItem = ({ label, val }) => (
-            <div className="flex flex-col gap-0.5">
-                <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500">
-                    <span>{label}</span>
-                    <span className="text-white">{val}</span>
-                </div>
-                <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#FF007F]" style={{width: `${val}%`}}></div>
-                </div>
-            </div>
-        );
-
-        // --- HAUPT APP ---
 
         const App = () => {
             const [user, setUser] = useState(null);
+            const [fbUser, setFbUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [loginData, setLoginData] = useState({ nameId: '', password: '' });
             const [loginError, setLoginError] = useState('');
-            const [votes, setVotes] = useState({ style_a: 12, style_b: 8, style_c: 15 });
+            const [votesData, setVotesData] = useState({});
+            const [db, setDb] = useState(null);
+
+            // 1. Firebase Auth & Init (Regel 3: Auth zuerst!)
+            useEffect(() => {
+                const init = async () => {
+                    if (!window.FB) return;
+                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.FB;
+                    
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const firestore = getFirestore(app);
+                    setDb(firestore);
+
+                    // Auth Call
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, (u) => setFbUser(u));
+                };
+                init();
+            }, []);
+
+            // 2. Data Fetching (Regel 1: Korrekte Pfade!)
+            useEffect(() => {
+                if (!fbUser || !db) return;
+                const { collection, onSnapshot } = window.FB;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-v1';
+                
+                // Pfad: /artifacts/{appId}/public/data/{collectionName}
+                const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'team_votes');
+                
+                const unsubscribe = onSnapshot(votesRef, 
+                    (snapshot) => {
+                        const data = {};
+                        snapshot.forEach(doc => data[doc.id] = doc.data());
+                        setVotesData(data);
+                    },
+                    (error) => console.error("Firestore Permission Error:", error)
+                );
+                return () => unsubscribe();
+            }, [fbUser, db]);
 
             const handleLogin = (e) => {
                 e.preventDefault();
                 const found = SQUAD_DATA.find(m => m.id === loginData.nameId);
-                
                 if (found && loginData.password === found.pw) {
                     setUser(found);
                     setLoginError('');
@@ -149,15 +143,22 @@
                 }
             };
 
-            useEffect(() => { lucide.createIcons(); }, [user, activeTab]);
+            const submitVote = async (category, subId, value) => {
+                if (!db || !fbUser) return;
+                const { doc, setDoc } = window.FB;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-v1';
+                const voteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `${category}_${subId}`);
+                
+                await setDoc(voteDoc, { [user.id]: value }, { merge: true });
+            };
 
             if (!user) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
                         <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-[#FF007F]/20 shadow-2xl animate-slide-up">
-                            <div className="flex justify-center mb-8">
+                            <div className="flex justify-center mb-8 text-[#FF007F]">
                                 <div className="w-20 h-20 border-4 border-[#FF007F] rounded-2xl flex items-center justify-center rotate-3 shadow-[0_0_20px_rgba(255,0,127,0.4)]">
-                                    <span className="text-3xl rebel-font font-black italic text-[#FF007F]">UR</span>
+                                    <span className="text-3xl rebel-font font-black italic">UR</span>
                                 </div>
                             </div>
                             <h1 className="text-3xl rebel-font font-black italic text-white text-center uppercase tracking-tighter mb-2">Rebel Hub</h1>
@@ -203,24 +204,26 @@
                                 <span className="text-white rebel-font font-black italic text-sm">UR</span>
                             </div>
                             <div>
-                                <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase">Rebel Hub</h2>
-                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">Hi, {user.name}!</span>
+                                <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase tracking-tighter">Rebel Hub</h2>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Hi, {user.name}!</span>
                             </div>
                         </div>
                         <button onClick={() => setUser(null)} className="text-zinc-500 hover:text-[#FF007F]">
-                            <i data-lucide="log-out"></i>
+                            <Icon name="log-out" size={20} />
                         </button>
                     </header>
 
-                    <main className="p-6 max-w-4xl mx-auto">
+                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView me={user} />}
-                        {activeTab === 'style' && <StyleView votes={votes} onVote={(id) => setVotes({...votes, [id]: votes[id]+1})} />}
+                        {activeTab === 'votes' && <VotesView votesData={votesData} submitVote={submitVote} userId={user.id} />}
+                        {activeTab === 'style' && <StyleView votesData={votesData} submitVote={submitVote} userId={user.id} />}
                         {activeTab === 'base' && <BaseView />}
                         {activeTab === 'squad' && <SquadView myId={user.id} />}
                     </main>
 
-                    <nav className="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50">
+                    <nav className="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
                         <NavButton icon="zap" label="Ich" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="check-square" label="Votes" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
                         <NavButton icon="shirt" label="Style" active={activeTab === 'style'} onClick={() => setActiveTab('style')} />
                         <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
@@ -235,79 +238,153 @@
                     <h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-1">Deine Karte</h1>
                     <p className="text-xs text-zinc-500 uppercase tracking-widest">Saison 2026 // Gründungsmitglied</p>
                 </header>
-
                 <RebelCard member={me} isMe={true} />
-
                 <section className="bg-[#111] p-6 rounded-3xl border border-zinc-800 flex gap-5 items-center">
-                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex flex-col items-center justify-center text-[#FF007F]">
+                    <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex flex-col items-center justify-center text-[#FF007F] border border-[#FF007F]/20">
                         <span className="text-xs font-bold uppercase leading-none mb-1">Feb</span>
                         <span className="text-2xl rebel-font font-black italic leading-none">18</span>
                     </div>
                     <div className="flex-grow">
-                        <p className="text-white font-bold text-lg leading-tight mb-1">Nächster Halt: Training</p>
-                        <p className="text-xs text-zinc-500 uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis">20:00 Uhr | Hasengrundhalle</p>
+                        <p className="text-white font-bold text-lg leading-tight mb-1 uppercase italic">Trainings-Auftakt</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest">20:00 Uhr | Hasengrundhalle</p>
                     </div>
                 </section>
             </div>
         );
 
-        const StyleView = ({ votes, onVote }) => (
-            <div className="space-y-6 animate-slide-up">
-                <header>
-                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2>
-                    <p className="text-sm text-zinc-500">Gestalte den Look der Rebellion mit.</p>
-                </header>
+        const VotesView = ({ votesData, submitVote, userId }) => {
+            const categories = [
+                { id: 'training', title: 'Training: Aschermittwoch', items: [{ id: '1802', label: '18.02.2026 | 20 Uhr' }], type: 'attendance' },
+                { id: 'matches', title: 'Game-Check: Vorbereitung', items: [{ id: 'v1', label: 'Spiel 1 (TBA)' }], type: 'attendance' },
+                { id: 'duties', title: 'Heimspiel-Dienst', items: [{ id: 'theke', label: 'Thekendienst' }, { id: 'wischen', label: 'Wischer-Dienst' }], type: 'task' },
+                { id: 'gear', title: 'Rebel Gear Order', items: [{ id: 'hoodie', label: 'Team Hoodie Größe' }], type: 'size' }
+            ];
 
+            return (
+                <div className="space-y-8">
+                    <header>
+                        <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2>
+                        <p className="text-sm text-zinc-500 italic">Hier planen wir die Rebellion.</p>
+                    </header>
+                    {categories.map(cat => (
+                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
+                            <h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
+                            {cat.items.map(item => {
+                                const currentVote = votesData[`${cat.id}_${item.id}`]?.[userId];
+                                return (
+                                    <div key={item.id} className="space-y-3 pt-2">
+                                        <p className="text-sm font-bold text-zinc-300">{item.label}</p>
+                                        {cat.type === 'attendance' && (
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
+                                                    <button key={opt} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${currentVote === opt ? 'bg-[#FF007F] text-white' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{opt}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {cat.type === 'task' && (
+                                            <button onClick={() => submitVote(cat.id, item.id, currentVote === 'Übernehme ich' ? null : 'Übernehme ich')} className={`w-full py-3 rounded-xl text-[10px] font-black uppercase transition-all ${currentVote === 'Übernehme ich' ? 'bg-green-600 text-white' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{currentVote === 'Übernehme ich' ? 'Du bist eingeteilt! ✅' : 'Dienst übernehmen'}</button>
+                                        )}
+                                        {cat.type === 'size' && (
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {['XS', 'S', 'M', 'L', 'XL'].map(size => (
+                                                    <button key={size} onClick={() => submitVote(cat.id, item.id, size)} className={`py-2 rounded-xl text-[10px] font-black transition-all ${currentVote === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{size}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="flex flex-wrap gap-1 pt-2 border-t border-white/5">
+                                            {Object.entries(votesData[`${cat.id}_${item.id}`] || {}).map(([uid, val]) => (
+                                                val && <span key={uid} className="text-[7px] bg-white/5 px-2 py-0.5 rounded text-zinc-500 uppercase font-bold">{SQUAD_DATA.find(s => s.id === uid)?.name}: {val}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const RebelCard = ({ member, isMe = false }) => {
+            const displayName = (ANONYMOUS_MODE && !isMe) ? "REBEL MEMBER" : member.name;
+            const displayTrait = (ANONYMOUS_MODE && !isMe) ? "MISSION 2026" : member.trait;
+
+            return (
+                <div className={`relative group w-full ${isMe ? 'max-w-[320px]' : 'max-w-[280px]'} mx-auto mb-8 h-[400px]`}>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-50 transition duration-500"></div>
+                    <div className="relative h-full w-full bg-[#050505] rounded-2xl border border-[#FF007F]/30 overflow-hidden flex flex-col card-shadow">
+                        <div className="flex justify-between items-start p-4 z-20">
+                            <div className="flex flex-col items-center">
+                                <span className="text-3xl rebel-font font-black italic text-white leading-none">{member.rating}</span>
+                                <span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">{member.pos}</span>
+                            </div>
+                            <div className="w-8 h-8 border border-[#FF007F]/50 rounded flex items-center justify-center bg-black/50 text-[#FF007F]">
+                                <svg viewBox="0 0 100 100" className="w-5 h-5 fill-current"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" strokeWidth="6"/><text x="50" y="65" font-family="Poppins" font-size="30" font-weight="800" text-anchor="middle">UR</text></svg>
+                            </div>
+                        </div>
+                        <div className="absolute top-0 left-0 w-full h-56 flex items-center justify-center pointer-events-none overflow-hidden">
+                            <div className="text-[#FF007F]/5 text-[150px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{member.rating}</div>
+                            <div className="relative z-10 opacity-70 group-hover:opacity-100 transition-opacity"><Icon name={member.icon} size={80} className="text-[#FF007F]" /></div>
+                        </div>
+                        <div className="mt-auto relative z-20">
+                            <div className="px-4 pb-2 text-center">
+                                <h3 className="text-xl rebel-font font-black italic text-white uppercase tracking-tighter">{displayName}</h3>
+                                <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div>
+                                <p className="text-[9px] text-[#FF007F] font-bold uppercase tracking-widest">{displayTrait}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-4 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F]">
+                                <StatItem label="Pwr" val={member.stats.pwr} /><StatItem label="Vbe" val={member.stats.vbe} />
+                                <StatItem label="Sol" val={member.stats.sol} /><StatItem label="Grp" val={member.stats.grp} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StatItem = ({ label, val }) => (
+            <div className="flex flex-col gap-0.5">
+                <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500"><span>{label}</span><span className="text-white">{val}</span></div>
+                <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F]" style={{width: `${val}%`}}></div></div>
+            </div>
+        );
+
+        const StyleView = ({ votesData, submitVote, userId }) => (
+            <div className="space-y-6 animate-slide-up">
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2><p className="text-sm text-zinc-500">Wähle deinen Favoriten für die neue Saison.</p></header>
                 {[
                     { id: 'style_a', name: 'Neon Edge', desc: 'Pinke Highlights auf Deep-Black.', img: '👕' },
                     { id: 'style_b', name: 'Rebel Stripe', desc: 'Klassische Streifen, moderner Fit.', img: '🎽' },
                     { id: 'style_c', name: 'Cyber Pink', desc: 'Futuristisches Design mit Glow-Print.', img: '👚' }
-                ].map(item => (
-                    <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
-                        <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
-                        <div className="p-6 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-white font-bold text-lg">{item.name}</h3>
-                                <p className="text-xs text-zinc-500">{item.desc}</p>
+                ].map(item => {
+                    const votes = Object.values(votesData[`style_vote_${item.id}`] || {}).filter(v => v === true).length;
+                    const voted = votesData[`style_vote_${item.id}`]?.[userId] === true;
+                    return (
+                        <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
+                            <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
+                            <div className="p-6 flex justify-between items-center">
+                                <div><h3 className="text-white font-bold text-lg">{item.name}</h3><p className="text-xs text-zinc-500">{item.desc}</p></div>
+                                <button onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all ${voted ? 'bg-[#FF007F] text-white' : 'bg-[#FF007F]/10 text-[#FF007F] border border-[#FF007F]/30'}`}>
+                                    <Icon name="vote" size={20} /><span className="font-black italic text-lg">{votes}</span>
+                                </button>
                             </div>
-                            <button 
-                                onClick={() => onVote(item.id)}
-                                className="flex items-center gap-2 bg-[#FF007F]/10 hover:bg-[#FF007F] border border-[#FF007F]/30 text-[#FF007F] hover:text-white px-5 py-3 rounded-xl transition-all"
-                            >
-                                <i data-lucide="vote" style={{width: '20px'}}></i>
-                                <span className="font-black italic text-lg">{votes[item.id]}</span>
-                            </button>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         );
 
         const BaseView = () => (
             <div className="space-y-6 animate-slide-up">
-                <header>
-                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2>
-                    <p className="text-sm text-zinc-500">Wo das Licht brennt.</p>
-                </header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2><p className="text-sm text-zinc-500">Wo das Licht brennt.</p></header>
                 <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F]">
-                            <i data-lucide="map-pin" style={{width: '32px', height: '32px'}}></i>
-                        </div>
-                        <div>
-                            <h3 className="text-white font-black italic text-xl uppercase leading-none mb-1">Hasengrundhalle</h3>
-                            <p className="text-xs text-zinc-500 uppercase tracking-widest whitespace-nowrap overflow-hidden text-ellipsis">65428 Rüsselsheim</p>
-                        </div>
+                        <div className="w-14 h-14 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F]"><Icon name="map-pin" size={32} /></div>
+                        <div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-1">Hasengrundhalle</h3><p className="text-xs text-zinc-500 uppercase">65428 Rüsselsheim</p></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
-                            <span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Training</span>
-                            <span className="text-white font-bold text-xs">Mi, 20-22h</span>
-                        </div>
-                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
-                            <span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Status</span>
-                            <span className="text-green-500 font-bold text-xs uppercase">Fix ✅</span>
-                        </div>
+                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Training</span><span className="text-white font-bold text-xs">Mi, 20-22h</span></div>
+                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Status</span><span className="text-green-500 font-bold text-xs uppercase">Fix ✅</span></div>
                     </div>
                 </div>
             </div>
@@ -315,41 +392,24 @@
 
         const SquadView = ({ myId }) => (
             <div className="space-y-6 animate-slide-up">
-                <header>
-                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2>
-                    <p className="text-sm text-zinc-500 mb-8">Alle Gründungsmitglieder auf einen Blick.</p>
-                </header>
-                
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2><p className="text-sm text-zinc-500 mb-8">Alle Gründungsmitglieder auf einen Blick.</p></header>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {SQUAD_DATA.map((member) => (
-                        <RebelCard key={member.id} member={member} isMe={member.id === myId} />
-                    ))}
-                    
+                    {SQUAD_DATA.map((member) => (<RebelCard key={member.id} member={member} isMe={member.id === myId} />))}
                     <div className="w-full max-w-[280px] mx-auto h-[400px] border-2 border-dashed border-[#FF007F]/20 rounded-2xl flex flex-col items-center justify-center text-center p-6 opacity-40">
-                         <i data-lucide="user-plus" className="mb-4 text-[#FF007F]"></i>
-                         <p className="rebel-font font-black italic text-[#FF007F] uppercase tracking-widest leading-none">The Final<br/>Rebel</p>
-                         <p className="text-[10px] uppercase mt-4 tracking-widest whitespace-nowrap overflow-hidden text-ellipsis">Claim your Slot</p>
+                         <Icon name="user-plus" size={32} className="mb-4 text-[#FF007F]" /><p className="rebel-font font-black italic text-[#FF007F] uppercase tracking-widest leading-none">The Final<br/>Rebel</p>
                     </div>
                 </div>
             </div>
         );
 
-        const NavButton = ({ icon, label, active, onClick }) => {
-            return (
-                <button 
-                    onClick={onClick}
-                    className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
-                >
-                    <i data-lucide={icon} style={{width: '24px', height: '24px'}}></i>
-                    <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
-                </button>
-            );
-        };
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+            </button>
+        );
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        
-        setTimeout(() => lucide.createIcons(), 100);
     </script>
 </body>
 </html>
