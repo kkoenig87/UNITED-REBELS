@@ -9,7 +9,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Wir nutzen lucide (Core) statt lucide-react für bessere Stabilität im Browser -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;1,800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
@@ -34,17 +33,16 @@
     <div id="root"></div>
 
     <script type="module">
-        // Firebase SDKs importieren
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global verfügbar machen für den React Teil
+        // Global verfügbar machen
         window.FB = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useCallback, useRef } = React;
 
         // --- KONFIGURATION ---
         const ANONYMOUS_MODE = false; 
@@ -71,63 +69,75 @@
             stats: { pwr: 80, vbe: 80, sol: 80, grp: 80 }
         }));
 
-        // Icon Helper (Fix für den Lucide-React Fehler)
+        // Dynamische App ID aus der Umgebung oder Fallback
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-prod';
+
+        // Stabile Icon Komponente
         const Icon = ({ name, size = 24, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name]);
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
         const App = () => {
-            const [user, setUser] = useState(null);
-            const [fbUser, setFbUser] = useState(null);
+            const [user, setUser] = useState(null); // Lokaler Spieler
+            const [fbUser, setFbUser] = useState(null); // Firebase Auth
             const [activeTab, setActiveTab] = useState('dashboard');
             const [loginData, setLoginData] = useState({ nameId: '', password: '' });
             const [loginError, setLoginError] = useState('');
             const [votesData, setVotesData] = useState({});
             const [db, setDb] = useState(null);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [cloudStatus, setCloudStatus] = useState('offline');
 
-            // 1. Firebase Auth & Init (Regel 3: Auth zuerst!)
+            // 1. Firebase Initialisierung (Auth FIRST)
             useEffect(() => {
                 const init = async () => {
                     if (!window.FB) return;
                     const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.FB;
                     
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
-                    const auth = getAuth(app);
-                    const firestore = getFirestore(app);
-                    setDb(firestore);
+                    try {
+                        const firebaseConfig = JSON.parse(__firebase_config);
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
+                        setDb(firestore);
 
-                    // Auth Call
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
+                        // Auth Call - Warten bis abgeschlossen
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+
+                        onAuthStateChanged(auth, (u) => {
+                            setFbUser(u);
+                            if (u) setCloudStatus('connected');
+                        });
+                    } catch (e) {
+                        console.error("Cloud Init failed", e);
+                        setCloudStatus('error');
                     }
-
-                    onAuthStateChanged(auth, (u) => setFbUser(u));
                 };
                 init();
             }, []);
 
-            // 2. Data Fetching (Regel 1: Korrekte Pfade!)
+            // 2. Echtzeit-Daten-Listener (Nur wenn fbUser & db bereit)
             useEffect(() => {
                 if (!fbUser || !db) return;
                 const { collection, onSnapshot } = window.FB;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-v1';
                 
-                // Pfad: /artifacts/{appId}/public/data/{collectionName}
                 const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'team_votes');
-                
                 const unsubscribe = onSnapshot(votesRef, 
                     (snapshot) => {
                         const data = {};
                         snapshot.forEach(doc => data[doc.id] = doc.data());
                         setVotesData(data);
+                        console.log("Cloud Data Sync Complete");
                     },
-                    (error) => console.error("Firestore Permission Error:", error)
+                    (error) => {
+                        console.error("Firestore Error:", error);
+                        setCloudStatus('error');
+                    }
                 );
                 return () => unsubscribe();
             }, [fbUser, db]);
@@ -144,12 +154,23 @@
             };
 
             const submitVote = async (category, subId, value) => {
-                if (!db || !fbUser) return;
-                const { doc, setDoc } = window.FB;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-v1';
-                const voteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `${category}_${subId}`);
+                if (!db || !fbUser || !user || isSyncing) return;
                 
-                await setDoc(voteDoc, { [user.id]: value }, { merge: true });
+                setIsSyncing(true);
+                const { doc, setDoc } = window.FB;
+                const docId = `${category}_${subId}`;
+                const voteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', docId);
+                
+                try {
+                    // Explizites Speichern in der Cloud
+                    await setDoc(voteDoc, { [user.id]: value }, { merge: true });
+                    console.log(`Vote saved: ${docId} -> ${value}`);
+                } catch (err) {
+                    console.error("Save failed", err);
+                    alert("Speichern fehlgeschlagen. Bitte Internetverbindung prüfen.");
+                } finally {
+                    setIsSyncing(false);
+                }
             };
 
             if (!user) {
@@ -200,8 +221,10 @@
                 <div className="min-h-screen pb-24 no-scrollbar">
                     <header className="p-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#FF007F] rounded-lg flex items-center justify-center rotate-3">
+                            <div className="w-10 h-10 bg-[#FF007F] rounded-lg flex items-center justify-center rotate-3 relative">
                                 <span className="text-white rebel-font font-black italic text-sm">UR</span>
+                                {/* Cloud Status Indicator */}
+                                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${cloudStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                             </div>
                             <div>
                                 <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase tracking-tighter">Rebel Hub</h2>
@@ -215,8 +238,8 @@
 
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView me={user} />}
-                        {activeTab === 'votes' && <VotesView votesData={votesData} submitVote={submitVote} userId={user.id} />}
-                        {activeTab === 'style' && <StyleView votesData={votesData} submitVote={submitVote} userId={user.id} />}
+                        {activeTab === 'votes' && <VotesView votesData={votesData} submitVote={submitVote} userId={user.id} isSyncing={isSyncing} />}
+                        {activeTab === 'style' && <StyleView votesData={votesData} submitVote={submitVote} userId={user.id} isSyncing={isSyncing} />}
                         {activeTab === 'base' && <BaseView />}
                         {activeTab === 'squad' && <SquadView myId={user.id} />}
                     </main>
@@ -228,6 +251,91 @@
                         <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
                     </nav>
+                </div>
+            );
+        };
+
+        // --- SUB-KOMPONENTEN ---
+
+        const VotesView = ({ votesData, submitVote, userId, isSyncing }) => {
+            const categories = [
+                { id: 'training', title: 'Training: Aschermittwoch', items: [{ id: '1802', label: '18.02.2026 | 20:00 Uhr' }], type: 'attendance' },
+                { id: 'duties', title: 'Heimspiel-Dienst', items: [{ id: 'theke', label: 'Thekendienst' }], type: 'task' },
+                { id: 'gear', title: 'Rebel Gear Order', items: [{ id: 'hoodie', label: 'Team Hoodie Größe' }], type: 'size' }
+            ];
+
+            return (
+                <div className="space-y-8">
+                    <header>
+                        <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2>
+                        <p className="text-sm text-zinc-500 italic">Plane deinen Einsatz für die Rebellion.</p>
+                    </header>
+                    {categories.map(cat => (
+                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
+                            <h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
+                            {cat.items.map(item => {
+                                const currentVote = votesData[`${cat.id}_${item.id}`]?.[userId];
+                                return (
+                                    <div key={item.id} className="space-y-4 pt-2">
+                                        <p className="text-sm font-bold text-zinc-300">{item.label}</p>
+                                        
+                                        {cat.type === 'attendance' && (
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
+                                                    <button 
+                                                        key={opt} 
+                                                        disabled={isSyncing}
+                                                        onClick={() => submitVote(cat.id, item.id, opt)} 
+                                                        className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}
+                                                    >
+                                                        {opt}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {cat.type === 'task' && (
+                                            <button 
+                                                disabled={isSyncing}
+                                                onClick={() => submitVote(cat.id, item.id, currentVote === 'Übernehme ich' ? null : 'Übernehme ich')} 
+                                                className={`w-full py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === 'Übernehme ich' ? 'bg-green-600 text-white border-green-600' : 'bg-black/50 text-zinc-600 border-zinc-800'}`}
+                                            >
+                                                {currentVote === 'Übernehme ich' ? 'Du bist dabei! ✅' : 'Dienst übernehmen'}
+                                            </button>
+                                        )}
+
+                                        {cat.type === 'size' && (
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {['XS', 'S', 'M', 'L', 'XL'].map(size => (
+                                                    <button 
+                                                        key={size} 
+                                                        disabled={isSyncing}
+                                                        onClick={() => submitVote(cat.id, item.id, size)} 
+                                                        className={`py-3 rounded-xl text-[10px] font-black transition-all border ${currentVote === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border-zinc-800'}`}
+                                                    >
+                                                        {size}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Zusammenfassung */}
+                                        <div className="flex flex-wrap gap-1.5 pt-4 border-t border-white/5 min-h-[30px]">
+                                            {Object.entries(votesData[`${cat.id}_${item.id}`] || {}).map(([uid, val]) => (
+                                                val && <span key={uid} className="text-[7px] bg-white/5 px-2 py-1 rounded-lg text-zinc-500 uppercase font-bold border border-white/5">
+                                                    {SQUAD_DATA.find(s => s.id === uid)?.name}: <span className="text-[#FF007F]">{val}</span>
+                                                </span>
+                                            ))}
+                                            {Object.keys(votesData[`${cat.id}_${item.id}`] || {}).length === 0 && (
+                                                <span className="text-[8px] text-zinc-700 font-bold italic tracking-widest uppercase">Keine Stimmen bisher</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                    {isSyncing && <p className="text-[9px] text-center text-[#FF007F] animate-pulse font-black uppercase tracking-widest">Wird gespeichert...</p>}
                 </div>
             );
         };
@@ -245,65 +353,12 @@
                         <span className="text-2xl rebel-font font-black italic leading-none">18</span>
                     </div>
                     <div className="flex-grow">
-                        <p className="text-white font-bold text-lg leading-tight mb-1 uppercase italic">Trainings-Auftakt</p>
+                        <p className="text-white font-bold text-lg leading-tight mb-1 uppercase italic">Auftakt-Training</p>
                         <p className="text-xs text-zinc-500 uppercase tracking-widest">20:00 Uhr | Hasengrundhalle</p>
                     </div>
                 </section>
             </div>
         );
-
-        const VotesView = ({ votesData, submitVote, userId }) => {
-            const categories = [
-                { id: 'training', title: 'Training: Aschermittwoch', items: [{ id: '1802', label: '18.02.2026 | 20 Uhr' }], type: 'attendance' },
-                { id: 'matches', title: 'Game-Check: Vorbereitung', items: [{ id: 'v1', label: 'Spiel 1 (TBA)' }], type: 'attendance' },
-                { id: 'duties', title: 'Heimspiel-Dienst', items: [{ id: 'theke', label: 'Thekendienst' }, { id: 'wischen', label: 'Wischer-Dienst' }], type: 'task' },
-                { id: 'gear', title: 'Rebel Gear Order', items: [{ id: 'hoodie', label: 'Team Hoodie Größe' }], type: 'size' }
-            ];
-
-            return (
-                <div className="space-y-8">
-                    <header>
-                        <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2>
-                        <p className="text-sm text-zinc-500 italic">Hier planen wir die Rebellion.</p>
-                    </header>
-                    {categories.map(cat => (
-                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
-                            <h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
-                            {cat.items.map(item => {
-                                const currentVote = votesData[`${cat.id}_${item.id}`]?.[userId];
-                                return (
-                                    <div key={item.id} className="space-y-3 pt-2">
-                                        <p className="text-sm font-bold text-zinc-300">{item.label}</p>
-                                        {cat.type === 'attendance' && (
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
-                                                    <button key={opt} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${currentVote === opt ? 'bg-[#FF007F] text-white' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{opt}</button>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {cat.type === 'task' && (
-                                            <button onClick={() => submitVote(cat.id, item.id, currentVote === 'Übernehme ich' ? null : 'Übernehme ich')} className={`w-full py-3 rounded-xl text-[10px] font-black uppercase transition-all ${currentVote === 'Übernehme ich' ? 'bg-green-600 text-white' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{currentVote === 'Übernehme ich' ? 'Du bist eingeteilt! ✅' : 'Dienst übernehmen'}</button>
-                                        )}
-                                        {cat.type === 'size' && (
-                                            <div className="grid grid-cols-5 gap-2">
-                                                {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                                                    <button key={size} onClick={() => submitVote(cat.id, item.id, size)} className={`py-2 rounded-xl text-[10px] font-black transition-all ${currentVote === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{size}</button>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="flex flex-wrap gap-1 pt-2 border-t border-white/5">
-                                            {Object.entries(votesData[`${cat.id}_${item.id}`] || {}).map(([uid, val]) => (
-                                                val && <span key={uid} className="text-[7px] bg-white/5 px-2 py-0.5 rounded text-zinc-500 uppercase font-bold">{SQUAD_DATA.find(s => s.id === uid)?.name}: {val}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ))}
-                </div>
-            );
-        };
 
         const RebelCard = ({ member, isMe = false }) => {
             const displayName = (ANONYMOUS_MODE && !isMe) ? "REBEL MEMBER" : member.name;
@@ -349,23 +404,24 @@
             </div>
         );
 
-        const StyleView = ({ votesData, submitVote, userId }) => (
+        const StyleView = ({ votesData, submitVote, userId, isSyncing }) => (
             <div className="space-y-6 animate-slide-up">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2><p className="text-sm text-zinc-500">Wähle deinen Favoriten für die neue Saison.</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2><p className="text-sm text-zinc-500">Gestalte den Look der Rebellion.</p></header>
                 {[
                     { id: 'style_a', name: 'Neon Edge', desc: 'Pinke Highlights auf Deep-Black.', img: '👕' },
                     { id: 'style_b', name: 'Rebel Stripe', desc: 'Klassische Streifen, moderner Fit.', img: '🎽' },
                     { id: 'style_c', name: 'Cyber Pink', desc: 'Futuristisches Design mit Glow-Print.', img: '👚' }
                 ].map(item => {
-                    const votes = Object.values(votesData[`style_vote_${item.id}`] || {}).filter(v => v === true).length;
-                    const voted = votesData[`style_vote_${item.id}`]?.[userId] === true;
+                    const votesDoc = votesData[`style_vote_${item.id}`] || {};
+                    const voteCount = Object.values(votesDoc).filter(v => v === true).length;
+                    const voted = votesDoc[userId] === true;
                     return (
                         <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
                             <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
                             <div className="p-6 flex justify-between items-center">
                                 <div><h3 className="text-white font-bold text-lg">{item.name}</h3><p className="text-xs text-zinc-500">{item.desc}</p></div>
-                                <button onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all ${voted ? 'bg-[#FF007F] text-white' : 'bg-[#FF007F]/10 text-[#FF007F] border border-[#FF007F]/30'}`}>
-                                    <Icon name="vote" size={20} /><span className="font-black italic text-lg">{votes}</span>
+                                <button disabled={isSyncing} onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all border ${voted ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/30'}`}>
+                                    <Icon name="vote" size={20} /><span className="font-black italic text-lg">{voteCount}</span>
                                 </button>
                             </div>
                         </div>
@@ -392,7 +448,7 @@
 
         const SquadView = ({ myId }) => (
             <div className="space-y-6 animate-slide-up">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2><p className="text-sm text-zinc-500 mb-8">Alle Gründungsmitglieder auf einen Blick.</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2><p className="text-sm text-zinc-500 mb-8">Gründungsmitglieder Mission 2026.</p></header>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {SQUAD_DATA.map((member) => (<RebelCard key={member.id} member={member} isMe={member.id === myId} />))}
                     <div className="w-full max-w-[280px] mx-auto h-[400px] border-2 border-dashed border-[#FF007F]/20 rounded-2xl flex flex-col items-center justify-center text-center p-6 opacity-40">
