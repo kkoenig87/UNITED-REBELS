@@ -1,345 +1,268 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Zap, 
-  MapPin, 
-  Shirt, 
-  Users, 
-  LogOut, 
-  ChevronRight, 
-  CheckCircle, 
-  MessageSquare,
-  Lock,
-  User as UserIcon,
-  Vote
-} from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInAnonymously, 
-  onAuthStateChanged, 
-  signOut 
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  onSnapshot, 
-  updateDoc, 
-  increment 
-} from 'firebase/firestore';
-
-// --- Firebase Konfiguration ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-2026';
-
-// --- Hauptkomponente App ---
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [rebelKey, setRebelKey] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [outfitVotes, setOutfitVotes] = useState({});
-
-  // 1. Authentifizierung & Init
-  useEffect(() => {
-    const initAuth = async () => {
-      // Wir nutzen eine anonyme Anmeldung für den schnellen Zugriff der Spielerinnen
-      // kombiniert mit einem "Rebel Key" als einfache Hürde.
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setLoading(false);
-      });
-      return () => unsubscribe();
-    };
-    initAuth();
-  }, []);
-
-  // 2. Daten-Abruf (Public Data)
-  useEffect(() => {
-    if (!user) return;
-
-    // Votes für Outfits abrufen
-    const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'votes');
-    const unsubscribe = onSnapshot(votesRef, (snapshot) => {
-      const votesData = {};
-      snapshot.forEach((doc) => {
-        votesData[doc.id] = doc.data();
-      });
-      setOutfitVotes(votesData);
-    }, (err) => console.error("Firestore Error:", err));
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // --- Handlers ---
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    // Einfacher Sicherheits-Check: Der Rebel-Key (z.B. "REBEL2026")
-    if (rebelKey.toUpperCase() === 'REBEL2026') {
-      try {
-        await signInAnonymously(auth);
-      } catch (err) {
-        setLoginError('Anmeldung fehlgeschlagen.');
-      }
-    } else {
-      setLoginError('Ungültiger Rebel-Key.');
-    }
-  };
-
-  const handleVote = async (outfitId) => {
-    if (!user) return;
-    const voteDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'votes', outfitId);
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNITED REBELS - Squad Hub</title>
+    <!-- React & Babel für JSX Support im Browser -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide-react@latest"></script>
     
-    // Wir setzen das Dokument initial, falls es nicht existiert
-    try {
-      await setDoc(voteDocRef, { count: increment(1) }, { merge: true });
-    } catch (err) {
-      console.error("Voting failed", err);
-    }
-  };
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;1,800&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 
-  // --- UI Views ---
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <Zap className="text-[#FF007F] animate-pulse" size={48} />
-      </div>
-    );
-  }
+    <style>
+        body { font-family: 'Lato', sans-serif; background-color: #050505; color: #d4d4d8; }
+        .rebel-font { font-family: 'Poppins', sans-serif; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-[#FF007F]/20 shadow-2xl">
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 border-4 border-[#FF007F] rounded-2xl flex items-center justify-center rotate-3 shadow-[0_0_20px_rgba(255,0,127,0.4)]">
-              <span className="text-3xl font-black italic text-[#FF007F]">UR</span>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { 
+            Zap, MapPin, Shirt, Users, LogOut, ChevronRight, 
+            CheckCircle, MessageSquare, Lock, User, Vote 
+        } = lucide;
+
+        // Firebase Mock / Logic (Da wir hier im Browser sind, nutzen wir eine vereinfachte State-Logik für dieses Template)
+        // Hinweis: Für echtes Firebase müssten die SDKs hier eingebunden werden.
+        
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [rebelKey, setRebelKey] = useState('');
+            const [loginError, setLoginError] = useState('');
+            const [votes, setVotes] = useState({ style_a: 12, style_b: 8, style_c: 15 });
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (rebelKey.toUpperCase() === 'REBEL2026') {
+                    setUser({ id: 'rebel-1' });
+                } else {
+                    setLoginError('Ungültiger Rebel-Key.');
+                }
+            };
+
+            if (!user) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+                        <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-[#FF007F]/20 shadow-2xl">
+                            <div className="flex justify-center mb-8">
+                                <div className="w-20 h-20 border-4 border-[#FF007F] rounded-2xl flex items-center justify-center rotate-3 shadow-[0_0_20px_rgba(255,0,127,0.4)]">
+                                    <span className="text-3xl rebel-font font-black italic text-[#FF007F]">UR</span>
+                                </div>
+                            </div>
+                            <h1 className="text-3xl rebel-font font-black italic text-white text-center uppercase tracking-tighter mb-2">Rebel Hub</h1>
+                            <p className="text-gray-500 text-center text-sm mb-8 uppercase tracking-widest">Nur für geladene Spielerinnen</p>
+                            
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">Rebel Key</label>
+                                    <input 
+                                        type="password" 
+                                        value={rebelKey}
+                                        onChange={(e) => setRebelKey(e.target.value)}
+                                        placeholder="Dein Zugangsschlüssel"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white focus:border-[#FF007F] outline-none transition-all"
+                                    />
+                                </div>
+                                {loginError && <p className="text-[#FF007F] text-xs font-bold text-center">{loginError}</p>}
+                                <button type="submit" className="w-full bg-[#FF007F] hover:bg-[#D4006A] text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-[0_10px_20px_rgba(255,0,127,0.3)]">
+                                    Einloggen
+                                </button>
+                            </form>
+                            <p className="text-[10px] text-zinc-600 text-center mt-8">Passwort vergessen? Frag in der WA-Gruppe.</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen pb-24 no-scrollbar">
+                    <header className="p-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[#FF007F] rounded-lg flex items-center justify-center rotate-3">
+                                <span className="text-white rebel-font font-black italic text-sm">UR</span>
+                            </div>
+                            <div>
+                                <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase">Rebel Hub</h2>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Squad Area</span>
+                            </div>
+                        </div>
+                        <button onClick={() => setUser(null)} className="text-zinc-500 hover:text-[#FF007F]">
+                            <i data-lucide="log-out"></i>
+                        </button>
+                    </header>
+
+                    <main className="p-6 max-w-2xl mx-auto">
+                        {activeTab === 'dashboard' && <DashboardView />}
+                        {activeTab === 'style' && <StyleView votes={votes} onVote={(id) => setVotes({...votes, [id]: votes[id]+1})} />}
+                        {activeTab === 'base' && <BaseView />}
+                        {activeTab === 'squad' && <SquadView />}
+                    </main>
+
+                    <nav className="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50">
+                        <NavButton icon="zap" label="Home" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="shirt" label="Style" active={activeTab === 'style'} onClick={() => setActiveTab('style')} />
+                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
+                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                    </nav>
+                </div>
+            );
+        };
+
+        const DashboardView = () => (
+            <div className="space-y-6">
+                <div className="bg-gradient-to-br from-[#FF007F]/20 to-transparent p-8 rounded-3xl border border-[#FF007F]/30 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-2">Willkommen <br/>Rebellin!</h1>
+                        <p className="text-sm text-zinc-400 max-w-[200px]">Der Kick-off war legendär. Jetzt machen wir Ernst.</p>
+                    </div>
+                    <div className="absolute -right-6 -bottom-6 opacity-10 text-[#FF007F]">
+                         <i data-lucide="zap" style={{width: '180px', height: '180px'}}></i>
+                    </div>
+                </div>
+
+                <section>
+                    <h3 className="text-xs font-black uppercase text-zinc-500 tracking-[0.3em] mb-4">Nächstes Event</h3>
+                    <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800 flex gap-4 items-center">
+                        <div className="w-14 h-14 bg-white/5 rounded-xl flex flex-col items-center justify-center text-[#FF007F]">
+                            <span className="text-xs font-bold uppercase">Feb</span>
+                            <span className="text-xl rebel-font font-black italic">18</span>
+                        </div>
+                        <div className="flex-grow">
+                            <p className="text-white font-bold">Erstes Training</p>
+                            <p className="text-xs text-zinc-500">20:00 Uhr | Hasengrundhalle</p>
+                        </div>
+                        <i data-lucide="chevron-right" className="text-zinc-700"></i>
+                    </div>
+                </section>
+
+                <section className="grid grid-cols-2 gap-4">
+                    <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800 text-center">
+                        <p className="text-[#FF007F] rebel-font font-black text-2xl italic">17/18</p>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Plätze Fix</p>
+                    </div>
+                    <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800 text-center">
+                        <p className="text-white rebel-font font-black text-2xl italic">100%</p>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Motivation</p>
+                    </div>
+                </section>
             </div>
-          </div>
-          <h1 className="text-3xl font-black italic text-white text-center uppercase tracking-tighter mb-2">Rebel Hub</h1>
-          <p className="text-gray-500 text-center text-sm mb-8 uppercase tracking-widest">Nur für geladene Spielerinnen</p>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2 px-1">Rebel Key</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
-                <input 
-                  type="password" 
-                  value={rebelKey}
-                  onChange={(e) => setRebelKey(e.target.value)}
-                  placeholder="Dein Zugangsschlüssel"
-                  className="w-full bg-black border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-[#FF007F] outline-none transition-all"
-                />
-              </div>
+        );
+
+        const StyleView = ({ votes, onVote }) => (
+            <div className="space-y-6">
+                <header>
+                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2>
+                    <p className="text-sm text-zinc-500">Wähle deinen Favoriten für die neue Saison.</p>
+                </header>
+
+                {[
+                    { id: 'style_a', name: 'Neon Edge', desc: 'Pinke Highlights auf Deep-Black.', img: '👕' },
+                    { id: 'style_b', name: 'Rebel Stripe', desc: 'Klassische Streifen, moderner Fit.', img: '🎽' },
+                    { id: 'style_c', name: 'Cyber Pink', desc: 'Futuristisches Design mit Glow-Print.', img: '👚' }
+                ].map(item => (
+                    <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
+                        <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
+                        <div className="p-6 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-white font-bold text-lg">{item.name}</h3>
+                                <p className="text-xs text-zinc-500">{item.desc}</p>
+                            </div>
+                            <button 
+                                onClick={() => onVote(item.id)}
+                                className="flex items-center gap-2 bg-[#FF007F]/10 hover:bg-[#FF007F] border border-[#FF007F]/30 text-[#FF007F] hover:text-white px-4 py-2 rounded-xl transition-all"
+                            >
+                                <i data-lucide="vote" style={{width: '18px'}}></i>
+                                <span className="font-bold">{votes[item.id]}</span>
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
-            {loginError && <p className="text-[#FF007F] text-xs font-bold text-center">{loginError}</p>}
-            <button type="submit" className="w-full bg-[#FF007F] hover:bg-[#D4006A] text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-[0_10px_20px_rgba(255,0,127,0.3)]">
-              Einloggen
-            </button>
-          </form>
-          <p className="text-[10px] text-zinc-600 text-center mt-8">Passwort vergessen? Frag in der WA-Gruppe.</p>
-        </div>
-      </div>
-    );
-  }
+        );
 
-  return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans pb-24">
-      {/* Header */}
-      <header className="p-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#FF007F] rounded-lg flex items-center justify-center rotate-3">
-            <span className="text-white font-black italic text-sm">UR</span>
-          </div>
-          <div>
-            <h2 className="text-white font-black italic text-lg leading-none uppercase">Rebel Hub</h2>
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Squad Area</span>
-          </div>
-        </div>
-        <button onClick={() => signOut(auth)} className="text-zinc-500 hover:text-[#FF007F] transition-colors">
-          <LogOut size={20} />
-        </button>
-      </header>
+        const BaseView = () => (
+            <div className="space-y-6">
+                <header>
+                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Hallen & Info</h2>
+                    <p className="text-sm text-zinc-500">Wo die Rebellion stattfindet.</p>
+                </header>
+                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#FF007F]/10 rounded-xl flex items-center justify-center text-[#FF007F]">
+                            <i data-lucide="map-pin"></i>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-bold">Hasengrundhalle</h3>
+                            <p className="text-xs text-zinc-500">Im Hasengrund, 65428 Rüsselsheim</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-black/40 p-3 rounded-xl border border-white/5 text-center">
+                            <span className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">Training</span>
+                            <span className="text-white font-bold">Mi, 20:00 - 22:00</span>
+                        </div>
+                        <div className="bg-black/40 p-3 rounded-xl border border-white/5 text-center">
+                            <span className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">Status</span>
+                            <span className="text-green-500 font-bold">FIX ✅</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
 
-      {/* Main Content */}
-      <main className="p-6 max-w-2xl mx-auto">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'style' && <StyleView outfitVotes={outfitVotes} onVote={handleVote} />}
-        {activeTab === 'base' && <BaseView />}
-        {activeTab === 'squad' && <SquadView />}
-      </main>
+        const SquadView = () => (
+            <div className="space-y-6">
+                <header>
+                    <h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2>
+                    <p className="text-sm text-zinc-500">Unsere Gründungsmitglieder.</p>
+                </header>
+                <div className="space-y-3">
+                    {["Lena Kugies", "Kai König", "SQUAD MEMBER", "SQUAD MEMBER", "DEIN NAME?"].map((name, i) => (
+                        <div key={i} className="p-4 rounded-2xl border border-zinc-800 bg-[#111] flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-600">
+                                <i data-lucide="user" style={{width: '18px'}}></i>
+                            </div>
+                            <p className="font-bold text-white">{name}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
 
-      {/* Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50">
-        <NavButton icon={<Zap size={22} />} label="Home" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-        <NavButton icon={<Shirt size={22} />} label="Style" active={activeTab === 'style'} onClick={() => setActiveTab('style')} />
-        <NavButton icon={<MapPin size={22} />} label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
-        <NavButton icon={<Users size={22} />} label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
-      </nav>
-    </div>
-  );
-}
+        const NavButton = ({ icon, label, active, onClick }) => {
+            useEffect(() => { lucide.createIcons(); }, []);
+            return (
+                <button 
+                    onClick={onClick}
+                    className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110' : 'text-zinc-600'}`}
+                >
+                    <i data-lucide={icon} style={{width: '22px', height: '22px'}}></i>
+                    <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+                </button>
+            );
+        };
 
-// --- Sub-Views ---
-
-const DashboardView = () => (
-  <div className="space-y-6">
-    <div className="bg-gradient-to-br from-[#FF007F]/20 to-transparent p-8 rounded-3xl border border-[#FF007F]/30 relative overflow-hidden">
-      <div className="relative z-10">
-        <h1 className="text-3xl font-black italic text-white uppercase leading-none mb-2">Willkommen <br/>Rebellin!</h1>
-        <p className="text-sm text-zinc-400 max-w-[200px]">Der Kick-off war legendär. Jetzt machen wir Ernst.</p>
-      </div>
-      <Zap className="absolute -right-6 -bottom-6 text-[#FF007F]/10" size={180} />
-    </div>
-
-    <section>
-      <h3 className="text-xs font-black uppercase text-zinc-500 tracking-[0.3em] mb-4">Nächstes Event</h3>
-      <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800 flex gap-4 items-center">
-        <div className="w-14 h-14 bg-white/5 rounded-xl flex flex-col items-center justify-center text-[#FF007F]">
-          <span className="text-xs font-bold uppercase">Feb</span>
-          <span className="text-xl font-black italic">18</span>
-        </div>
-        <div className="flex-grow">
-          <p className="text-white font-bold">Erstes Training</p>
-          <p className="text-xs text-zinc-500">20:00 Uhr | Hasengrundhalle</p>
-        </div>
-        <ChevronRight className="text-zinc-700" />
-      </div>
-    </section>
-
-    <section className="grid grid-cols-2 gap-4">
-      <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800">
-        <p className="text-[#FF007F] font-black text-2xl italic">17/18</p>
-        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Plätze Fix</p>
-      </div>
-      <div className="bg-[#111] p-5 rounded-2xl border border-zinc-800">
-        <p className="text-white font-black text-2xl italic">100%</p>
-        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Motivation</p>
-      </div>
-    </section>
-  </div>
-);
-
-const StyleView = ({ outfitVotes, onVote }) => (
-  <div className="space-y-6">
-    <header>
-      <h2 className="text-2xl font-black italic text-white uppercase">Outfit Voting</h2>
-      <p className="text-sm text-zinc-500">Wähle deinen Favoriten für die neue Saison.</p>
-    </header>
-
-    {[
-      { id: 'style_a', name: 'Neon Edge', desc: 'Pinke Highlights auf Deep-Black.', img: '👕' },
-      { id: 'style_b', name: 'Rebel Stripe', desc: 'Klassische Streifen, moderner Fit.', img: '🎽' },
-      { id: 'style_c', name: 'Cyber Pink', desc: 'Futuristisches Design mit Glow-Print.', img: '👚' }
-    ].map(item => (
-      <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
-        <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
-        <div className="p-6 flex justify-between items-center">
-          <div>
-            <h3 className="text-white font-bold text-lg">{item.name}</h3>
-            <p className="text-xs text-zinc-500">{item.desc}</p>
-          </div>
-          <button 
-            onClick={() => onVote(item.id)}
-            className="flex items-center gap-2 bg-[#FF007F]/10 hover:bg-[#FF007F] border border-[#FF007F]/30 text-[#FF007F] hover:text-white px-4 py-2 rounded-xl transition-all"
-          >
-            <Vote size={18} />
-            <span className="font-bold">{outfitVotes[item.id]?.count || 0}</span>
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
-const BaseView = () => (
-  <div className="space-y-6">
-    <header>
-      <h2 className="text-2xl font-black italic text-white uppercase">Hallen & Info</h2>
-      <p className="text-sm text-zinc-500">Wo die Rebellion stattfindet.</p>
-    </header>
-
-    <div className="space-y-4">
-      <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#FF007F]/10 rounded-xl flex items-center justify-center text-[#FF007F]">
-            <MapPin size={24} />
-          </div>
-          <div>
-            <h3 className="text-white font-bold">Hasengrundhalle</h3>
-            <p className="text-xs text-zinc-500">Im Hasengrund, 65428 Rüsselsheim</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-            <span className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">Training</span>
-            <span className="text-white font-bold">Mi, 20:00 - 22:00</span>
-          </div>
-          <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-            <span className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">Status</span>
-            <span className="text-green-500 font-bold">FIX ✅</span>
-          </div>
-        </div>
-        <button className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl text-sm transition-all">
-          In Google Maps öffnen
-        </button>
-      </div>
-
-      <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 flex items-center gap-4">
-        <CheckCircle className="text-[#FF007F]" />
-        <p className="text-xs text-zinc-400 font-medium">Bälle und Harz sind vor Ort vorhanden.</p>
-      </div>
-    </div>
-  </div>
-);
-
-const SquadView = () => (
-  <div className="space-y-6">
-    <header>
-      <h2 className="text-2xl font-black italic text-white uppercase">The Squad</h2>
-      <p className="text-sm text-zinc-500">Unsere Gründungsmitglieder.</p>
-    </header>
-
-    <div className="space-y-3">
-      {[
-        { name: "Lena Kugies", role: "Orga & Spirit", type: "Lead" },
-        { name: "Kai König", role: "Strategie", type: "Staff" },
-        { name: "SQUAD MEMBER", role: "Warten auf Unterschrift...", type: "Player" },
-        { name: "SQUAD MEMBER", role: "Warten auf Unterschrift...", type: "Player" },
-        { name: "DEIN NAME?", role: "Letzter freier Slot", type: "Open" }
-      ].map((member, i) => (
-        <div key={i} className={`p-4 rounded-2xl border flex items-center gap-4 ${member.type === 'Open' ? 'border-dashed border-[#FF007F]/40 bg-[#FF007F]/5' : 'border-zinc-800 bg-[#111]'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${member.type === 'Open' ? 'bg-[#FF007F]/20 text-[#FF007F]' : 'bg-zinc-800 text-zinc-600'}`}>
-            <UserIcon size={18} />
-          </div>
-          <div className="flex-grow">
-            <p className={`font-bold ${member.type === 'Open' ? 'text-[#FF007F]' : 'text-white'}`}>{member.name}</p>
-            <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">{member.role}</p>
-          </div>
-          {member.type !== 'Open' && <CheckCircle size={18} className="text-zinc-800" />}
-        </div>
-      ))}
-    </div>
-
-    <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 text-center">
-      <MessageSquare className="mx-auto text-zinc-600 mb-2" />
-      <p className="text-xs text-zinc-500 italic">Hier werden bald alle Rebel Cards der Spielerinnen verlinkt.</p>
-    </div>
-  </div>
-);
-
-const NavButton = ({ icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110' : 'text-zinc-600'}`}
-  >
-    {icon}
-    <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
-  </button>
-);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        
+        // Initial Lucide Icons
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    </script>
+</body>
+</html>
