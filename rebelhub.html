@@ -37,7 +37,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global verfügbar machen
+        // Global verfügbar machen für den React Teil
         window.FB = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection };
     </script>
 
@@ -69,27 +69,27 @@
             stats: { pwr: 80, vbe: 80, sol: 80, grp: 80 }
         }));
 
-        // Dynamische App ID aus der Umgebung oder Fallback
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-prod';
+        // Zentrale APP_ID für alle Firebase Operationen
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'rebel-hub-v1';
 
-        // Stabile Icon Komponente
+        // Stabile Icon Komponente ohne forwardRef Probleme
         const Icon = ({ name, size = 24, className = "" }) => {
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
         const App = () => {
-            const [user, setUser] = useState(null); // Lokaler Spieler
-            const [fbUser, setFbUser] = useState(null); // Firebase Auth
+            const [user, setUser] = useState(null); // Lokaler Spieler aus SQUAD_DATA
+            const [fbUser, setFbUser] = useState(null); // Firebase Auth State
             const [activeTab, setActiveTab] = useState('dashboard');
             const [loginData, setLoginData] = useState({ nameId: '', password: '' });
             const [loginError, setLoginError] = useState('');
             const [votesData, setVotesData] = useState({});
             const [db, setDb] = useState(null);
             const [isSyncing, setIsSyncing] = useState(false);
-            const [cloudStatus, setCloudStatus] = useState('offline');
+            const [cloudStatus, setCloudStatus] = useState('offline'); // connected | offline | error
 
-            // 1. Firebase Initialisierung (Auth FIRST)
+            // 1. Firebase Initialisierung & Authentifizierung
             useEffect(() => {
                 const init = async () => {
                     if (!window.FB) return;
@@ -102,43 +102,51 @@
                         const firestore = getFirestore(app);
                         setDb(firestore);
 
-                        // Auth Call - Warten bis abgeschlossen
+                        // Auth Prozess starten
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
                             await signInAnonymously(auth);
                         }
 
+                        // Auth Listener setzen
                         onAuthStateChanged(auth, (u) => {
-                            setFbUser(u);
-                            if (u) setCloudStatus('connected');
+                            if (u) {
+                                setFbUser(u);
+                                setCloudStatus('connected');
+                            } else {
+                                setCloudStatus('offline');
+                            }
                         });
                     } catch (e) {
-                        console.error("Cloud Init failed", e);
+                        console.error("Firebase Setup Error:", e);
                         setCloudStatus('error');
                     }
                 };
                 init();
             }, []);
 
-            // 2. Echtzeit-Daten-Listener (Nur wenn fbUser & db bereit)
+            // 2. Echtzeit-Daten-Listener für Votes
             useEffect(() => {
+                // Wir starten den Listener erst, wenn Auth UND DB bereit sind
                 if (!fbUser || !db) return;
-                const { collection, onSnapshot } = window.FB;
                 
-                const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'team_votes');
+                const { collection, onSnapshot } = window.FB;
+                // Pfad muss exakt sein: /artifacts/{appId}/public/data/{collectionName}
+                const votesRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes');
+                
                 const unsubscribe = onSnapshot(votesRef, 
                     (snapshot) => {
                         const data = {};
                         snapshot.forEach(doc => data[doc.id] = doc.data());
                         setVotesData(data);
-                        console.log("Cloud Data Sync Complete");
                     },
                     (error) => {
-                        console.error("Firestore Error:", error);
+                        console.error("Cloud Access Denied:", error);
                         setCloudStatus('error');
                     }
                 );
+                
                 return () => unsubscribe();
             }, [fbUser, db]);
 
@@ -154,25 +162,24 @@
             };
 
             const submitVote = async (category, subId, value) => {
+                // Sicherheitschecks vor dem Speichern
                 if (!db || !fbUser || !user || isSyncing) return;
                 
                 setIsSyncing(true);
                 const { doc, setDoc } = window.FB;
                 const docId = `${category}_${subId}`;
-                const voteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', docId);
+                const voteDoc = doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', docId);
                 
                 try {
-                    // Explizites Speichern in der Cloud
                     await setDoc(voteDoc, { [user.id]: value }, { merge: true });
-                    console.log(`Vote saved: ${docId} -> ${value}`);
                 } catch (err) {
-                    console.error("Save failed", err);
-                    alert("Speichern fehlgeschlagen. Bitte Internetverbindung prüfen.");
+                    console.error("Firestore Save Error:", err);
                 } finally {
                     setIsSyncing(false);
                 }
             };
 
+            // Login View
             if (!user) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
@@ -223,12 +230,12 @@
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-[#FF007F] rounded-lg flex items-center justify-center rotate-3 relative">
                                 <span className="text-white rebel-font font-black italic text-sm">UR</span>
-                                {/* Cloud Status Indicator */}
-                                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${cloudStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                {/* Connection Status Indicator */}
+                                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${cloudStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : cloudStatus === 'error' ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-zinc-500'}`}></div>
                             </div>
                             <div>
-                                <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase tracking-tighter">Rebel Hub</h2>
-                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Hi, {user.name}!</span>
+                                <h2 className="text-white rebel-font font-black italic text-lg leading-none uppercase tracking-tighter whitespace-nowrap">Rebel Hub</h2>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block mt-1">Hi, {user.name}!</span>
                             </div>
                         </div>
                         <button onClick={() => setUser(null)} className="text-zinc-500 hover:text-[#FF007F]">
@@ -255,7 +262,27 @@
             );
         };
 
-        // --- SUB-KOMPONENTEN ---
+        // --- SUB-VIEWS ---
+
+        const DashboardView = ({ me }) => (
+            <div className="space-y-8 animate-slide-up">
+                <header className="text-center">
+                    <h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-1">Deine Karte</h1>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Gründungsmitglied // Mission 2026</p>
+                </header>
+                <RebelCard member={me} isMe={true} />
+                <section className="bg-[#111] p-6 rounded-3xl border border-zinc-800 flex gap-5 items-center">
+                    <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex flex-col items-center justify-center text-[#FF007F] border border-[#FF007F]/20">
+                        <span className="text-xs font-bold uppercase leading-none mb-1">Feb</span>
+                        <span className="text-2xl rebel-font font-black italic leading-none">18</span>
+                    </div>
+                    <div className="flex-grow">
+                        <p className="text-white font-bold text-lg leading-tight mb-1 uppercase italic">Auftakt-Training</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">20:00 Uhr | Hasengrundhalle</p>
+                    </div>
+                </section>
+            </div>
+        );
 
         const VotesView = ({ votesData, submitVote, userId, isSyncing }) => {
             const categories = [
@@ -268,16 +295,16 @@
                 <div className="space-y-8">
                     <header>
                         <h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2>
-                        <p className="text-sm text-zinc-500 italic">Plane deinen Einsatz für die Rebellion.</p>
+                        <p className="text-sm text-zinc-500 italic">Gestalte die Rebellion aktiv mit.</p>
                     </header>
                     {categories.map(cat => (
-                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
+                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-5">
                             <h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
                             {cat.items.map(item => {
                                 const currentVote = votesData[`${cat.id}_${item.id}`]?.[userId];
                                 return (
                                     <div key={item.id} className="space-y-4 pt-2">
-                                        <p className="text-sm font-bold text-zinc-300">{item.label}</p>
+                                        <p className="text-sm font-bold text-zinc-300 uppercase tracking-widest">{item.label}</p>
                                         
                                         {cat.type === 'attendance' && (
                                             <div className="grid grid-cols-3 gap-2">
@@ -286,7 +313,7 @@
                                                         key={opt} 
                                                         disabled={isSyncing}
                                                         onClick={() => submitVote(cat.id, item.id, opt)} 
-                                                        className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}
+                                                        className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_15px_#FF007F]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}
                                                     >
                                                         {opt}
                                                     </button>
@@ -298,9 +325,9 @@
                                             <button 
                                                 disabled={isSyncing}
                                                 onClick={() => submitVote(cat.id, item.id, currentVote === 'Übernehme ich' ? null : 'Übernehme ich')} 
-                                                className={`w-full py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === 'Übernehme ich' ? 'bg-green-600 text-white border-green-600' : 'bg-black/50 text-zinc-600 border-zinc-800'}`}
+                                                className={`w-full py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === 'Übernehme ich' ? 'bg-green-600 text-white border-green-600 shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'bg-black/50 text-zinc-600 border-zinc-800'}`}
                                             >
-                                                {currentVote === 'Übernehme ich' ? 'Du bist dabei! ✅' : 'Dienst übernehmen'}
+                                                {currentVote === 'Übernehme ich' ? 'Du bist eingeteilt! ✅' : 'Dienst übernehmen'}
                                             </button>
                                         )}
 
@@ -319,10 +346,9 @@
                                             </div>
                                         )}
                                         
-                                        {/* Zusammenfassung */}
                                         <div className="flex flex-wrap gap-1.5 pt-4 border-t border-white/5 min-h-[30px]">
                                             {Object.entries(votesData[`${cat.id}_${item.id}`] || {}).map(([uid, val]) => (
-                                                val && <span key={uid} className="text-[7px] bg-white/5 px-2 py-1 rounded-lg text-zinc-500 uppercase font-bold border border-white/5">
+                                                val && <span key={uid} className="text-[7px] bg-white/5 px-2 py-1 rounded-lg text-zinc-500 uppercase font-black border border-white/5">
                                                     {SQUAD_DATA.find(s => s.id === uid)?.name}: <span className="text-[#FF007F]">{val}</span>
                                                 </span>
                                             ))}
@@ -335,30 +361,10 @@
                             })}
                         </div>
                     ))}
-                    {isSyncing && <p className="text-[9px] text-center text-[#FF007F] animate-pulse font-black uppercase tracking-widest">Wird gespeichert...</p>}
+                    {isSyncing && <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black border border-[#FF007F] px-6 py-2 rounded-full shadow-[0_0_20px_#FF007F] z-[100]"><p className="text-[9px] text-[#FF007F] animate-pulse font-black uppercase tracking-widest">Synchronisierung...</p></div>}
                 </div>
             );
         };
-
-        const DashboardView = ({ me }) => (
-            <div className="space-y-8 animate-slide-up">
-                <header className="text-center">
-                    <h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-1">Deine Karte</h1>
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest">Saison 2026 // Gründungsmitglied</p>
-                </header>
-                <RebelCard member={me} isMe={true} />
-                <section className="bg-[#111] p-6 rounded-3xl border border-zinc-800 flex gap-5 items-center">
-                    <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex flex-col items-center justify-center text-[#FF007F] border border-[#FF007F]/20">
-                        <span className="text-xs font-bold uppercase leading-none mb-1">Feb</span>
-                        <span className="text-2xl rebel-font font-black italic leading-none">18</span>
-                    </div>
-                    <div className="flex-grow">
-                        <p className="text-white font-bold text-lg leading-tight mb-1 uppercase italic">Auftakt-Training</p>
-                        <p className="text-xs text-zinc-500 uppercase tracking-widest">20:00 Uhr | Hasengrundhalle</p>
-                    </div>
-                </section>
-            </div>
-        );
 
         const RebelCard = ({ member, isMe = false }) => {
             const displayName = (ANONYMOUS_MODE && !isMe) ? "REBEL MEMBER" : member.name;
@@ -383,9 +389,9 @@
                         </div>
                         <div className="mt-auto relative z-20">
                             <div className="px-4 pb-2 text-center">
-                                <h3 className="text-xl rebel-font font-black italic text-white uppercase tracking-tighter">{displayName}</h3>
+                                <h3 className="text-xl rebel-font font-black italic text-white uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{displayName}</h3>
                                 <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div>
-                                <p className="text-[9px] text-[#FF007F] font-bold uppercase tracking-widest">{displayTrait}</p>
+                                <p className="text-[9px] text-[#FF007F] font-black uppercase tracking-widest">{displayTrait}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-4 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F]">
                                 <StatItem label="Pwr" val={member.stats.pwr} /><StatItem label="Vbe" val={member.stats.vbe} />
@@ -399,14 +405,14 @@
 
         const StatItem = ({ label, val }) => (
             <div className="flex flex-col gap-0.5">
-                <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500"><span>{label}</span><span className="text-white">{val}</span></div>
+                <div className="flex justify-between text-[7px] font-black uppercase text-zinc-600"><span>{label}</span><span className="text-white">{val}</span></div>
                 <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F]" style={{width: `${val}%`}}></div></div>
             </div>
         );
 
         const StyleView = ({ votesData, submitVote, userId, isSyncing }) => (
             <div className="space-y-6 animate-slide-up">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2><p className="text-sm text-zinc-500">Gestalte den Look der Rebellion.</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Outfit Voting</h2><p className="text-sm text-zinc-500">Bestimme den Look des Teams.</p></header>
                 {[
                     { id: 'style_a', name: 'Neon Edge', desc: 'Pinke Highlights auf Deep-Black.', img: '👕' },
                     { id: 'style_b', name: 'Rebel Stripe', desc: 'Klassische Streifen, moderner Fit.', img: '🎽' },
@@ -417,11 +423,11 @@
                     const voted = votesDoc[userId] === true;
                     return (
                         <div key={item.id} className="bg-[#111] rounded-3xl overflow-hidden border border-zinc-800 transition-all active:scale-[0.98]">
-                            <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-50">{item.img}</div>
+                            <div className="h-48 bg-zinc-900 flex items-center justify-center text-6xl opacity-40">{item.img}</div>
                             <div className="p-6 flex justify-between items-center">
-                                <div><h3 className="text-white font-bold text-lg">{item.name}</h3><p className="text-xs text-zinc-500">{item.desc}</p></div>
-                                <button disabled={isSyncing} onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all border ${voted ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/30'}`}>
-                                    <Icon name="vote" size={20} /><span className="font-black italic text-lg">{voteCount}</span>
+                                <div><h3 className="text-white font-black italic uppercase leading-none mb-1">{item.name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">{item.desc}</p></div>
+                                <button disabled={isSyncing} onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all border ${voted ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_15px_#FF007F]' : 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20'}`}>
+                                    <Icon name="check-square" size={18} /><span className="font-black italic text-lg">{voteCount}</span>
                                 </button>
                             </div>
                         </div>
@@ -432,15 +438,21 @@
 
         const BaseView = () => (
             <div className="space-y-6 animate-slide-up">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2><p className="text-sm text-zinc-500">Wo das Licht brennt.</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2><p className="text-sm text-zinc-500">Wo die Rebellion trainiert.</p></header>
                 <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F]"><Icon name="map-pin" size={32} /></div>
-                        <div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-1">Hasengrundhalle</h3><p className="text-xs text-zinc-500 uppercase">65428 Rüsselsheim</p></div>
+                        <div className="w-14 h-14 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-[0_0_15px_rgba(255,0,127,0.1)]"><Icon name="map-pin" size={32} /></div>
+                        <div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-1">Hasengrundhalle</h3><p className="text-xs text-zinc-500 uppercase font-bold tracking-widest">65428 Rüsselsheim</p></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Training</span><span className="text-white font-bold text-xs">Mi, 20-22h</span></div>
-                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-bold mb-1 tracking-widest">Status</span><span className="text-green-500 font-bold text-xs uppercase">Fix ✅</span></div>
+                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
+                            <span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 tracking-widest">Training</span>
+                            <span className="text-white font-black text-xs uppercase">Mi, 20-22h</span>
+                        </div>
+                        <div className="bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
+                            <span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 tracking-widest">Status</span>
+                            <span className="text-green-500 font-black text-xs uppercase">Fix ✅</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -448,10 +460,10 @@
 
         const SquadView = ({ myId }) => (
             <div className="space-y-6 animate-slide-up">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2><p className="text-sm text-zinc-500 mb-8">Gründungsmitglieder Mission 2026.</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">The Squad</h2><p className="text-sm text-zinc-500 mb-8 font-bold italic uppercase tracking-tighter">Gründungsmitglieder 2026.</p></header>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {SQUAD_DATA.map((member) => (<RebelCard key={member.id} member={member} isMe={member.id === myId} />))}
-                    <div className="w-full max-w-[280px] mx-auto h-[400px] border-2 border-dashed border-[#FF007F]/20 rounded-2xl flex flex-col items-center justify-center text-center p-6 opacity-40">
+                    <div className="w-full max-w-[280px] mx-auto h-[400px] border-2 border-dashed border-[#FF007F]/20 rounded-2xl flex flex-col items-center justify-center text-center p-6 opacity-30">
                          <Icon name="user-plus" size={32} className="mb-4 text-[#FF007F]" /><p className="rebel-font font-black italic text-[#FF007F] uppercase tracking-widest leading-none">The Final<br/>Rebel</p>
                     </div>
                 </div>
@@ -459,8 +471,8 @@
         );
 
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                <Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-[0.2em]">{label}</span>
             </button>
         );
 
