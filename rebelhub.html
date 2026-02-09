@@ -8,10 +8,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rebel Hub">
+    <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Verbessertes App Icon für den Homescreen (SVG mit höherer Kompatibilität) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23050505'/%3E%3Cpath d='M90 15 L158 52 L158 128 L90 165 L22 128 L22 52 Z' fill='none' stroke='%23FF007F' stroke-width='12'/%3E%3Ctext x='90' y='112' font-family='Arial, sans-serif' font-size='52' font-weight='900' fill='%23FF007F' text-anchor='middle' font-style='italic'%3EUR%3C/text%3E%3C/svg%3E">
-    
+    <!-- Verbessertes App Icon für den Homescreen (Spezielle Kodierung für Safari) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAxNSBMMTU4IDUyIEwxNTggMTI4IEw5MCAxNjUgTDIyIDEyOCBMMjIgNTIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAxNSBMMTU4IDUyIEwxNTggMTI4IEw5MCAxNjUgTDIyIDEyOCBMMjIgNTIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
+
     <title>UNITED REBELS - Squad Hub</title>
     
     <!-- Libraries -->
@@ -158,7 +160,6 @@
                                 setFbUser(u); 
                                 setCloudStatus('connected');
                                 
-                                // PERSISTENCE CHECK: Wenn eine ID gespeichert ist, logge automatisch ein
                                 const savedId = localStorage.getItem('rebel_hub_user_id');
                                 if (savedId) {
                                     const found = SQUAD_DATA.find(m => m.id === savedId);
@@ -200,7 +201,6 @@
                 if (found && loginData.password === found.pw) { 
                     setUser(found); 
                     setLoginError(''); 
-                    // PERSISTENCE: ID im Handy speichern
                     localStorage.setItem('rebel_hub_user_id', found.id);
                 } 
                 else { setLoginError('Passwort ungültig.'); }
@@ -306,13 +306,8 @@
                     <section className="bg-gradient-to-br from-[#FF007F]/20 to-transparent p-6 rounded-3xl border border-[#FF007F]/30 text-center relative overflow-hidden shadow-2xl">
                         <div className="relative z-10"><p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF007F] mb-4">Countdown zum Auftakt</p><div className="flex justify-center gap-4"><div className="flex flex-col"><span className="text-4xl rebel-font font-black italic text-white leading-none">{timeLeft.d}</span><span className="text-[8px] uppercase font-bold text-zinc-500 mt-1 tracking-widest">Tage</span></div><div className="text-2xl rebel-font font-black italic text-[#FF007F] animate-pulse">:</div><div className="flex flex-col"><span className="text-4xl rebel-font font-black italic text-white leading-none">{timeLeft.h}</span><span className="text-[8px] uppercase font-bold text-zinc-500 mt-1 tracking-widest">Std</span></div><div className="text-2xl rebel-font font-black italic text-[#FF007F] animate-pulse">:</div><div className="flex flex-col"><span className="text-4xl rebel-font font-black italic text-white leading-none">{timeLeft.m}</span><span className="text-[8px] uppercase font-bold text-zinc-500 mt-1 tracking-widest">Min</span></div></div></div>
                     </section>
-
-                    <header className="text-center">
-                        <h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-1">Deine Karte</h1>
-                        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold italic">Identity Card // Founding Rebel</p>
-                    </header>
+                    <header className="text-center"><h1 className="text-3xl rebel-font font-black italic text-white uppercase leading-none mb-1">Deine Karte</h1><p className="text-xs text-zinc-500 uppercase tracking-widest font-bold italic">Identity Card // Founding Rebel</p></header>
                     <RebelCard member={me} isMe={true} />
-
                     <section className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
                         <h3 className="rebel-font font-black italic text-white uppercase text-xl px-1">Deine Achievements</h3>
                         <div className="flex justify-around gap-4">
@@ -321,7 +316,6 @@
                             <div className="flex flex-col items-center gap-2 achievement-locked"><div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 text-zinc-600"><Icon name="heart" size={32} /></div><span className="text-[8px] uppercase font-black tracking-widest">Team Soul</span></div>
                         </div>
                     </section>
-
                     <section className="space-y-4">
                         <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic text-white uppercase text-xl">Rebel Social</h3><span className="text-[9px] uppercase font-bold text-zinc-600 tracking-widest italic">Digital Cabin Wall</span></div>
                         <div className="bg-[#111] rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
@@ -335,16 +329,6 @@
                                 ))}
                                 {shoutbox.length === 0 && <p className="text-xs text-zinc-700 text-center py-8 italic uppercase tracking-widest">Noch keine Nachrichten an der Wall...</p>}
                             </div>
-                        </div>
-                    </section>
-
-                    <section className="bg-[#111] p-8 rounded-3xl border border-zinc-800 space-y-6 text-center">
-                        <h3 className="rebel-font font-black italic text-white uppercase text-xl">The Rebel Code</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-black/40 rounded-2xl border border-white/5"><span className="block text-[#FF007F] font-black rebel-font text-3xl italic neon-glow mb-1">P</span><span className="text-[9px] uppercase font-black text-zinc-500 tracking-[0.2em]">Performance</span></div>
-                            <div className="text-center p-4 bg-black/40 rounded-2xl border border-white/5"><span className="block text-[#FF007F] font-black rebel-font text-3xl italic neon-glow mb-1">I</span><span className="text-[9px] uppercase font-black text-zinc-500 tracking-[0.2em]">Individualität</span></div>
-                            <div className="text-center p-4 bg-black/40 rounded-2xl border border-white/5"><span className="block text-[#FF007F] font-black rebel-font text-3xl italic neon-glow mb-1">N</span><span className="text-[9px] uppercase font-black text-zinc-500 tracking-[0.2em]">Next Level</span></div>
-                            <div className="text-center p-4 bg-black/40 rounded-2xl border border-white/5"><span className="block text-[#FF007F] font-black rebel-font text-3xl italic neon-glow mb-1">K</span><span className="text-[9px] uppercase font-black text-zinc-500 tracking-[0.2em]">Kampfgeist</span></div>
                         </div>
                     </section>
                 </div>
@@ -371,7 +355,7 @@
                                         {cat.type === 'attendance' && (
                                             <div className="grid grid-cols-3 gap-3">
                                                 {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
-                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border border-zinc-800 active:scale-95'}`}>{opt}</button>
+                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}>{opt}</button>
                                                 ))}
                                             </div>
                                         )}
@@ -408,7 +392,7 @@
                     <div className="relative h-full w-full bg-[#050505] rounded-2xl border border-[#FF007F]/30 overflow-hidden flex flex-col card-shadow">
                         <div className="flex justify-between items-start p-4 z-20">
                             <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic text-white leading-none">{member.rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">{member.pos}</span></div>
-                            <div className="w-10 h-10 border border-[#FF007F]/50 rounded-lg flex items-center justify-center bg-black/50 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><svg viewBox="0 0 100 100" className="w-6 h-6 fill-current"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" strokeWidth="6"/><text x="50" y="65" font-family="Poppins" font-size="30" font-weight="900" text-anchor="middle" font-style="italic">UR</text></svg></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/50 rounded-lg flex items-center justify-center bg-black/50 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><svg viewBox="0 0 100 100" className="w-6 h-6 fill-current"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="65" font-family="Poppins" font-size="30" font-weight="900" text-anchor="middle" font-style="italic">UR</text></svg></div>
                         </div>
                         <div className="absolute top-0 left-0 w-full h-56 flex items-center justify-center pointer-events-none overflow-hidden">
                             <div className="text-[#FF007F]/5 text-[150px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{member.rating}</div>
