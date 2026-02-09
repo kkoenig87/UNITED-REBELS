@@ -10,9 +10,9 @@
     <meta name="apple-mobile-web-app-title" content="Rebel Hub">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Verbessertes App Icon für den Homescreen (Spezielle Kodierung für Safari) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAxNSBMMTU4IDUyIEwxNTggMTI4IEw5MCAxNjUgTDIyIDEyOCBMMjIgNTIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAxNSBMMTU4IDUyIEwxNTggMTI4IEw5MCAxNjUgTDIyIDEyOCBMMjIgNTIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
+    <!-- Hochkompatibles App Icon (180x180 Square, Black Background, Pink Hexagon) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAyMCBMMTU1IDU1IEwxNTUgMTI1IEw5MCAxNjAgTDI1IDEyNSBMMjUgNTUgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjU1IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
+    <link rel="icon" type="image/png" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzA1MDUwNSIvPjxwYXRoIGQ9Ik05MCAyMCBMMTU1IDU1IEwxNTUgMTI1IEw5MCAxNjAgTDIyIDEyNSBMMjIgNTUgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkYwMDdGIiBzdHJva2Utd2lkdGg9IjEyIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjU1IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkYwMDdGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXN0eWxlPSJpdGFsaWMiPlVSPC90ZXh0Pjwvc3ZnPg==">
 
     <title>UNITED REBELS - Squad Hub</title>
     
@@ -160,6 +160,7 @@
                                 setFbUser(u); 
                                 setCloudStatus('connected');
                                 
+                                // PERSISTENCE CHECK: Wenn eine ID gespeichert ist, logge automatisch ein
                                 const savedId = localStorage.getItem('rebel_hub_user_id');
                                 if (savedId) {
                                     const found = SQUAD_DATA.find(m => m.id === savedId);
@@ -201,6 +202,7 @@
                 if (found && loginData.password === found.pw) { 
                     setUser(found); 
                     setLoginError(''); 
+                    // PERSISTENCE: ID im Handy speichern
                     localStorage.setItem('rebel_hub_user_id', found.id);
                 } 
                 else { setLoginError('Passwort ungültig.'); }
@@ -355,7 +357,7 @@
                                         {cat.type === 'attendance' && (
                                             <div className="grid grid-cols-3 gap-3">
                                                 {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
-                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}>{opt}</button>
+                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border border-zinc-800 active:scale-95'}`}>{opt}</button>
                                                 ))}
                                             </div>
                                         )}
