@@ -8,6 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rebel Hub">
+    
+    <!-- Individuelles App Icon für den Homescreen (SVG Data URI) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23050505'/%3E%3Cpath d='M90 25 L154 58 L154 122 L90 155 L26 122 L26 58 Z' fill='none' stroke='%23FF007F' stroke-width='10'/%3E%3Ctext x='90' y='108' font-family='Arial, sans-serif' font-size='55' font-weight='900' fill='%23FF007F' text-anchor='middle' font-style='italic'%3EUR%3C/text%3E%3C/svg%3E">
+    
     <title>UNITED REBELS - Squad Hub</title>
     
     <!-- Libraries -->
@@ -49,6 +53,8 @@
             50% { opacity: 0.7; transform: scale(1.05); }
         }
         .pulse-pink { animation: pulse-pink 2s infinite ease-in-out; }
+
+        .achievement-locked { filter: grayscale(1) opacity(0.3); }
     </style>
 </head>
 <body>
@@ -389,7 +395,6 @@
                             })}
                         </div>
                     ))}
-                    {isSyncing && <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black border border-[#FF007F] px-6 py-2 rounded-full shadow-[0_0_20px_#FF007F] z-[100]"><p className="text-[9px] text-[#FF007F] animate-pulse font-black uppercase tracking-widest">Cloud Sync...</p></div>}
                 </div>
             );
         };
@@ -438,7 +443,7 @@
                             <div className="h-48 bg-zinc-900 flex items-center justify-center text-7xl opacity-40">{item.img}</div>
                             <div className="p-6 flex justify-between items-center bg-zinc-900/30">
                                 <div><h3 className="text-xl text-white font-black italic uppercase leading-none mb-1">{item.name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">{item.desc}</p></div>
-                                <button disabled={isSyncing} onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-3 px-6 py-4 rounded-2xl transition-all border ${voted ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20'}`}><Icon name="vote" size={22} /><span className="font-black italic text-xl">{voteCount}</span></button>
+                                <button disabled={isSyncing} onClick={() => submitVote('style_vote', item.id, !voted)} className={`flex items-center gap-3 px-6 py-4 rounded-2xl transition-all border ${voted ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_15px_#FF007F]' : 'bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/20'}`}><Icon name="vote" size={22} /><span className="font-black italic text-xl">{voteCount}</span></button>
                             </div>
                         </div>
                     );
