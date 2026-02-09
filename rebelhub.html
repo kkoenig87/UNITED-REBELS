@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rebel Hub">
     
-    <!-- Individuelles App Icon für den Homescreen (SVG Data URI) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23050505'/%3E%3Cpath d='M90 25 L154 58 L154 122 L90 155 L26 122 L26 58 Z' fill='none' stroke='%23FF007F' stroke-width='10'/%3E%3Ctext x='90' y='108' font-family='Arial, sans-serif' font-size='55' font-weight='900' fill='%23FF007F' text-anchor='middle' font-style='italic'%3EUR%3C/text%3E%3C/svg%3E">
+    <!-- Verbessertes App Icon für den Homescreen (SVG mit höherer Kompatibilität) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23050505'/%3E%3Cpath d='M90 15 L158 52 L158 128 L90 165 L22 128 L22 52 Z' fill='none' stroke='%23FF007F' stroke-width='12'/%3E%3Ctext x='90' y='112' font-family='Arial, sans-serif' font-size='52' font-weight='900' fill='%23FF007F' text-anchor='middle' font-style='italic'%3EUR%3C/text%3E%3C/svg%3E">
     
     <title>UNITED REBELS - Squad Hub</title>
     
@@ -371,7 +371,7 @@
                                         {cat.type === 'attendance' && (
                                             <div className="grid grid-cols-3 gap-3">
                                                 {['Dabei', 'Nein', 'Vielleicht'].map(opt => (
-                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}>{opt}</button>
+                                                    <button key={opt} disabled={isSyncing} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_20px_#FF007F55]' : 'bg-black/50 text-zinc-600 border border-zinc-800 active:scale-95'}`}>{opt}</button>
                                                 ))}
                                             </div>
                                         )}
