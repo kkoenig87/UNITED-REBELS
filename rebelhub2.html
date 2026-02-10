@@ -29,7 +29,6 @@
     <style>
         :root { --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom); --rebel-pink: #FF007F; }
         
-        /* Basis Styling */
         body { font-family: 'Lato', sans-serif; transition: background-color 0.3s, color 0.3s; margin: 0; padding: 0; }
         
         .dark { background-color: #050505; color: #d4d4d8; }
@@ -45,7 +44,6 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
 
-        /* Glass Cards */
         .glass-card { backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
         .dark .glass-card { background: rgba(20, 20, 20, 0.7); border-color: rgba(255, 255, 255, 0.05); }
         .light .glass-card { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.1); color: #18181b; }
@@ -57,7 +55,6 @@
             color: white !important;
         }
 
-        /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
@@ -146,18 +143,17 @@
             const [shoutbox, setShoutbox] = useState([]);
             const [profiles, setProfiles] = useState({});
             const [schedule, setSchedule] = useState([]);
+            const [health, setHealth] = useState({});
             const [theme, setTheme] = useState('dark');
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
 
-            // Theme Sync
             useEffect(() => {
                 document.body.className = theme + " no-scrollbar";
                 const meta = document.getElementById('theme-meta');
                 if (meta) meta.setAttribute('content', theme === 'dark' ? '#050505' : '#f4f4f5');
             }, [theme]);
 
-            // Firebase Init
             useEffect(() => {
                 const init = async () => {
                     let attempts = 0;
@@ -180,7 +176,6 @@
                 init();
             }, []);
 
-            // Realtime Sync
             useEffect(() => {
                 if (!db) return;
                 const { collection, onSnapshot } = window.FB;
@@ -203,6 +198,10 @@
                     list.sort((a, b) => new Date(a.date) - new Date(b.date));
                     setSchedule(list);
                 });
+                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'health'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setHealth(data);
+                });
             }, [db]);
 
             const handleLogin = (e) => {
@@ -216,13 +215,13 @@
 
             if (!user) return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
-                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up">
+                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
                         <div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" /></div>
-                        <h1 className="text-3xl font-black italic text-white text-center uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
+                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
                         <form onSubmit={handleLogin} className="space-y-6">
                             <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
                             <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>
-                            {loginError && <p className="text-[#FF007F] text-xs font-bold text-center">{loginError}</p>}
+                            {loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}
                             <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl">Anmelden</button>
                         </form>
                     </div>
@@ -254,10 +253,13 @@
                         }} />}
                         {activeTab === 'power' && <PowerView />}
                         {activeTab === 'base' && <BaseView />}
-                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} />}
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} schedule={schedule} onSave={async (d) => {
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} health={health['current'] || {}} schedule={schedule} onSave={async (d) => {
                             const { doc, setDoc } = window.FB;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', user.id), d, { merge: true });
+                        }} onHealthUpdate={async (s) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true });
                         }} onAddEvent={async (e) => {
                             const { collection, addDoc } = window.FB;
                             await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), e);
@@ -291,14 +293,10 @@
             const startDate = new Date('2026-02-08T16:30:00'); 
             const daysSinceStart = Math.max(1, Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24)));
 
-            // Check for Duplicate Number Conflict
             const conflicts = {
-                'p3': { num: '15', mate: 'Andrea' },
-                'p9': { num: '15', mate: 'Ricarda' },
-                'p6': { num: '3', mate: 'Carina' },
-                'p12': { num: '3', mate: 'Rebecca' },
-                'p13': { num: '28', mate: 'Sandra' },
-                'p14': { num: '28', mate: 'Ayleen' }
+                'p3': { num: '15', mate: 'Andrea' }, 'p9': { num: '15', mate: 'Ricarda' },
+                'p6': { num: '3', mate: 'Carina' }, 'p12': { num: '3', mate: 'Rebecca' },
+                'p13': { num: '28', mate: 'Sandra' }, 'p14': { num: '28', mate: 'Ayleen' }
             };
             const myConflict = conflicts[me.id];
 
@@ -308,10 +306,7 @@
                         <div className="bg-[#FF007F]/10 border-2 border-[#FF007F] p-5 rounded-3xl animate-pulse">
                             <div className="flex gap-4 items-center">
                                 <RebelIcon name="alert-triangle" className="text-[#FF007F]" size={32} />
-                                <div>
-                                    <h4 className="font-black uppercase italic text-[#FF007F] text-sm">Nummern-Konflikt!</h4>
-                                    <p className="text-[11px] leading-tight mt-1">Deine Wunsch-Nummer <span className="font-black">#{myConflict.num}</span> ist doppelt belegt. Bitte kläre das intern mit <span className="font-black">{myConflict.mate}</span>.</p>
-                                </div>
+                                <div><h4 className="font-black uppercase italic text-[#FF007F] text-sm leading-none">Nummern-Konflikt!</h4><p className="text-[11px] leading-tight mt-2">Die Nummer <span className="font-black">#{myConflict.num}</span> ist doppelt belegt. Klär das mit <span className="font-black">{myConflict.mate}</span>.</p></div>
                             </div>
                         </div>
                     )}
@@ -323,9 +318,12 @@
                                 <div><p className="text-[10px] uppercase font-black text-[#FF007F]">{nextEvent.type==='game' ? (nextEvent.isHome ? 'HEIM-REBELLION' : 'AUSWÄRTS-REBELLION') : 'NEXT REBELLION'}</p><h3 className="rebel-font font-black italic text-xl uppercase leading-none mt-1">{nextEvent.label}</h3></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3 text-center">
-                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} Uhr</span></div>
+                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
                                 <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
                             </div>
+                            {nextEvent.type==='game' && nextEvent.meetingTime && (
+                                <div className="mt-3 bg-black/50 p-2.5 rounded-xl border border-[#FF007F]/30 text-center"><p className="text-[10px] uppercase font-black tracking-widest leading-none">Treffpunkt: <span className="text-white">{nextEvent.meetingTime} Uhr</span> @ <span className="text-white">{nextEvent.meetingLocation || 'Halle'}</span></p></div>
+                            )}
                         </div>
                     )}
 
@@ -365,21 +363,42 @@
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
                 <div className="space-y-6 pb-10">
-                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Die nächsten Wochen im Voraus.</p></header>
+                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Wer ist dabei?</p></header>
                     {upcoming.map(event => {
-                        const myVote = (votesData[`event_${event.id}`] || {})[userId];
+                        const eventVotes = votesData[`event_${event.id}`] || {};
+                        const myVote = eventVotes[userId];
+                        
+                        // Gruppiere Ergebnisse
+                        const grouped = { 'Dabei': [], 'Nein': [], 'Maybe': [] };
+                        Object.entries(eventVotes).forEach(([uid, val]) => {
+                            const name = SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin';
+                            if (grouped[val]) grouped[val].push(name);
+                        });
+
                         return (
                             <div key={event.id} className="glass-card p-5 rounded-3xl border border-white/5 flex flex-col gap-4 shadow-xl">
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4 items-center overflow-hidden">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={20}/></div>
-                                        <div className="truncate"><h4 className="font-black italic uppercase leading-none truncate">{event.label}</h4><p className="text-[9px] text-zinc-500 mt-1 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Hasengrund'}</p></div>
+                                        <div className="truncate"><h4 className="font-black italic uppercase leading-none truncate text-white">{event.label}</h4><p className="text-[9px] text-zinc-500 mt-1 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} - {event.endTime || '?'} | {event.location || 'Hasengrund'}</p></div>
                                     </div>
-                                    {event.type === 'game' && <div className={`text-[8px] font-black uppercase px-2 py-1 rounded border ${event.isHome ? 'bg-pink-900/30 border-pink-500 text-pink-500' : 'bg-zinc-800 border-zinc-600 text-zinc-400'}`}>{event.isHome ? 'Heim' : 'Ausw'}</div>}
                                 </div>
+                                
                                 <div className="grid grid-cols-3 gap-2">
                                     {['Dabei', 'Nein', 'Maybe'].map(opt => (
                                         <button key={opt} onClick={() => onVote(event.id, opt)} className={`py-3 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5 text-zinc-600'}`}>{opt}</button>
+                                    ))}
+                                </div>
+
+                                {/* Ergebnisse Visualisierung */}
+                                <div className="space-y-2 mt-2 pt-4 border-t border-white/5">
+                                    {Object.entries(grouped).map(([label, names]) => (
+                                        names.length > 0 && (
+                                            <div key={label} className="flex flex-wrap gap-1.5 items-center">
+                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label}:</span>
+                                                <span className="text-[10px] text-zinc-500">{names.join(', ')}</span>
+                                            </div>
+                                        )
                                     ))}
                                 </div>
                             </div>
@@ -389,25 +408,36 @@
             );
         };
 
-        const SquadView = ({ myId, profiles }) => (
-            <div className="space-y-12 pb-20">
-                <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Rebel Cards & Identity</p></header>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    {SQUAD_DATA.map(m => {
-                        const prof = profiles[m.id] || {};
-                        return <RebelCard key={m.id} member={{...m, ...prof}} isMe={m.id === myId} />;
-                    })}
+        const SquadView = ({ myId, profiles, health }) => {
+            const hStatus = health || {};
+            return (
+                <div className="space-y-12 pb-20">
+                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Rebel Cards & Health Status</p></header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                        {SQUAD_DATA.map(m => {
+                            const prof = profiles[m.id] || {};
+                            const s = hStatus[m.id] || 'Fit';
+                            return (
+                                <div key={m.id} className="relative">
+                                    <RebelCard member={{...m, ...prof}} isMe={m.id === myId} />
+                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${s==='Verletzt'?'bg-red-500 border-red-400 text-white':s==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`}>
+                                        {s}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const RebelCard = ({ member, isMe }) => (
             <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up`}>
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-3xl blur opacity-20 transition duration-500"></div>
                 <div className="relative h-full w-full bg-[#050505] rounded-3xl border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-all duration-300 group-hover:border-[#FF007F]/50">
-                    <div className="p-5 flex justify-between items-start z-20 text-white">
-                        <div className="flex flex-col items-center leading-none"><span className="text-4xl rebel-font font-black italic">{isMe ? '99' : '88'}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
-                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name="zap" size={20}/></div>
+                    <div className="p-5 flex justify-between items-start z-20 text-white leading-none">
+                        <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic">{isMe ? '99' : '88'}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
+                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F]"><RebelIcon name="zap" size={20}/></div>
                     </div>
                     <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">88</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
                     <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate">{member.name}</h3><div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-2 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
@@ -417,11 +447,12 @@
             </div>
         );
 
-        const ProfileManagement = ({ me, profile, onSave, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
+        const ProfileManagement = ({ me, profile, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '' });
-            const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', label: '', location: '', isHome: true });
+            const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const isAdmin = me.id === 'hc' || me.id === 'tm';
+            const currentHealth = health[me.id] || 'Fit';
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
@@ -438,28 +469,49 @@
                         <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg active:scale-95 transition-all">Speichern</button>
                     </section>
 
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Gesundheitsstatus</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
+                                <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
+                                    <RebelIcon name={status.icon} className={status.color} size={24}/><span className="text-[8px] font-black uppercase tracking-widest mt-1">{status.id}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
                     {isAdmin && (
                         <div className="space-y-8">
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
-                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase">Event Creator (Admin)</h3>
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest">Event Creator (Admin)</h3>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'border-transparent bg-black/20 text-zinc-600'}`}>Training</button>
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'border-transparent bg-black/20 text-zinc-600'}`}>Spiel</button>
+                                        <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'border-transparent bg-black/20 text-zinc-600'}`}>Training</button>
+                                        <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'border-transparent bg-black/20 text-zinc-600'}`}>Spiel</button>
                                     </div>
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                    <input type="text" placeholder="Ort (Adresse / Halle)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                    
                                     <div className="grid grid-cols-2 gap-2">
-                                        <input type="date" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
+                                        <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Startzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
+                                        <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Endzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
                                     </div>
+
+                                    <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
+
                                     {newEvent.type === 'game' && (
-                                        <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5">
-                                            <label className="switch"><input type="checkbox" checked={newEvent.isHome} onChange={e => setNewEvent({...newEvent, isHome: e.target.checked})} /><span className="slider"></span></label>
-                                            <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{newEvent.isHome ? 'Heim🏠' : 'Ausw🚌'}</span>
+                                        <div className="space-y-3 pt-2">
+                                            <div className="flex items-center gap-4 bg-black/40 p-3 rounded-lg border border-white/5">
+                                                <label className="switch"><input type="checkbox" checked={newEvent.isHome} onChange={e => setNewEvent({...newEvent, isHome: e.target.checked})} /><span className="slider"></span></label>
+                                                <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{newEvent.isHome ? 'Heimspiel🏠' : 'Ausw🚌'}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="time" placeholder="Treff-Zeit" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
+                                                <input type="text" placeholder="Treff-Ort" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
+                                            </div>
                                         </div>
                                     )}
-                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', label:'', location:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-2 shadow-xl hover:bg-zinc-200">Event hinzufügen</button>
+                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl">Event veröffentlichen</button>
                                 </div>
                             </section>
 
@@ -467,7 +519,7 @@
                                 <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest">Verwaltung</h3>
                                 {schedule.map(event => (
                                     <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
-                                        <div className="truncate pr-4"><p className="text-white font-bold text-xs uppercase italic truncate leading-none">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2">{new Date(event.date).toLocaleDateString('de-DE')} • {event.location || 'Halle'}</p></div>
+                                        <div className="truncate pr-4 leading-tight"><p className="text-white font-bold text-xs uppercase italic truncate">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-1">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
                                         <div className="flex gap-2 shrink-0">
                                             {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl"><RebelIcon name="bar-chart-2" size={18}/></button>}
                                             <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
@@ -480,29 +532,29 @@
                     
                     {editingStats && (
                         <div className="fixed inset-0 bg-black/95 z-[100] p-6 overflow-y-auto pt-24 no-scrollbar">
-                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up">
-                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-xl leading-none">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
+                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
+                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-xl">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { ht: fd.get('ht'), ft: fd.get('ft'), players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-10">
                                     <div className="grid grid-cols-2 gap-5">
                                         <div className="space-y-2"><label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Halbzeit</label><input name="ht" placeholder="12:10" defaultValue={editingStats.stats?.ht} className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black outline-none" /></div>
                                         <div className="space-y-2"><label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Endstand</label><input name="ft" placeholder="24:20" defaultValue={editingStats.stats?.ft} className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black outline-none" /></div>
                                     </div>
                                     <div className="space-y-3">
-                                        <p className="text-[10px] uppercase font-black text-[#FF007F] px-1 tracking-[0.2em] mb-4">Stats pro Rebellin</p>
+                                        <p className="text-[10px] uppercase font-black text-[#FF007F] px-1 mb-4 leading-none">Individuelle Performance</p>
                                         {SQUAD_DATA.map(s => (
                                             <div key={s.id} className="bg-white/5 p-5 rounded-[1.5rem] flex flex-wrap items-center gap-4 shadow-sm border border-white/5">
-                                                <span className="text-white font-black italic text-xs w-28 truncate">{s.name}</span>
+                                                <span className="text-white font-black italic text-xs w-28 truncate text-left">{s.name}</span>
                                                 <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <div className="flex gap-3">
-                                                    <label className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black transition-all">Y</span></label>
-                                                    <label className="text-[10px] text-red-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black transition-all">R</span></label>
-                                                    <label className="text-[10px] text-blue-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black transition-all">B</span></label>
+                                                    <label className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black">Y</span></label>
+                                                    <label className="text-[10px] text-red-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black">R</span></label>
+                                                    <label className="text-[10px] text-blue-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black">B</span></label>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all">Speichern</button>
+                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95">Stats Speichern</button>
                                 </form>
                             </div>
                         </div>
@@ -514,13 +566,13 @@
         const PowerView = () => {
             const [time, setTime] = useState(20); const [isActive, setIsActive] = useState(false); const [duration, setDuration] = useState(20);
             useEffect(() => { let interval = null; if (isActive && time > 0) interval = setInterval(() => setTime(t => t - 1), 1000); else if (time === 0) { setIsActive(false); confetti(); } return () => clearInterval(interval); }, [isActive, time]);
-            return (<div className="space-y-8 text-center animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Rebel Timer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none text-zinc-500">Focus & Burn</p></header><div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${isActive ? 'border-[#FF007F] shadow-[0_0_40px_#FF007F33]' : 'border-white/5'}`}><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div><div className="grid grid-cols-3 gap-3">{[20, 30, 60].map(s => (<button key={s} onClick={() => {setDuration(s); setTime(s); setIsActive(true);}} className={`py-4 rounded-2xl border font-black uppercase text-xs transition-all ${duration === s && isActive ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-black/40 border-white/5 text-zinc-600'}`}>{s}s</button>))}</div><button onClick={() => setIsActive(!isActive)} className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl">{isActive ? 'Pause' : 'Start Burn'}</button></div>);
+            return (<div className="space-y-8 text-center animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Rebel Timer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Focus & Burn</p></header><div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${isActive ? 'border-[#FF007F] shadow-[0_0_40px_#FF007F33]' : 'border-white/5'}`}><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div><div className="grid grid-cols-3 gap-3">{[20, 30, 60].map(s => (<button key={s} onClick={() => {setDuration(s); setTime(s); setIsActive(true);}} className={`py-4 rounded-2xl border font-black uppercase text-xs transition-all ${duration === s && isActive ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-black/40 border-white/5 text-zinc-600'}`}>{s}s</button>))}</div><button onClick={() => setIsActive(!isActive)} className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl">{isActive ? 'Pause' : 'Start Burn'}</button></div>);
         };
 
         const BaseView = () => (
-            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none">Training Location</p></header>
+            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest">Training Location</p></header>
                 <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl">
-                    <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none text-white leading-none">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+                    <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none text-white leading-none">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
                     <div className="grid grid-cols-2 gap-4">
                         <a href="https://www.google.com/maps/search/?api=1&query=Hasengrundhalle+Rüsselsheim" target="_blank" className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span></a>
                         <a href="https://maps.apple.com/?address=Reinhard-Strecker-Straße+15,+65428+Rüsselsheim+am+Main" target="_blank" className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="navigation" className="text-white"/><span className="text-[10px] font-black uppercase tracking-widest">Apple Maps</span></a>
