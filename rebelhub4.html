@@ -149,6 +149,7 @@
             const [profiles, setProfiles] = useState({});
             const [schedule, setSchedule] = useState([]);
             const [health, setHealth] = useState({});
+            const [voteHistory, setVoteHistory] = useState([]);
             const [theme, setTheme] = useState('dark');
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -208,6 +209,11 @@
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setHealth(data);
                 });
+                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), (snap) => {
+                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                    list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    setVoteHistory(list.slice(0, 100)); // Behalte nur die letzten 100 Änderungen
+                });
             }, [db]);
 
             const handleLogin = (e) => {
@@ -240,8 +246,18 @@
             };
 
             const handleVote = async (id, val) => {
-                const { doc, setDoc } = window.FB;
+                const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
+                const event = schedule.find(ev => ev.id === id);
+                // Speichere die Abstimmung
                 await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+                // Logge die Historie
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), {
+                    userId: user.id,
+                    userName: user.name,
+                    eventLabel: event?.label || 'Unbekanntes Event',
+                    voteValue: val,
+                    timestamp: serverTimestamp()
+                });
             };
 
             const squadGoals = useMemo(() => {
@@ -293,10 +309,10 @@
                         {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => {
                             const { doc, setDoc } = window.FB;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true });
-                        }} />}
+                        }} isAdmin={user.id==='hc'||user.id==='tm'} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} />}
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} onSave={async (d, targetId) => {
+                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} onSave={async (d, targetId) => {
                             const { doc, setDoc } = window.FB;
                             const id = targetId || user.id;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', id), d, { merge: true });
@@ -349,8 +365,8 @@
                                     <div><p className="text-[10px] uppercase font-black text-[#FF007F]">{nextEvent.type==='game' ? (nextEvent.isHome ? 'HEIM-REBELLION' : 'AUSWÄRTS-REBELLION') : 'NEXT REBELLION'}</p><h3 className="rebel-font font-black italic text-xl uppercase leading-none mt-1">{nextEvent.label}</h3></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 text-center">
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
                                 </div>
                             </div>
                             <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl text-center">
@@ -375,9 +391,9 @@
                     <section className="space-y-4">
                         <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic uppercase text-xl leading-none">Digital Cabin Wall</h3></div>
                         <div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl">
-                            <div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3">
+                            <div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3 text-white">
                                 <div className="flex gap-3">
-                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
+                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm text-white focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
                                     <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
                                 </div>
                                 <div className="flex items-center gap-2 px-1">
@@ -395,7 +411,7 @@
                                             </div>
                                             <span className="text-[7px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span>
                                         </div>
-                                        <div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 shadow-sm"><p className="text-sm leading-relaxed">{shout.text}</p></div>
+                                        <div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 shadow-sm text-white"><p className="text-sm text-zinc-300 leading-relaxed">{shout.text}</p></div>
                                     </div>
                                 ))}
                             </div>
@@ -408,7 +424,7 @@
         const LongTermVotes = ({ schedule, votesData, userId, onVote, health }) => {
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
-                <div className="space-y-6 pb-10">
+                <div className="space-y-6 pb-10 text-white">
                     <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Wer ist dabei?</p></header>
                     {upcoming.map(event => {
                         const eventVotes = votesData[`event_${event.id}`] || {};
@@ -419,11 +435,11 @@
                         });
 
                         return (
-                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col gap-5 shadow-xl">
+                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col gap-5 shadow-xl text-white">
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4 items-center overflow-hidden">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
-                                        <div className="truncate">
+                                        <div className="truncate text-white">
                                             <h4 className="font-black italic uppercase text-lg leading-none truncate">{event.label}</h4>
                                             <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} - {event.endTime || '?'} | {event.location || 'Hasengrund'}</p>
                                         </div>
@@ -442,7 +458,7 @@
                                                 <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {items.map((it, idx) => (
-                                                        <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>{it.name}</span>
+                                                        <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black text-zinc-200"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>{it.name}</span>
                                                     ))}
                                                 </div>
                                             </div>
@@ -456,17 +472,33 @@
             );
         };
 
-        const GeneralPollsView = ({ votesData, userId, onVote }) => {
+        const GeneralPollsView = ({ votesData, userId, onVote, isAdmin }) => {
             const sizePoll = votesData['warmup_shirt_size'] || {};
             const sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
             return (
-                <div className="space-y-8 animate-slide-up pb-10">
-                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Bestimme mit.</p></header>
+                <div className="space-y-8 animate-slide-up pb-10 text-white">
+                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Bestimme mit.</p></header>
                     <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
-                        <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className="rebel-font font-black italic text-lg uppercase leading-none">Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
+                        <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className="rebel-font font-black italic text-lg uppercase leading-none text-white">Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
                         <div className="grid grid-cols-4 gap-2">
                             {sizes.map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5'}`}>{size}</button>)}
                         </div>
+                        {isAdmin && (
+                            <div className="mt-8 pt-6 border-t border-white/5">
+                                <h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest">Ergebnisse (Admin-View)</h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {Object.entries(sizePoll).map(([uid, val]) => (
+                                        <div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5">
+                                            <span className="text-sm font-bold">{SQUAD_DATA.find(s => s.id === uid)?.name || uid}</span>
+                                            <span className="text-sm font-black text-[#FF007F]">{val}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {!isAdmin && sizePoll[userId] && (
+                             <div className="mt-6 text-center text-xs font-bold text-zinc-500 uppercase tracking-widest italic">Deine Wahl: <span className="text-[#FF007F]">{sizePoll[userId]}</span></div>
+                        )}
                     </div>
                 </div>
             );
@@ -474,8 +506,8 @@
 
         const SquadView = ({ myId, profiles, health, goals }) => {
             return (
-                <div className="space-y-12 pb-20">
-                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Rebel Cards & Health Status</p></header>
+                <div className="space-y-12 pb-20 text-white">
+                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none text-white">Rebel Cards & Health Status</p></header>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                         {SQUAD_DATA.map(m => {
                             const prof = profiles[m.id] || {};
@@ -506,9 +538,9 @@
                             <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name={member.icon || "zap"} size={20}/></div>
                         </div>
                         <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">{rating}</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
-                        <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate">{member.name}</h3>
+                        <div className="mt-auto relative z-20 text-white"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate text-white">{member.name}</h3>
                             <div className="flex items-center justify-center gap-2 my-2"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div>
-                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
+                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1 text-white">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]"><StatItem label="Grip" val={stats.grip}/><StatItem label="Vibe" val={stats.vibe}/><StatItem label="Power" val={stats.power}/><StatItem label="Soul" val={stats.soul}/></div>
                         </div>
                     </div>
@@ -516,19 +548,20 @@
             );
         };
 
-        const ProfileManagement = ({ me, profile, profiles, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onUpdateEvent, onSaveStats }) => {
+        const ProfileManagement = ({ me, profile, profiles, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onUpdateEvent, onSaveStats, voteHistory }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
             const [showGlobalStats, setShowGlobalStats] = useState(false);
             const [showCardEditor, setShowCardEditor] = useState(false);
+            const [showVoteHistory, setShowVoteHistory] = useState(false);
             
             const isAdmin = me.id === 'hc' || me.id === 'tm';
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl text-white">
                         <h3 className="rebel-font font-black italic uppercase text-lg mb-6 leading-none">Mein Profil</h3>
                         <div className="space-y-4">
                             <input type="text" placeholder="Voller Name" className="w-full bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl p-4 outline-none focus:border-[#FF007F]" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
@@ -541,8 +574,8 @@
                         <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg active:scale-95 transition-all">Speichern</button>
                     </section>
 
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
-                        <h3 className="rebel-font font-black italic uppercase text-lg mb-4">Gesundheitsstatus</h3>
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center text-white">
+                        <h3 className="rebel-font font-black italic uppercase text-lg mb-4 text-white">Gesundheitsstatus</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
                                 <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
@@ -554,12 +587,13 @@
 
                     {isAdmin && (
                         <div className="space-y-8">
-                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 shadow-2xl">
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 shadow-2xl text-white">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest">Admin Control Center</h3>
                                 <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={() => setShowGlobalStats(true)} className="w-full bg-black/40 light:bg-white border border-[#FF007F] py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl flex items-center justify-center gap-3"><RebelIcon name="bar-chart-2" size={16}/> Statistik</button>
-                                        <button onClick={() => setShowCardEditor(true)} className="w-full bg-[#FF007F] text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl flex items-center justify-center gap-3"><RebelIcon name="id-card" size={16}/> Card Editor</button>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button onClick={() => setShowGlobalStats(true)} className="w-full bg-black/40 light:bg-white border border-[#FF007F] py-3 rounded-2xl font-black uppercase text-[8px] shadow-xl flex flex-col items-center gap-2"><RebelIcon name="bar-chart-2" size={14}/> Stats</button>
+                                        <button onClick={() => setShowCardEditor(true)} className="w-full bg-[#FF007F] text-white py-3 rounded-2xl font-black uppercase text-[8px] shadow-xl flex flex-col items-center gap-2"><RebelIcon name="id-card" size={14}/> Cards</button>
+                                        <button onClick={() => setShowVoteHistory(true)} className="w-full bg-blue-500 text-white py-3 rounded-2xl font-black uppercase text-[8px] shadow-xl flex flex-col items-center gap-2"><RebelIcon name="history" size={14}/> History</button>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white shadow-inner':'border-transparent bg-black/20 text-zinc-600'}`}>Training</button>
@@ -589,10 +623,10 @@
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest">Events Verwalten</h3>
+                                <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest text-white">Events Verwalten</h3>
                                 {schedule.map(event => (
-                                    <div key={event.id} className="bg-[#111] light:bg-white p-4 rounded-2xl flex justify-between items-center border border-white/5 light:border-zinc-200 shadow-md">
-                                        <div className="truncate pr-4 leading-tight"><p className="font-bold text-xs uppercase italic truncate leading-none">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
+                                    <div key={event.id} className="bg-[#111] light:bg-white p-4 rounded-2xl flex justify-between items-center border border-white/5 light:border-zinc-200 shadow-md text-white">
+                                        <div className="truncate pr-4 leading-tight text-white"><p className="font-bold text-xs uppercase italic truncate leading-none text-white dark:text-white light:text-black">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5"><RebelIcon name="pencil" size={18}/></button>
                                             {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl"><RebelIcon name="bar-chart-2" size={18}/></button>}
@@ -604,8 +638,28 @@
                         </div>
                     )}
 
-                    {showGlobalStats && (
+                    {/* VOTE HISTORY MODAL */}
+                    {showVoteHistory && (
                          <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
+                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
+                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Abstimmungs-History</h2><button onClick={()=>setShowVoteHistory(false)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="space-y-3">
+                                    {voteHistory.map(entry => (
+                                        <div key={entry.id} className="bg-black/40 border border-white/10 p-4 rounded-2xl text-left">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">{entry.userName}</span>
+                                                <span className="text-[8px] font-bold text-zinc-600 italic">{entry.timestamp ? new Date(entry.timestamp.seconds * 1000).toLocaleString('de-DE') : '...'}</span>
+                                            </div>
+                                            <p className="text-xs text-zinc-300">Wahl bei <strong>{entry.eventLabel}</strong> auf <span className="text-white font-black italic">{entry.voteValue}</span> geändert.</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showGlobalStats && (
+                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white">
                             <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
                                 <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl text-white">
@@ -623,7 +677,7 @@
                     )}
 
                     {showCardEditor && (
-                        <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
+                        <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white">
                             <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-white">
                                 <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-2xl">Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="space-y-4">
@@ -633,10 +687,10 @@
                                             <div key={s.id} className="bg-[#111] p-5 rounded-3xl border border-white/5 flex flex-wrap items-center gap-4">
                                                 <span className="text-white font-black italic text-sm w-32">{s.name}</span>
                                                 <div className="flex gap-2">
-                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Grip</span><input type="number" defaultValue={p.grip} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" onBlur={(e) => onSave({ ...profiles[s.id], grip: parseInt(e.target.value) || 0 }, s.id)} /></div>
-                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Vibe</span><input type="number" defaultValue={p.vibe} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" onBlur={(e) => onSave({ ...profiles[s.id], vibe: parseInt(e.target.value) || 0 }, s.id)} /></div>
-                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Pow</span><input type="number" defaultValue={p.power} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" onBlur={(e) => onSave({ ...profiles[s.id], power: parseInt(e.target.value) || 0 }, s.id)} /></div>
-                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Soul</span><input type="number" defaultValue={p.soul} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" onBlur={(e) => onSave({ ...profiles[s.id], soul: parseInt(e.target.value) || 0 }, s.id)} /></div>
+                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Grip</span><input type="number" defaultValue={p.grip} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs text-white" onBlur={(e) => onSave({ grip: parseInt(e.target.value) || 0 }, s.id)} /></div>
+                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Vibe</span><input type="number" defaultValue={p.vibe} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs text-white" onBlur={(e) => onSave({ vibe: parseInt(e.target.value) || 0 }, s.id)} /></div>
+                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Pow</span><input type="number" defaultValue={p.power} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs text-white" onBlur={(e) => onSave({ power: parseInt(e.target.value) || 0 }, s.id)} /></div>
+                                                    <div className="flex flex-col items-center"><span className="text-[8px] uppercase text-zinc-500">Soul</span><input type="number" defaultValue={p.soul} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs text-white" onBlur={(e) => onSave({ soul: parseInt(e.target.value) || 0 }, s.id)} /></div>
                                                 </div>
                                             </div>
                                         );
@@ -649,8 +703,8 @@
                     {editingEvent && (
                         <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
                             <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
-                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-[#FF007F] uppercase text-xl">Event Bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-4 bg-[#111] p-6 rounded-3xl border border-[#FF007F]/20">
+                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-[#FF007F] uppercase text-xl text-white">Event Bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="space-y-4 bg-[#111] p-6 rounded-3xl border border-[#FF007F]/20 text-white">
                                     <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
                                     <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-4">
@@ -658,8 +712,37 @@
                                         <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} />
                                     </div>
                                     <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} />
-                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6 shadow-xl active:scale-95 transition-all">Speichern</button>
+                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6 shadow-xl active:scale-95 transition-all text-white">Speichern</button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {editingStats && (
+                        <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
+                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
+                                <div className="flex justify-between items-center text-white"><h2 className="rebel-font font-black italic text-white uppercase text-xl">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
+                                <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { ht: fd.get('ht'), ft: fd.get('ft'), players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-10">
+                                    <div className="grid grid-cols-2 gap-5 text-center">
+                                        <input name="ht" placeholder="HT" defaultValue={editingStats.stats?.ht} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black" />
+                                        <input name="ft" placeholder="FT" defaultValue={editingStats.stats?.ft} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        {SQUAD_DATA.map(s => (
+                                            <div key={s.id} className="bg-white/5 p-5 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5">
+                                                <span className="text-white font-black italic text-xs w-28 truncate text-left">{s.name}</span>
+                                                <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none text-white" />
+                                                <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none text-white" />
+                                                <div className="flex gap-3">
+                                                    <label className="text-[10px] text-yellow-500 flex items-center gap-1"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black">Y</span></label>
+                                                    <label className="text-[10px] text-red-500 flex items-center gap-1"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black">R</span></label>
+                                                    <label className="text-[10px] text-blue-500 flex items-center gap-1"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black">B</span></label>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase shadow-2xl active:scale-95 transition-all">Stats Speichern</button>
+                                </form>
                             </div>
                         </div>
                     )}
@@ -681,8 +764,8 @@
                     <div className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 space-y-6 shadow-2xl">
                         <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none">{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight">{halls[activeHall].addr}</p></div></div>
                         <div className="grid grid-cols-2 gap-4">
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].search)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span></a>
-                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="navigation" className="text-[#FF007F] light:text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Apple Maps</span></a>
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].search)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-white"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span></a>
+                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-[#FF007F]"><RebelIcon name="navigation" className="text-[#FF007F] light:text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Apple Maps</span></a>
                         </div>
                         <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 light:border-zinc-200 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map}></iframe></div>
                     </div>
