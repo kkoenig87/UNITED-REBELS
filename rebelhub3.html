@@ -62,7 +62,6 @@
         input:checked + .slider { background-color: var(--rebel-pink); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Custom Scrollbar for Stats Table */
         .stats-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-collapse: separate; border-spacing: 0 8px; }
     </style>
@@ -91,22 +90,22 @@
         };
 
         const SQUAD_DATA = [
-            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap", number: 'HC' },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "ShieldCheck", number: 'TM' }, 
-            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame", number: '99' },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap", number: '11' },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "ShieldCheck", number: '15' },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target", number: '21' },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame", number: '2' },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap", number: '3' },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair", number: '12' },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users", number: '9' },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "ShieldCheck", number: '15' },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles", number: '24' },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame", number: '4' },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers", number: '3' },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award", number: '28' }
+            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap", number: 'HC', rating: 88 },
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "ShieldCheck", number: 'TM', rating: 88 }, 
+            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame", number: '99', rating: 88 },
+            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap", number: '11', rating: 88 },
+            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "ShieldCheck", number: '15', rating: 88 },
+            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target", number: '21', rating: 88 },
+            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame", number: '2', rating: 88 },
+            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap", number: '3', rating: 88 },
+            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair", number: '12', rating: 88 },
+            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users", number: '9', rating: 88 },
+            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "ShieldCheck", number: '15', rating: 88 },
+            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles", number: '24', rating: 88 },
+            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame", number: '4', rating: 88 },
+            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers", number: '3', rating: 88 },
+            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap", number: '28', rating: 88 },
+            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award", number: '28', rating: 88 }
         ];
 
         const APP_ID = 'hsg-rebelhub';
@@ -244,7 +243,6 @@
                 await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
             };
 
-            // Aggregated Goal Logic
             const squadGoals = useMemo(() => {
                 const goalsMap = {};
                 schedule.forEach(event => {
@@ -276,7 +274,8 @@
 
             return (
                 <div className={`min-h-screen pb-24 transition-all duration-500`}>
-                    <header className={`p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
+                    {/* iPhone Notch Safe Header */}
+                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
                         <div className="flex items-center gap-3">
                             <RebelLogo className="w-9 h-9" status={cloudStatus} />
                             <h2 className={`rebel-font font-black italic text-lg leading-none uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2>
@@ -291,7 +290,10 @@
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} />}
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} />}
-                        {activeTab === 'power' && <PowerView />}
+                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true });
+                        }} />}
                         {activeTab === 'base' && <BaseView />}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} health={health['current'] || {}} schedule={schedule} onSave={async (d) => {
@@ -318,7 +320,7 @@
                     <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
                         <NavButton icon="zap" label="Ich" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
-                        <NavButton icon="timer" label="Timer" active={activeTab === 'power'} onClick={() => setActiveTab('power')} />
+                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
                         <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
                         <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
@@ -485,7 +487,7 @@
                                                 <div className="flex flex-wrap gap-2">
                                                     {items.map((it, idx) => (
                                                         <span key={idx} className="text-[13px] text-zinc-200 bg-white/5 px-3 py-2 rounded-xl border border-white/5 flex items-center gap-2 font-black">
-                                                            <span className={`w-2 h-2 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_5px_currentColor]`}></span>
+                                                            <span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>
                                                             {it.name}
                                                         </span>
                                                     ))}
@@ -497,6 +499,39 @@
                             </div>
                         );
                     })}
+                </div>
+            );
+        };
+
+        const GeneralPollsView = ({ votesData, userId, onVote }) => {
+            const sizePoll = votesData['warmup_shirt_size'] || {};
+            const sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+
+            return (
+                <div className="space-y-8 animate-slide-up pb-10">
+                    <header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Wähle deine Optionen.</p></header>
+                    
+                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div>
+                            <div><h3 className="rebel-font font-black italic text-lg uppercase leading-none text-white">Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung für die neue Saison</p></div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                            {sizes.map(size => (
+                                <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5 text-zinc-600'}`}>{size}</button>
+                            ))}
+                        </div>
+                        <div className="mt-6 pt-5 border-t border-white/5 space-y-3">
+                            <p className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Aktuelle Stimmen:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(sizePoll).map(([uid, size]) => (
+                                    <span key={uid} className="text-[11px] font-black text-zinc-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                                        {SQUAD_DATA.find(s => s.id === uid)?.name}: <span className="text-[#FF007F] ml-1">{size}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -530,10 +565,10 @@
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-3xl blur opacity-20 transition duration-500"></div>
                 <div className="relative h-full w-full bg-[#050505] rounded-3xl border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-all duration-300 group-hover:border-[#FF007F]/50">
                     <div className="p-5 flex justify-between items-start z-20 text-white leading-none">
-                        <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic">{isMe ? '99' : '88'}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
+                        <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic">{member.rating || 88}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
                         <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name={member.icon || "zap"} size={20}/></div>
                     </div>
-                    <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">88</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
+                    <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">{member.rating || 88}</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
                     <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate">{member.name}</h3>
                         <div className="flex items-center justify-center gap-2 my-2">
                              <div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div>
@@ -541,7 +576,7 @@
                              <div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div>
                         </div>
                         <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]"><StatItem label="Grip" val={85}/><StatItem label="Vibe" val={99}/><StatItem label="Power" val={88}/><StatItem label="Soul" val={95}/></div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] shadow-inner"><StatItem label="Grip" val={85}/><StatItem label="Vibe" val={99}/><StatItem label="Power" val={88}/><StatItem label="Soul" val={95}/></div>
                     </div>
                 </div>
             </div>
@@ -556,19 +591,9 @@
             
             const isAdmin = me.id === 'hc' || me.id === 'tm';
             const currentHealth = health[me.id] || 'Fit';
-            const nextEvent = schedule?.find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
 
-            // Aggregate Data for Global Stats
             const globalStats = useMemo(() => {
-                const results = SQUAD_DATA.map(s => ({
-                    id: s.id,
-                    name: s.name,
-                    goals: 0,
-                    p2m: 0,
-                    y: 0,
-                    r: 0,
-                    b: 0
-                }));
+                const results = SQUAD_DATA.map(s => ({ id: s.id, name: s.name, goals: 0, p2m: 0, y: 0, r: 0, b: 0 }));
                 schedule.forEach(event => {
                     if (event.stats && event.stats.players) {
                         Object.entries(event.stats.players).forEach(([pid, stat]) => {
@@ -589,7 +614,7 @@
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
                     <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
-                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-6 leading-none">Mein Profil</h3>
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-6 leading-none text-white">Mein Profil</h3>
                         <div className="space-y-4">
                             <input type="text" placeholder="Voller Name" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
                             <div className="grid grid-cols-2 gap-4">
@@ -602,7 +627,7 @@
                     </section>
 
                     <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
-                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Gesundheitsstatus</h3>
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4 text-white leading-none">Gesundheitsstatus</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
                                 <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
@@ -626,14 +651,11 @@
                                     </div>
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                     <input type="text" placeholder="Ort (Halle)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
-                                    
                                     <div className="grid grid-cols-2 gap-2">
-                                        <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
-                                        <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
                                     </div>
-
-                                    <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
-
+                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
                                     {newEvent.type === 'game' && (
                                         <div className="space-y-3 pt-2">
                                             <div className="flex items-center gap-4 bg-black/40 p-4 rounded-lg border border-white/5">
@@ -641,79 +663,57 @@
                                                 <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{newEvent.isHome ? 'Heimspiel🏠' : 'Ausw🚌'}</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input type="time" placeholder="Treff-Zeit" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
-                                                <input type="text" placeholder="Treff-Ort" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
+                                                <input type="time" placeholder="Treff-Zeit" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
+                                                <input type="text" placeholder="Treff-Ort" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl">Event speichern</button>
+                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl">Event hinzufügen</button>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
                                 <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest">Events Verwalten</h3>
                                 {schedule.map(event => (
-                                    <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md hover:border-[#FF007F]/30 transition-all">
+                                    <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
                                         <div className="truncate pr-4 leading-tight"><p className="text-white font-bold text-xs uppercase italic truncate">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-1">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
                                         <div className="flex gap-2 shrink-0">
-                                            <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5 hover:border-white/20"><RebelIcon name="pencil" size={18}/></button>
-                                            {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl border border-pink-500/10 hover:border-pink-500/30"><RebelIcon name="bar-chart-2" size={18}/></button>}
-                                            <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl border border-red-500/10 hover:border-red-500/30"><RebelIcon name="trash-2" size={18}/></button>
+                                            <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5"><RebelIcon name="pencil" size={18}/></button>
+                                            {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl"><RebelIcon name="bar-chart-2" size={18}/></button>}
+                                            <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
                                         </div>
                                     </div>
                                 ))}
                             </section>
                         </div>
                     )}
-                    
-                    {/* GLOBAL STATS MODAL */}
+
                     {showGlobalStats && (
                          <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
-                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up">
+                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
                                 <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl">
                                     <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="text-[10px] uppercase font-black text-[#FF007F] tracking-widest">
-                                                <th className="p-3">Spielerin</th>
-                                                <th className="p-3 text-center">Tore</th>
-                                                <th className="p-3 text-center">2M</th>
-                                                <th className="p-3 text-center">Y</th>
-                                                <th className="p-3 text-center">R</th>
-                                                <th className="p-3 text-center">B</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {globalStats.map(s => (
-                                                <tr key={s.id} className="bg-black/40 border-b border-white/5">
-                                                    <td className="p-3 text-sm font-black italic text-white">{s.name}</td>
-                                                    <td className="p-3 text-center text-lg font-black text-[#FF007F]">{s.goals}</td>
-                                                    <td className="p-3 text-center font-bold text-zinc-400">{s.p2m}</td>
-                                                    <td className="p-3 text-center font-bold text-yellow-500">{s.y}</td>
-                                                    <td className="p-3 text-center font-bold text-red-500">{s.r}</td>
-                                                    <td className="p-3 text-center font-bold text-blue-500">{s.b}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
+                                        <thead><tr className="text-[10px] uppercase font-black text-[#FF007F]"><th>Spielerin</th><th className="text-center">Tore</th><th className="text-center">2M</th><th className="text-center">Y</th><th className="text-center">R</th><th className="text-center">B</th></tr></thead>
+                                        <tbody>{globalStats.map(s => (<tr key={s.id} className="bg-black/40 border-b border-white/5"><td className="p-3 text-sm font-black italic text-white">{s.name}</td><td className="p-3 text-center text-lg font-black text-[#FF007F]">{s.goals}</td><td className="p-3 text-center font-bold text-zinc-400">{s.p2m}</td><td className="p-3 text-center font-bold text-yellow-500">{s.y}</td><td className="p-3 text-center font-bold text-red-500">{s.r}</td><td className="p-3 text-center font-bold text-blue-500">{s.b}</td></tr>))}</tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* EDIT EVENT MODAL */}
                     {editingEvent && (
                         <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
-                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up">
+                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
                                 <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-[#FF007F] uppercase text-xl">Event Bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="space-y-4 bg-[#111] p-6 rounded-3xl border border-[#FF007F]/20">
-                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none focus:border-[#FF007F]" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none focus:border-[#FF007F]" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
+                                    <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
+                                    <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-600 ml-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
-                                        <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-600 ml-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} /></div>
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} />
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} />
                                     </div>
-                                    <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-600 ml-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
+                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} />
                                     {editingEvent.type === 'game' && (
                                         <div className="space-y-4 pt-2">
                                             <div className="flex items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/5">
@@ -721,12 +721,12 @@
                                                 <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{editingEvent.isHome ? 'Heimspiel🏠' : 'Auswärts🚌'}</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-600 ml-1">Treff-Zeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none" value={editingEvent.meetingTime} onChange={e => setEditingEvent({...editingEvent, meetingTime: e.target.value})} /></div>
-                                                <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-600 ml-1">Treff-Ort</label><input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} /></div>
+                                                <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.meetingTime} onChange={e => setEditingEvent({...editingEvent, meetingTime: e.target.value})} />
+                                                <input type="text" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} />
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6 shadow-xl active:scale-95">Änderungen speichern</button>
+                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6">Speichern</button>
                                 </div>
                             </div>
                         </div>
@@ -738,25 +738,24 @@
                                 <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-xl">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
                                 <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { ht: fd.get('ht'), ft: fd.get('ft'), players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-10">
                                     <div className="grid grid-cols-2 gap-5">
-                                        <div className="space-y-2"><label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Halbzeit</label><input name="ht" placeholder="12:10" defaultValue={editingStats.stats?.ht} className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black outline-none" /></div>
-                                        <div className="space-y-2"><label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Endstand</label><input name="ft" placeholder="24:20" defaultValue={editingStats.stats?.ft} className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black outline-none" /></div>
+                                        <input name="ht" placeholder="HT" defaultValue={editingStats.stats?.ht} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black" />
+                                        <input name="ft" placeholder="FT" defaultValue={editingStats.stats?.ft} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black" />
                                     </div>
                                     <div className="space-y-3">
-                                        <p className="text-[10px] uppercase font-black text-[#FF007F] px-1 mb-4 leading-none uppercase">Statistiken pro Spielerin</p>
                                         {SQUAD_DATA.map(s => (
-                                            <div key={s.id} className="bg-white/5 p-5 rounded-[1.5rem] flex flex-wrap items-center gap-4 shadow-sm border border-white/5">
+                                            <div key={s.id} className="bg-white/5 p-5 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5">
                                                 <span className="text-white font-black italic text-xs w-28 truncate text-left">{s.name}</span>
                                                 <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <div className="flex gap-3">
-                                                    <label className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black">Y</span></label>
-                                                    <label className="text-[10px] text-red-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black">R</span></label>
-                                                    <label className="text-[10px] text-blue-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black">B</span></label>
+                                                    <label className="text-[10px] text-yellow-500 flex items-center gap-1"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black">Y</span></label>
+                                                    <label className="text-[10px] text-red-500 flex items-center gap-1"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black">R</span></label>
+                                                    <label className="text-[10px] text-blue-500 flex items-center gap-1"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black">B</span></label>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95">Stats Speichern</button>
+                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase shadow-2xl active:scale-95">Stats Speichern</button>
                                 </form>
                             </div>
                         </div>
@@ -765,14 +764,8 @@
             );
         };
 
-        const PowerView = () => {
-            const [time, setTime] = useState(20); const [isActive, setIsActive] = useState(false); const [duration, setDuration] = useState(20);
-            useEffect(() => { let interval = null; if (isActive && time > 0) interval = setInterval(() => setTime(t => t - 1), 1000); else if (time === 0) { setIsActive(false); confetti(); } return () => clearInterval(interval); }, [isActive, time]);
-            return (<div className="space-y-8 text-center animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Rebel Timer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest leading-none">Focus & Burn</p></header><div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${isActive ? 'border-[#FF007F] shadow-[0_0_40px_#FF007F33]' : 'border-white/5'}`}><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div><div className="grid grid-cols-3 gap-3">{[20, 30, 60].map(s => (<button key={s} onClick={() => {setDuration(s); setTime(s); setIsActive(true);}} className={`py-4 rounded-2xl border font-black uppercase text-xs transition-all ${duration === s && isActive ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-black/40 border-white/5 text-zinc-600'}`}>{s}s</button>))}</div><button onClick={() => setIsActive(!isActive)} className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl">{isActive ? 'Pause' : 'Start Burn'}</button></div>);
-        };
-
         const BaseView = () => (
-            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest">Training Location</p></header>
+            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest">Training Location</p></header>
                 <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl">
                     <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none text-white leading-none">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
                     <div className="grid grid-cols-2 gap-4">
