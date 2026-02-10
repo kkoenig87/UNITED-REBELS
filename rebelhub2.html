@@ -39,6 +39,15 @@
             --rebel-pink: #FF007F;
         }
         
+        body { 
+            font-family: 'Lato', sans-serif; 
+            background-color: #050505; 
+            color: #d4d4d8; 
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            overflow-x: hidden;
+        }
+
         .rebel-font { font-family: 'Poppins', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -52,12 +61,6 @@
         }
         .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
         
-        @keyframes pulse-pink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-        .pulse-pink { animation: pulse-pink 2s infinite ease-in-out; }
-
         .glass-card {
             background: rgba(20, 20, 20, 0.7);
             backdrop-filter: blur(12px);
@@ -120,15 +123,22 @@
 
         const APP_ID = 'hsg-rebelhub';
 
-        // FIX: Sicherer Icon-Aufruf mit useRef, um den NotFound-Fehler zu vermeiden
+        // FIX: Hochstabiler Icon-Wrapper, der Lucide isoliert, um React-Crashes zu vermeiden
         const Icon = ({ name, size = 24, className = "" }) => {
-            const iconRef = useRef(null);
+            const containerRef = useRef(null);
             useEffect(() => {
-                if (window.lucide && iconRef.current) {
-                    window.lucide.createIcons({ elements: [iconRef.current] });
+                if (window.lucide && containerRef.current) {
+                    containerRef.current.innerHTML = ''; // Vorherigen Inhalt löschen
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    i.style.width = `${size}px`;
+                    i.style.height = `${size}px`;
+                    i.className = className;
+                    containerRef.current.appendChild(i);
+                    window.lucide.createIcons({ elements: [i] });
                 }
-            }, [name]);
-            return <i ref={iconRef} data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+            }, [name, size, className]);
+            return <span ref={containerRef} style={{ display: 'inline-flex', width: size, height: size }}></span>;
         };
 
         const App = () => {
@@ -145,7 +155,6 @@
             const [theme, setTheme] = useState('dark');
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
-            const [isSyncing, setIsSyncing] = useState(false);
             const [cloudStatus, setCloudStatus] = useState('offline');
 
             useEffect(() => {
@@ -247,7 +256,7 @@
                 await setDoc(doc(db, 'artifacts', appIdToUse, 'public', 'data', 'health', 'current'), { [user.id]: status }, { merge: true });
             };
 
-            if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><Icon name="zap" className="text-[#FF007F] animate-pulse" size={48} /></div>;
+            if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><Icon name="zap" className="text-[#FF007F]" size={48} /></div>;
 
             if (!user) {
                 return (
@@ -276,9 +285,9 @@
                             <h2 className="rebel-font font-black italic text-lg leading-none uppercase tracking-tighter">Rebel Hub</h2>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button onClick={toggleTheme} className="text-zinc-500 p-2"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></button>
-                            <button onClick={() => { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); }} className="text-[#FF007F] p-2"><Icon name="sparkles" size={18} /></button>
-                            <button onClick={handleLogout} className="text-zinc-500 p-2"><Icon name="log-out" size={18} /></button>
+                            <button onClick={toggleTheme} className="text-zinc-500 p-2 focus:outline-none"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></button>
+                            <button onClick={() => { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); }} className="text-[#FF007F] p-2 focus:outline-none"><Icon name="sparkles" size={18} /></button>
+                            <button onClick={handleLogout} className="text-zinc-500 p-2 focus:outline-none"><Icon name="log-out" size={18} /></button>
                         </div>
                     </header>
 
@@ -320,7 +329,7 @@
                     <div className={`glass-card p-6 rounded-3xl transition-all ${isMatchDay ? 'match-day-theme' : 'border-[#FF007F]/30'}`}>
                         <div className="flex items-center gap-4 mb-4">
                             <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><Icon name={isMatchDay ? "flame" : "calendar"} size={28} /></div>
-                            <div><p className="text-[10px] uppercase font-black tracking-widest text-[#FF007F]">{isMatchDay ? 'HEUTE IST MATCH DAY!' : 'NÄCHSTES SPIEL'}</p><h3 className="rebel-font font-black italic text-xl uppercase">Saison-Auftakt</h3></div>
+                            <div><p className="text-[10px] uppercase font-black tracking-widest text-[#FF007F]">{isMatchDay ? 'HEUTE IST MATCH DAY!' : 'NÄCHSTES SPIEL'}</p><h3 className="rebel-font font-black italic text-xl uppercase leading-none mt-1">Saison-Auftakt</h3></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-center">
                             <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Anwurf</span><span className="text-white font-black text-sm uppercase">So, 15:00h</span></div>
@@ -349,7 +358,7 @@
                     </section>
 
                     <section className="space-y-4">
-                        <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic text-white uppercase text-xl">Rebel Social</h3><span className="text-[9px] uppercase font-bold text-zinc-600 tracking-widest italic">Digital Cabin Wall</span></div>
+                        <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic text-white uppercase text-xl leading-none">Rebel Social</h3><span className="text-[9px] uppercase font-bold text-zinc-600 tracking-widest italic">Digital Cabin Wall</span></div>
                         <div className="bg-[#111] rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
                             <div className="max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar">
                                 {(shoutbox || []).map(shout => (
@@ -375,9 +384,9 @@
             }, [isActive, time, mode]);
             return (
                 <div className="space-y-8 text-center animate-slide-up">
-                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Rebel Timer</h2><p className="text-sm text-zinc-500 italic tracking-widest">Tabata Session 20/10</p></header>
-                    <div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${mode === 'Work' ? 'border-[#FF007F] shadow-[0_0_30px_#FF007F33]' : 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]'}`}><span className="text-xs font-black uppercase text-zinc-500 tracking-widest mb-2">{mode}</span><span className="text-7xl rebel-font font-black italic text-white">{time}</span></div>
-                    <div className="flex gap-4 justify-center"><button onClick={() => setIsActive(!isActive)} className="bg-[#FF007F] text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">{isActive ? 'Pause' : 'Start Burn'}</button><button onClick={() => { setIsActive(false); setTime(20); setMode('Work'); }} className="bg-zinc-800 text-zinc-400 p-5 rounded-3xl"><Icon name="refresh-cw" /></button></div>
+                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Rebel Timer</h2><p className="text-sm text-zinc-500 italic tracking-widest uppercase">Tabata Session 20/10</p></header>
+                    <div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${mode === 'Work' ? 'border-[#FF007F] shadow-[0_0_30px_#FF007F33]' : 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]'}`}><span className="text-xs font-black uppercase text-zinc-500 tracking-widest mb-2">{mode}</span><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div>
+                    <div className="flex gap-4 justify-center pt-4"><button onClick={() => setIsActive(!isActive)} className="bg-[#FF007F] text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">{isActive ? 'Pause' : 'Start Burn'}</button><button onClick={() => { setIsActive(false); setTime(20); setMode('Work'); }} className="bg-zinc-800 text-zinc-400 p-5 rounded-3xl focus:outline-none"><Icon name="refresh-cw" /></button></div>
                 </div>
             );
         };
@@ -386,11 +395,11 @@
             const getRank = (count) => count > 5 ? { name: 'Elite Rebel', color: '#FF007F' } : count > 2 ? { name: 'Rising Star', color: '#A855F7' } : { name: 'Rookie Rebel', color: '#71717a' };
             return (
                 <div className="space-y-6">
-                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Squad & Stats</h2><p className="text-sm text-zinc-500 italic">Wer brennt am meisten?</p></header>
+                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Squad & Stats</h2><p className="text-sm text-zinc-500 italic mt-1">Wer brennt am meisten?</p></header>
                     <div className="space-y-3">
                         {SQUAD_DATA.map((member) => {
                             const rank = getRank(5);
-                            return <div key={member.id} className={`p-4 rounded-3xl glass-card flex items-center justify-between border-l-8 ${member.id === myId ? 'border-pink-500' : 'border-transparent'}`}><div className="flex items-center gap-4"><div className="w-12 h-12 bg-black border border-white/10 rounded-2xl flex items-center justify-center rebel-font font-black italic text-zinc-400">#{member.number}</div><div><h4 className="text-white font-black italic text-lg leading-tight">{member.name}</h4><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">{member.pos} • <span style={{color: rank.color}}>{rank.name}</span></p></div></div><div className="text-right"><p className="text-xs font-black text-[#FF007F] italic">5 🔥</p><p className="text-[7px] uppercase font-bold text-zinc-600 tracking-widest">Streak</p></div></div>;
+                            return <div key={member.id} className={`p-4 rounded-3xl glass-card flex items-center justify-between border-l-8 ${member.id === myId ? 'border-pink-500' : 'border-transparent'}`}><div className="flex items-center gap-4"><div className="w-12 h-12 bg-black border border-white/10 rounded-2xl flex items-center justify-center rebel-font font-black italic text-zinc-400">#{member.number}</div><div><h4 className="text-white font-black italic text-lg leading-tight">{member.name}</h4><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">{member.pos} • <span style={{color: rank.color}}>{rank.name}</span></p></div></div><div className="text-right"><p className="text-xs font-black text-[#FF007F] italic">5 🔥</p><p className="text-[7px] uppercase font-bold text-zinc-600 tracking-widest mt-0.5">Streak</p></div></div>;
                         })}
                     </div>
                 </div>
@@ -402,9 +411,9 @@
             return (
                 <div className="space-y-8 animate-slide-up">
                     <RebelCard member={me} isMe={true} />
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center"><h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Mein Status 🏥</h3><div className="grid grid-cols-3 gap-3">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center"><h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4 leading-none">Mein Status 🏥</h3><div className="grid grid-cols-3 gap-3">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
-                                <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><Icon name={status.icon} className={status.color} /><span className="text-[8px] font-black uppercase tracking-widest">{status.id}</span></button>
+                                <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><Icon name={status.icon} className={status.color} size={24}/><span className="text-[8px] font-black uppercase tracking-widest mt-1">{status.id}</span></button>
                             ))}
                         </div></section>
                 </div>
@@ -420,15 +429,15 @@
                         <div className="w-10 h-10 border border-[#FF007F]/50 rounded-lg flex items-center justify-center bg-black/50 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><svg viewBox="0 0 100 100" className="w-6 h-6 fill-current"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="65" font-family="Poppins" font-size="30" font-weight="900" text-anchor="middle" font-style="italic">UR</text></svg></div>
                     </div>
                     <div className="absolute top-0 left-0 w-full h-56 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[150px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{member.rating}</div><div className="relative z-10 opacity-70 group-hover:opacity-100 transition-opacity"><Icon name={member.icon} size={90} className="text-[#FF007F]" /></div></div>
-                    <div className="mt-auto relative z-20"><div className="px-4 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic text-white uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis mb-1">{member.name}</h3><div className="h-1 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest">{member.trait} • #{member.number}</p></div><div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F] shadow-inner"><StatItem label="Pwr" val={member.stats.pwr} /><StatItem label="Vbe" val={member.stats.vbe} /><StatItem label="Sol" val={member.stats.sol} /><StatItem label="Grp" val={member.stats.grp} /></div></div>
+                    <div className="mt-auto relative z-20"><div className="px-4 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic text-white uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis mb-1 leading-none">{member.name}</h3><div className="h-1 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest leading-none mt-1">{member.trait} • #{member.number}</p></div><div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F] shadow-inner"><StatItem label="Pwr" val={member.stats.pwr} /><StatItem label="Vbe" val={member.stats.vbe} /><StatItem label="Sol" val={member.stats.sol} /><StatItem label="Grp" val={member.stats.grp} /></div></div>
                 </div>
             </div>
         );
 
         const VotesView = ({ votesData, submitVote, userId }) => {
             const categories = [{ id: 'training', title: 'Training: 18.02.', items: [{ id: '1802', label: '20:00 Uhr | Hasengrund' }], type: 'attendance' }, { id: 'gear', title: 'Rebel Gear', items: [{ id: 'warmup', label: 'Warmup Shirt Größe' }], type: 'size' }];
-            return (<div className="space-y-8"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2><p className="text-sm text-zinc-500 italic">Plane deinen Einsatz.</p></header>
-                    {categories.map(cat => (<div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-5 shadow-2xl"><h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
+            return (<div className="space-y-8"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Abstimmungen</h2><p className="text-sm text-zinc-500 italic mt-1">Plane deinen Einsatz.</p></header>
+                    {categories.map(cat => (<div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-5 shadow-2xl"><h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight leading-none">{cat.title}</h3>
                             {cat.items.map(item => {
                                 const currentVote = (votesData[`${cat.id}_${item.id}`] || {})[userId];
                                 return (<div key={item.id} className="space-y-4 pt-2 border-t border-white/5"><p className="text-sm font-bold text-zinc-300 uppercase tracking-widest">{item.label}</p>
@@ -438,14 +447,14 @@
         };
 
         const BaseView = () => (
-            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2><p className="text-sm text-zinc-500 italic">Wo wir trainieren.</p></header>
-                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl"><div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20"><Icon name="map-pin" size={32} /></div><div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-2">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1">Wo wir trainieren.</p></header>
+                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl"><div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-[0_0_15px_rgba(255,0,127,0.2)]"><Icon name="map-pin" size={32} /></div><div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-2">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
                     <div className="grid grid-cols-2 gap-4 text-center"><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Training</span><span className="text-white font-black text-sm uppercase">Mi, 20-22h</span></div><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Status</span><span className="text-green-500 font-black text-sm uppercase font-bold">Fix ✅</span></div></div>
                     <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=de&amp;q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim%20am%20Main+(Hasengrundhalle)&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"></iframe></div></div></div>
         );
 
         const StatItem = ({ label, val }) => (<div className="flex flex-col gap-1"><div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest"><span>{label}</span><span className="text-white">{val}</span></div><div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_#FF007F]" style={{width: `${val}%`}}></div></div></div>);
-        const NavButton = ({ icon, label, active, onClick }) => (<button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[60px] ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}><Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-tighter">{label}</span></button>);
+        const NavButton = ({ icon, label, active, onClick }) => (<button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[60px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}><Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-tighter mt-1">{label}</span></button>);
         const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
 </body>
