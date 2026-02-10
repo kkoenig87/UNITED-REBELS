@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA / iOS App Character Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="REBEL HUB">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Theme Color (Initial Schwarz) -->
+    <meta name="theme-color" content="#050505" id="theme-meta">
+    
+    <!-- Verweis auf die externe Datei im Repo -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="./apple-touch-icon.png">
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlVOSVRFRCBSRUJFTFMgU3F1YWQgSHViIiwKICAic2hvcnRfbmFtZSI6ICJSRUJFTCBIVUIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAgICAgInNpemVzIjogIjE4MHgxODAiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwNTA1MDUiLAogICJ0aGVtZV9jb2xvciI6ICIjMDUwNTA1Igp9">
+
+    <title>UNITED REBELS - Squad Hub Ultimate</title>
+    
+    <!-- Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;1,100;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --rebel-pink: #FF007F;
+        }
+        
+        .rebel-font { font-family: 'Poppins', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .neon-glow { text-shadow: 0 0 10px rgba(255, 0, 127, 0.8); }
+        .card-shadow { box-shadow: 0 10px 30px -10px rgba(255, 0, 127, 0.3); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+        
+        @keyframes pulse-pink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        .pulse-pink { animation: pulse-pink 2s infinite ease-in-out; }
+
+        .glass-card {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* LIGHT MODE OVERRIDES */
+        body.light {
+            background-color: #f4f4f5;
+            color: #18181b;
+        }
+        body.light .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+        body.light header, body.light nav {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* MATCH DAY OVERLAY */
+        .match-day-theme {
+            border: 2px solid var(--rebel-pink);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
+            background: linear-gradient(135deg, #050505 0%, #200010 100%) !important;
+        }
+    </style>
+</head>
+<body class="dark no-scrollbar">
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.FB = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+        // --- KONFIGURATION ---
+        const MANUAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk",
+            authDomain: "hsg-rebelhub.firebaseapp.com",
+            projectId: "hsg-rebelhub",
+            storageBucket: "hsg-rebelhub.firebasestorage.app",
+            messagingSenderId: "240623232398",
+            appId: "1:240623232398:web:012f79f0ebfa20cc3ff0df",
+            measurementId: "G-V873HR1PFY"
+        };
+
+        const SQUAD_DATA = [
+            { id: 'hc', name: "Heiko", pos: "Headcoach", trait: "Mastermind", icon: "zap", pw: "RebelHeiko26", bday: '01.01.', number: 'HC' },
+            { id: 'tm', name: "Kai", pos: "Manager", trait: "Strategy", icon: "users", pw: "RebelKai26", bday: '10.02.', number: 'TM' }, // Test-Bday heute
+            { id: 'p1', name: "Leni", pos: "Squad", trait: "Rebel Spirit", icon: "flame", pw: "RebelLeni26", bday: '15.03.', number: '7' },
+            { id: 'p2', name: "Jana", pos: "Squad", trait: "Rebel Spirit", icon: "zap", pw: "RebelJana26", bday: '20.06.', number: '23' },
+            { id: 'p3', name: "Ricarda", pos: "Squad", trait: "Rebel Spirit", icon: "shield", pw: "RebelRicarda26", bday: '04.05.', number: '13' },
+            { id: 'p4', name: "Alicia", pos: "Squad", trait: "Rebel Spirit", icon: "target", pw: "RebelAlicia26", bday: '11.11.', number: '11' },
+            { id: 'p5', name: "Nina", pos: "Squad", trait: "Rebel Spirit", icon: "flame", pw: "RebelNina26", bday: '25.08.', number: '5' },
+            { id: 'p6', name: "Rebecca", pos: "Squad", trait: "Rebel Spirit", icon: "zap", pw: "RebelRebecca26", bday: '12.12.', number: '6' },
+            { id: 'p7', name: "Nora", pos: "Squad", trait: "Rebel Spirit", icon: "crosshair", pw: "RebelNora26", bday: '30.01.', number: '17' },
+            { id: 'p8', name: "Astrid", pos: "Squad", trait: "Rebel Spirit", icon: "users", pw: "RebelAstrid26", bday: '14.02.', number: '8' },
+            { id: 'p9', name: "Andrea", pos: "Squad", trait: "Rebel Spirit", icon: "shield", pw: "RebelAndrea26", bday: '09.09.', number: '9' },
+            { id: 'p10', name: "Lara", pos: "Squad", trait: "Rebel Spirit", icon: "sparkles", pw: "RebelLara26", bday: '22.02.', number: '10' },
+            { id: 'p11', name: "Franzi", pos: "Squad", trait: "Rebel Spirit", icon: "flame", pw: "RebelFranzi26", bday: '08.08.', number: '3' },
+            { id: 'p12', name: "Carina", pos: "Squad", trait: "Rebel Spirit", icon: "layers", pw: "RebelCarina26", bday: '19.10.', number: '12' },
+            { id: 'p13', name: "Ayleen", pos: "Squad", trait: "Rebel Spirit", icon: "zap", pw: "RebelAyleen26", bday: '05.07.', number: '14' },
+            { id: 'p14', name: "Sandra", pos: "Squad", trait: "Rebel Spirit", icon: "award", pw: "RebelSandra26", bday: '13.04.', number: '4' }
+        ].map(m => ({
+            ...m,
+            rating: 80,
+            stats: { pwr: 80, vbe: 80, sol: 80, grp: 80 }
+        }));
+
+        const APP_ID = 'hsg-rebelhub';
+
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null); 
+            const [fbUser, setFbUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loginData, setLoginData] = useState({ nameId: '', password: '' });
+            const [loginError, setLoginError] = useState('');
+            const [votesData, setVotesData] = useState({});
+            const [shoutbox, setShoutbox] = useState([]);
+            const [vibes, setVibes] = useState({});
+            const [healthStatus, setHealthStatus] = useState({});
+            const [polls, setPolls] = useState({});
+            const [theme, setTheme] = useState('dark');
+            const [db, setDb] = useState(null);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [cloudStatus, setCloudStatus] = useState('offline');
+
+            // --- THEME LOGIC ---
+            useEffect(() => {
+                document.body.className = theme;
+                document.getElementById('theme-meta').setAttribute('content', theme === 'dark' ? '#050505' : '#f4f4f5');
+            }, [theme]);
+
+            // 1. Firebase Initialisierung
+            useEffect(() => {
+                const init = async () => {
+                    let attempts = 0;
+                    while (!window.FB && attempts < 20) {
+                        await new Promise(r => setTimeout(r, 100));
+                        attempts++;
+                    }
+                    if (!window.FB) { setCloudStatus('error'); return; }
+                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.FB;
+                    let config = null;
+                    try { config = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : MANUAL_FIREBASE_CONFIG; } catch(e) {}
+                    if (!config) { setCloudStatus('offline'); return; }
+                    try {
+                        const app = initializeApp(config);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
+                        setDb(firestore);
+                        let token = null;
+                        try { token = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null; } catch(e) {}
+                        if (token) { await signInWithCustomToken(auth, token); } 
+                        else { await signInAnonymously(auth); }
+                        onAuthStateChanged(auth, (u) => {
+                            if (u) { 
+                                setFbUser(u); 
+                                setCloudStatus('connected');
+                                const savedId = localStorage.getItem('rebel_hub_user_id');
+                                if (savedId) {
+                                    const found = SQUAD_DATA.find(m => m.id === savedId);
+                                    if (found) setUser(found);
+                                }
+                            }
+                        });
+                    } catch (e) { setCloudStatus('error'); }
+                };
+                init();
+            }, []);
+
+            // 2. Echtzeit-Daten-Listener (Alle 10 Features)
+            useEffect(() => {
+                if (!fbUser || !db) return;
+                const { collection, onSnapshot } = window.FB;
+                const appIdToUse = typeof window.__app_id !== 'undefined' ? window.__app_id : APP_ID;
+                
+                const unsubVotes = onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'team_votes'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setVotesData(data);
+                });
+
+                const unsubShout = onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'shoutbox'), (snap) => {
+                    const messages = []; snap.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
+                    messages.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    setShoutbox(messages.slice(0, 20));
+                });
+
+                const unsubVibes = onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'vibes'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setVibes(data);
+                });
+
+                const unsubHealth = onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'health'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setHealthStatus(data);
+                });
+
+                const unsubPolls = onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'polls'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setPolls(data);
+                });
+
+                return () => { unsubVotes(); unsubShout(); unsubVibes(); unsubHealth(); unsubPolls(); };
+            }, [fbUser, db]);
+
+            // --- HANDLERS ---
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const found = SQUAD_DATA.find(m => m.id === loginData.nameId);
+                if (found && loginData.password === found.pw) { 
+                    setUser(found); 
+                    localStorage.setItem('rebel_hub_user_id', found.id);
+                } else { setLoginError('Passwort ungültig.'); }
+            };
+
+            const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+            const submitPoll = async (pollId, option) => {
+                if (!db || !fbUser || !user) return;
+                const { doc, setDoc } = window.FB;
+                const appIdToUse = typeof window.__app_id !== 'undefined' ? window.__app_id : APP_ID;
+                const pollDoc = doc(db, 'artifacts', appIdToUse, 'public', 'data', 'polls', pollId);
+                await setDoc(pollDoc, { [user.id]: option }, { merge: true });
+            };
+
+            const updateHealth = async (status) => {
+                if (!db || !fbUser || !user) return;
+                const { doc, setDoc } = window.FB;
+                const appIdToUse = typeof window.__app_id !== 'undefined' ? window.__app_id : APP_ID;
+                const healthDoc = doc(db, 'artifacts', appIdToUse, 'public', 'data', 'health', 'current');
+                await setDoc(healthDoc, { [user.id]: status }, { merge: true });
+            };
+
+            if (!user) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
+                        <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-[#FF007F]/20 shadow-2xl animate-slide-up">
+                            <div className="flex justify-center mb-8 text-[#FF007F]">
+                                <svg viewBox="0 0 100 100" className="w-24 h-24 filter drop-shadow-[0_0_15px_rgba(255,0,127,0.6)]"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" stroke-width="4"/><text x="50" y="65" font-family="Poppins" font-size="35" font-weight="900" fill="#FF007F" text-anchor="middle" font-style="italic">UR</text></svg>
+                            </div>
+                            <h1 className="text-3xl rebel-font font-black italic text-white text-center uppercase tracking-tighter mb-8">Rebel Hub</h1>
+                            <form onSubmit={handleLogin} className="space-y-5">
+                                <div><label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2 px-1">Identität wählen</label><select className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white focus:border-[#FF007F] outline-none appearance-none cursor-pointer" value={loginData.nameId} onChange={(e) => setLoginData({...loginData, nameId: e.target.value})}><option value="" disabled>Wähle deinen Namen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+                                <div><label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2 px-1">Rebel Passwort</label><input type="password" placeholder="••••••••" className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white focus:border-[#FF007F] outline-none transition-all text-center tracking-widest" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})}/></div>
+                                {loginError && <p className="text-[#FF007F] text-xs font-bold text-center">{loginError}</p>}
+                                <button type="submit" className="w-full bg-[#FF007F] hover:bg-[#D4006A] text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-[0_10px_20px_rgba(255,0,127,0.3)]">Anmelden</button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen pb-24 no-scrollbar transition-colors duration-500">
+                    <header className="p-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 flex items-center justify-center relative"><svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="#FF007F" /><text x="50" y="65" font-family="Poppins" font-size="32" font-weight="900" fill="white" text-anchor="middle" font-style="italic">UR</text></svg><div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${cloudStatus === 'connected' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500'}`}></div></div>
+                            <h2 className="rebel-font font-black italic text-lg leading-none uppercase tracking-tighter">Rebel Hub</h2>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button onClick={toggleTheme} className="text-zinc-500 p-2"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></button>
+                            <button onClick={() => { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); }} className="text-[#FF007F] p-2"><Icon name="sparkles" size={18} /></button>
+                            <button onClick={handleLogout} className="text-zinc-500 p-2"><Icon name="log-out" size={18} /></button>
+                        </div>
+                    </header>
+
+                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
+                        {activeTab === 'dashboard' && <DashboardView me={user} shoutbox={shoutbox} vibes={vibes} polls={polls} onVotePoll={submitPoll} />}
+                        {activeTab === 'votes' && <VotesView votesData={votesData} submitVote={(c, s, v) => {
+                            if (!db || !fbUser) return;
+                            const { doc, setDoc } = window.FB;
+                            const voteDoc = doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `${c}_${s}`);
+                            setDoc(voteDoc, { [user.id]: v }, { merge: true });
+                        }} userId={user.id} />}
+                        {activeTab === 'power' && <PowerView />}
+                        {activeTab === 'base' && <BaseView />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} votes={votesData} />}
+                        {activeTab === 'ich' && <IchView me={user} health={healthStatus} onHealthUpdate={updateHealth} />}
+                    </main>
+
+                    <nav className="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] overflow-x-auto">
+                        <NavButton icon="zap" label="Ich" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="check-square" label="Votes" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
+                        <NavButton icon="timer" label="Power" active={activeTab === 'power'} onClick={() => setActiveTab('power')} />
+                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
+                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                        <NavButton icon="user" label="Profil" active={activeTab === 'ich'} onClick={() => setActiveTab('ich')} />
+                    </nav>
+                </div>
+            );
+        };
+
+        const DashboardView = ({ me, shoutbox, vibes, polls, onVotePoll }) => {
+            const nextMatchDate = new Date('2026-02-15T15:00:00'); // Fiktives Datum
+            const isMatchDay = new Date().toDateString() === nextMatchDate.toDateString();
+            
+            const startDate = new Date('2026-02-08T16:30:00'); 
+            const daysSinceStart = Math.max(1, Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24)));
+            
+            const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
+            const bdayGirls = SQUAD_DATA.filter(s => s.bday === today);
+
+            return (
+                <div className="space-y-8">
+                    {/* 1. MATCH DAY MODE / EMERGENCY INFO */}
+                    <div className={`glass-card p-6 rounded-3xl transition-all ${isMatchDay ? 'match-day-theme' : 'border-[#FF007F]/30'}`}>
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><Icon name={isMatchDay ? "flame" : "calendar"} size={28} /></div>
+                            <div>
+                                <p className="text-[10px] uppercase font-black tracking-widest text-[#FF007F]">{isMatchDay ? 'HEUTE IST MATCH DAY!' : 'NÄCHSTES SPIEL'}</p>
+                                <h3 className="rebel-font font-black italic text-xl uppercase">Saison-Auftakt</h3>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-center">
+                            <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Anwurf</span><span className="text-white font-black text-sm uppercase">So, 15:00h</span></div>
+                            <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Treffpunkt</span><span className="text-white font-black text-sm uppercase">14:15h</span></div>
+                        </div>
+                    </div>
+
+                    {/* 5. BIRTHDAY ALERT */}
+                    {bdayGirls.length > 0 && (
+                        <div className="bg-gradient-to-r from-purple-600 to-[#FF007F] p-6 rounded-3xl shadow-2xl animate-pulse flex items-center justify-between">
+                            <div>
+                                <h3 className="rebel-font font-black italic text-white uppercase text-xl leading-none">HAPPY BIRTHDAY! 🎂</h3>
+                                <p className="text-white font-bold mt-1 uppercase text-xs">{bdayGirls.map(g => g.name).join(' & ')} feiert heute!</p>
+                            </div>
+                            <button onClick={() => confetti()} className="bg-white/20 p-4 rounded-2xl text-white"><Icon name="party-popper" /></button>
+                        </div>
+                    )}
+
+                    {/* 2. REBEL STREAK */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="glass-card p-5 rounded-3xl border border-white/5 text-center shadow-xl">
+                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Rebel Streak</p>
+                            <p className="text-3xl font-black italic text-[#FF007F] leading-none">{daysSinceStart}</p>
+                            <p className="text-[8px] uppercase font-bold text-zinc-600 mt-1">Tag der Rebellion</p>
+                        </div>
+                        <div className="glass-card p-5 rounded-3xl border border-white/5 text-center shadow-xl">
+                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Squad Power</p>
+                            <p className="text-3xl font-black italic text-white leading-none">17/18</p>
+                            <p className="text-[8px] uppercase font-bold text-zinc-600 mt-1">Members Ready</p>
+                        </div>
+                    </div>
+
+                    {/* 7. QUICK POLL */}
+                    <section className="glass-card p-6 rounded-3xl border border-white/5">
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Quick Poll 🗳️</h3>
+                        <p className="text-xs text-zinc-500 uppercase font-black mb-4 tracking-widest">Abfahrt 10 Min früher am Sonntag?</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {['Yes, Safe!', 'Eher nicht'].map(opt => {
+                                const count = Object.values(polls['match_abfahrt'] || {}).filter(v => v === opt).length;
+                                const voted = polls['match_abfahrt']?.[me.id] === opt;
+                                return (
+                                    <button key={opt} onClick={() => onVotePoll('match_abfahrt', opt)} className={`p-4 rounded-2xl border text-[10px] font-black uppercase transition-all ${voted ? 'bg-[#FF007F] border-[#FF007F] text-white shadow-lg' : 'bg-black/40 border-white/5 text-zinc-500'}`}>
+                                        {opt} <span className="ml-2 opacity-50">{count}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </section>
+
+                    <section className="space-y-4">
+                        <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic text-white uppercase text-xl">Rebel Social</h3><span className="text-[9px] uppercase font-bold text-zinc-600 tracking-widest italic">Digital Cabin Wall</span></div>
+                        <div className="bg-[#111] rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
+                            <div className="max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar">
+                                {shoutbox.map(shout => (
+                                    <div key={shout.id} className="animate-slide-up">
+                                        <div className="flex justify-between items-center mb-1 px-1"><span className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">{shout.userName}</span><span className="text-[8px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</span></div>
+                                        <div className="bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5 shadow-sm"><p className="text-sm text-zinc-300 font-medium leading-relaxed">{shout.text}</p></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        const PowerView = () => {
+            const [time, setTime] = useState(20);
+            const [isActive, setIsActive] = useState(false);
+            const [mode, setMode] = useState('Work'); // Work / Rest
+
+            useEffect(() => {
+                let interval = null;
+                if (isActive && time > 0) {
+                    interval = setInterval(() => setTime(time - 1), 1000);
+                } else if (time === 0) {
+                    setIsActive(false);
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+                    audio.play();
+                    if (mode === 'Work') { setMode('Rest'); setTime(10); setIsActive(true); }
+                    else { setMode('Work'); setTime(20); setIsActive(true); }
+                }
+                return () => clearInterval(interval);
+            }, [isActive, time]);
+
+            return (
+                <div className="space-y-8 text-center animate-slide-up">
+                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Rebel Timer</h2><p className="text-sm text-zinc-500 italic tracking-widest">Tabata Session 20/10</p></header>
+                    <div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${mode === 'Work' ? 'border-[#FF007F] shadow-[0_0_30px_#FF007F33]' : 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]'}`}>
+                        <span className="text-xs font-black uppercase text-zinc-500 tracking-widest mb-2">{mode}</span>
+                        <span className="text-7xl rebel-font font-black italic text-white">{time}</span>
+                    </div>
+                    <div className="flex gap-4 justify-center">
+                        <button onClick={() => setIsActive(!isActive)} className="bg-[#FF007F] text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                            {isActive ? 'Pause' : 'Start Burn'}
+                        </button>
+                        <button onClick={() => { setIsActive(false); setTime(20); setMode('Work'); }} className="bg-zinc-800 text-zinc-400 p-5 rounded-3xl">
+                            <Icon name="refresh-cw" />
+                        </button>
+                    </div>
+                    {/* 6. PLAY OF THE WEEK / MEDIA */}
+                    <section className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-4">
+                        <h3 className="rebel-font font-black italic text-white uppercase text-xl text-left">Highlights of the Week 🎥</h3>
+                        <div className="aspect-video bg-zinc-900 rounded-2xl flex items-center justify-center border border-white/5 relative overflow-hidden group">
+                            <Icon name="play-circle" size={48} className="text-[#FF007F] opacity-50 group-hover:scale-110 group-hover:opacity-100 transition-all" />
+                            <p className="absolute bottom-4 left-4 text-[10px] font-black uppercase text-white/50 tracking-widest">Highlight-Video wird geladen...</p>
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        const SquadView = ({ myId, votes }) => {
+            // 2. ATTENDANCE LEADERBOARD LOGIC (SIMULIERT)
+            const getRank = (count) => {
+                if (count > 5) return { name: 'Elite Rebel', color: '#FF007F' };
+                if (count > 2) return { name: 'Rising Star', color: '#A855F7' };
+                return { name: 'Rookie Rebel', color: '#71717a' };
+            };
+
+            return (
+                <div className="space-y-6">
+                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Squad & Stats</h2><p className="text-sm text-zinc-500 italic">Wer brennt am meisten?</p></header>
+                    <div className="space-y-3">
+                        {SQUAD_DATA.map((member) => {
+                            const attendance = Math.floor(Math.random() * 8); // Simuliert
+                            const rank = getRank(attendance);
+                            return (
+                                <div key={member.id} className={`p-4 rounded-3xl glass-card flex items-center justify-between border-l-8 ${member.id === myId ? 'border-pink-500' : 'border-transparent'}`}>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-black border border-white/10 rounded-2xl flex items-center justify-center rebel-font font-black italic text-zinc-400">#{member.number}</div>
+                                        <div>
+                                            <h4 className="text-white font-black italic text-lg leading-tight">{member.name}</h4>
+                                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">{member.pos} • <span style={{color: rank.color}}>{rank.name}</span></p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-black text-[#FF007F] italic">{attendance} 🔥</p>
+                                        <p className="text-[7px] uppercase font-bold text-zinc-600 tracking-widest">Streak</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const IchView = ({ me, health, onHealthUpdate }) => {
+            const currentHealth = health['current']?.[me.id] || 'Fit';
+            const [songRequest, setSongRequest] = useState('');
+
+            return (
+                <div className="space-y-8 animate-slide-up">
+                    <RebelCard member={me} isMe={true} />
+                    
+                    {/* 10. INJURY & HEALTH CHECK */}
+                    <section className="glass-card p-6 rounded-3xl border border-white/5">
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Mein Status 🏥</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'Fit', icon: 'zap', color: 'text-green-500' },
+                                { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' },
+                                { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }
+                            ].map(status => (
+                                <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
+                                    <Icon name={status.icon} className={status.color} />
+                                    <span className="text-[8px] font-black uppercase tracking-widest">{status.id}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-[8px] text-zinc-500 uppercase text-center mt-4 tracking-widest">Dein Status ist nur für dich & Coaches sichtbar.</p>
+                    </section>
+
+                    {/* 8. SONG REQUEST SYSTEM */}
+                    <section className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
+                        <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4">Cabin Song 🎵</h3>
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="Artist - Title..." className="flex-grow bg-black border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-[#FF007F] outline-none" value={songRequest} onChange={(e) => setSongRequest(e.target.value)} />
+                            <button onClick={() => { alert('Song-Wunsch gesendet!'); setSongRequest(''); }} className="bg-[#FF007F] text-white p-4 rounded-2xl"><Icon name="plus" /></button>
+                        </div>
+                        <p className="text-[8px] text-zinc-500 uppercase mt-3 tracking-widest italic">Vorschläge landen direkt in der Rebels-Spotify-Cloud.</p>
+                    </section>
+                </div>
+            );
+        };
+
+        const RebelCard = ({ member, isMe = false }) => {
+            return (
+                <div className={`relative group w-full ${isMe ? 'max-w-[320px]' : 'max-w-[280px]'} mx-auto mb-8 h-[400px]`}>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-50 transition duration-500"></div>
+                    <div className="relative h-full w-full bg-[#050505] rounded-2xl border border-[#FF007F]/30 overflow-hidden flex flex-col card-shadow">
+                        <div className="flex justify-between items-start p-4 z-20">
+                            <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic text-white leading-none">{member.rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">{member.pos}</span></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/50 rounded-lg flex items-center justify-center bg-black/50 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><svg viewBox="0 0 100 100" className="w-6 h-6 fill-current"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="currentColor" strokeWidth="6"/><text x="50" y="65" font-family="Poppins" font-size="30" font-weight="900" text-anchor="middle" font-style="italic">UR</text></svg></div>
+                        </div>
+                        <div className="absolute top-0 left-0 w-full h-56 flex items-center justify-center pointer-events-none overflow-hidden">
+                            <div className="text-[#FF007F]/5 text-[150px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{member.rating}</div>
+                            <div className="relative z-10 opacity-70 group-hover:opacity-100 transition-opacity"><Icon name={member.icon} size={90} className="text-[#FF007F] drop-shadow-[0_0_20px_#FF007F55]" /></div>
+                        </div>
+                        <div className="mt-auto relative z-20">
+                            <div className="px-4 pb-2 text-center">
+                                <h3 className="text-2xl rebel-font font-black italic text-white uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis mb-1">{member.name}</h3>
+                                <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div>
+                                <p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest">{member.trait} • #{member.number}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/60 backdrop-blur-md border-t border-[#FF007F]/20 border-b-4 border-[#FF007F] shadow-inner"><StatItem label="Pwr" val={member.stats.pwr} /><StatItem label="Vbe" val={member.stats.vbe} /><StatItem label="Sol" val={member.stats.sol} /><StatItem label="Grp" val={member.stats.grp} /></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const VotesView = ({ votesData, submitVote, userId }) => {
+            const categories = [
+                { id: 'training', title: 'Training: 18.02.', items: [{ id: '1802', label: '20:00 Uhr | Hasengrund' }], type: 'attendance' },
+                { id: 'gear', title: 'Rebel Gear', items: [{ id: 'warmup', label: 'Warmup Shirt Größe' }], type: 'size' }
+            ];
+            return (
+                <div className="space-y-8">
+                    <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Abstimmungen</h2><p className="text-sm text-zinc-500 italic">Gestalte die Rebellion.</p></header>
+                    {categories.map(cat => (
+                        <div key={cat.id} className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-5 shadow-2xl">
+                            <h3 className="text-[#FF007F] rebel-font font-black italic uppercase text-lg tracking-tight">{cat.title}</h3>
+                            {cat.items.map(item => {
+                                const currentVote = votesData[`${cat.id}_${item.id}`]?.[userId];
+                                return (
+                                    <div key={item.id} className="space-y-4 pt-2 border-t border-white/5">
+                                        <p className="text-sm font-bold text-zinc-300 uppercase tracking-widest">{item.label}</p>
+                                        {cat.type === 'attendance' ? (
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {['Dabei', 'Nein', 'Maybe'].map(opt => (
+                                                    <button key={opt} onClick={() => submitVote(cat.id, item.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase transition-all border ${currentVote === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_0_15px_#FF007F55]' : 'bg-black/50 text-zinc-600 border-zinc-800 active:scale-95'}`}>{opt}</button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => (
+                                                    <button key={size} onClick={() => submitVote(cat.id, item.id, size)} className={`py-3 rounded-xl text-[10px] font-black transition-all border ${currentVote === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 text-zinc-600 border border-zinc-800'}`}>{size}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="flex flex-wrap gap-2 pt-4">
+                                            {Object.entries(votesData[`${cat.id}_${item.id}`] || {}).map(([uid, val]) => (
+                                                val && <span key={uid} className="text-[10px] bg-white/10 px-2.5 py-1 rounded-lg text-zinc-300 uppercase font-black border border-white/5">{SQUAD_DATA.find(s => s.id === uid)?.name}: <span className="text-[#FF007F] ml-1">{val}</span></span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const BaseView = () => (
+            <div className="space-y-6 animate-slide-up pb-10">
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase">Home Base</h2><p className="text-sm text-zinc-500 italic">Wo wir trainieren.</p></header>
+                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl">
+                    <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20"><Icon name="map-pin" size={32} /></div><div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-2">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+                    <div className="grid grid-cols-2 gap-4 text-center"><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Training</span><span className="text-white font-black text-sm uppercase">Mi, 20-22h</span></div><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Status</span><span className="text-green-500 font-black text-sm uppercase font-bold">Fix ✅</span></div></div>
+                    <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700 shadow-2xl"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=de&amp;q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim%20am%20Main+(Hasengrundhalle)&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"></iframe></div>
+                </div>
+            </div>
+        );
+
+        const StatItem = ({ label, val }) => (
+            <div className="flex flex-col gap-1"><div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest"><span>{label}</span><span className="text-white">{val}</span></div><div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_#FF007F]" style={{width: `${val}%`}}></div></div></div>
+        );
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[60px] ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <Icon name={icon} size={24} /><span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
