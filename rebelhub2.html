@@ -90,22 +90,22 @@
         };
 
         const SQUAD_DATA = [
-            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap" },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "ShieldCheck" }, 
-            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame" },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap" },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "ShieldCheck" },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target" },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame" },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap" },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair" },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users" },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "ShieldCheck" },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles" },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame" },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers" },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap" },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award" }
+            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap", number: 'HC' },
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "ShieldCheck", number: 'TM' }, 
+            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame", number: '99' },
+            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "ShieldCheck", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "ShieldCheck", number: '15' },
+            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award", number: '28' }
         ];
 
         const APP_ID = 'hsg-rebelhub';
@@ -288,10 +288,34 @@
             const nextEvent = (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
             const bdayGirl = Object.values(profiles || {}).find(p => p.birthday === today);
-            const daysSinceStart = Math.max(1, Math.ceil((new Date() - new Date('2026-02-08T16:30:00')) / (1000 * 60 * 60 * 24)));
+            const startDate = new Date('2026-02-08T16:30:00'); 
+            const daysSinceStart = Math.max(1, Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24)));
+
+            // Check for Duplicate Number Conflict
+            const conflicts = {
+                'p3': { num: '15', mate: 'Andrea' },
+                'p9': { num: '15', mate: 'Ricarda' },
+                'p6': { num: '3', mate: 'Carina' },
+                'p12': { num: '3', mate: 'Rebecca' },
+                'p13': { num: '28', mate: 'Sandra' },
+                'p14': { num: '28', mate: 'Ayleen' }
+            };
+            const myConflict = conflicts[me.id];
 
             return (
                 <div className="space-y-8">
+                    {myConflict && (
+                        <div className="bg-[#FF007F]/10 border-2 border-[#FF007F] p-5 rounded-3xl animate-pulse">
+                            <div className="flex gap-4 items-center">
+                                <RebelIcon name="alert-triangle" className="text-[#FF007F]" size={32} />
+                                <div>
+                                    <h4 className="font-black uppercase italic text-[#FF007F] text-sm">Nummern-Konflikt!</h4>
+                                    <p className="text-[11px] leading-tight mt-1">Deine Wunsch-Nummer <span className="font-black">#{myConflict.num}</span> ist doppelt belegt. Bitte kläre das intern mit <span className="font-black">{myConflict.mate}</span>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {nextEvent && (
                         <div className={`glass-card p-6 rounded-3xl border-[#FF007F]/20 ${nextEvent.type==='game' ? 'match-day-theme' : ''}`}>
                             <div className="flex items-center gap-4 mb-4">
@@ -305,14 +329,14 @@
                         </div>
                     )}
 
-                    {bdayGirl && <div className="bg-gradient-to-r from-purple-600 to-[#FF007F] p-6 rounded-3xl animate-pulse flex items-center justify-between shadow-2xl text-white"><div><h3 className="rebel-font font-black italic text-xl leading-none">BIRTHDAY! 🎂</h3><p className="font-bold mt-1 uppercase text-xs">{bdayGirl.name} feiert!</p></div><button onClick={() => confetti()} className="bg-white/20 p-4 rounded-2xl"><RebelIcon name="sparkles" size={24}/></button></div>}
+                    {bdayGirl && <div className="bg-gradient-to-r from-purple-600 to-[#FF007F] p-6 rounded-3xl animate-pulse flex items-center justify-between shadow-2xl text-white"><div><h3 className="rebel-font font-black italic text-xl leading-none uppercase">Happy Birthday! 🎂</h3><p className="font-bold mt-1 uppercase text-xs">{bdayGirl.name} feiert!</p></div><button onClick={() => confetti()} className="bg-white/20 p-4 rounded-2xl"><RebelIcon name="sparkles" size={24}/></button></div>}
 
                     <section className="space-y-4">
                         <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic uppercase text-xl leading-none">Digital Cabin Wall</h3></div>
                         <div className="bg-[#111] rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
                             <div className="p-4 bg-zinc-900/50 space-y-3">
                                 <div className="flex gap-3">
-                                    <input type="text" placeholder="Deine Nachricht..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-[#FF007F]" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
+                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-[#FF007F]" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
                                     <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
                                 </div>
                                 <div className="flex items-center gap-2 px-1">
@@ -394,7 +418,7 @@
         );
 
         const ProfileManagement = ({ me, profile, onSave, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
-            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || '', trait: profile.trait || '' });
+            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', label: '', location: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const isAdmin = me.id === 'hc' || me.id === 'tm';
@@ -494,9 +518,9 @@
         };
 
         const BaseView = () => (
-            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none">Training Location</p></header>
+            <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic uppercase leading-none text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none">Training Location</p></header>
                 <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl">
-                    <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none text-white">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+                    <div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl"><RebelIcon name="map-pin" size={32} /></div><div><h3 className="font-black italic text-xl uppercase leading-none text-white leading-none">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
                     <div className="grid grid-cols-2 gap-4">
                         <a href="https://www.google.com/maps/search/?api=1&query=Hasengrundhalle+Rüsselsheim" target="_blank" className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span></a>
                         <a href="https://maps.apple.com/?address=Reinhard-Strecker-Straße+15,+65428+Rüsselsheim+am+Main" target="_blank" className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all"><RebelIcon name="navigation" className="text-white"/><span className="text-[10px] font-black uppercase tracking-widest">Apple Maps</span></a>
