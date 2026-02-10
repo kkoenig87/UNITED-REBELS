@@ -107,7 +107,7 @@
 
         const APP_ID = 'hsg-rebelhub';
 
-        // --- COMPONENTS ---
+        // --- CORE COMPONENTS ---
 
         const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
             <div className={`relative ${className}`}>
@@ -235,6 +235,11 @@
                 await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
             };
 
+            const handleVote = async (id, val) => {
+                const { doc, setDoc } = window.FB;
+                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+            };
+
             if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RebelIcon name="zap" className="text-[#FF007F] animate-pulse" size={48} /></div>;
 
             if (!user) return (
@@ -267,11 +272,8 @@
                     </header>
 
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} triggerBalloons={triggerBalloons} />}
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={async (id, val) => {
-                            const { doc, setDoc } = window.FB;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                        }} health={health['current'] || {}} />}
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} />}
                         {activeTab === 'power' && <PowerView />}
                         {activeTab === 'base' && <BaseView />}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} />}
@@ -281,9 +283,6 @@
                         }} onHealthUpdate={async (s) => {
                             const { doc, setDoc } = window.FB;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true });
-                        }} onVote={async (id, val) => {
-                            const { doc, setDoc } = window.FB;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
                         }} onAddEvent={async (e) => {
                             const { collection, addDoc } = window.FB;
                             await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), e);
@@ -293,7 +292,7 @@
                         }} onSaveStats={async (id, s) => {
                             const { doc, setDoc } = window.FB;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), { stats: s }, { merge: true });
-                        }} votesData={votesData} />}
+                        }} />}
                     </main>
 
                     <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
@@ -308,7 +307,7 @@
             );
         };
 
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, triggerBalloons }) => {
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, triggerBalloons, onVote, votesData }) => {
             const [newShout, setNewShout] = useState('');
             const [isAnon, setIsAnon] = useState(false);
             const nextEvent = (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
@@ -323,17 +322,51 @@
             const startDate = new Date('2026-02-08T16:30:00'); 
             const daysSinceStart = Math.max(1, Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24)));
 
+            const conflicts = {
+                'p3': { num: '15', mate: 'Andrea' }, 'p9': { num: '15', mate: 'Ricarda' },
+                'p6': { num: '3', mate: 'Carina' }, 'p12': { num: '3', mate: 'Rebecca' },
+                'p13': { num: '28', mate: 'Sandra' }, 'p14': { num: '28', mate: 'Ayleen' }
+            };
+            const myConflict = conflicts[me.id];
+
             return (
-                <div className="space-y-8">
-                    {nextEvent && (
-                        <div className={`glass-card p-6 rounded-3xl border-[#FF007F]/20 ${nextEvent.type==='game' ? 'match-day-theme' : ''}`}>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name={nextEvent.type==='game' ? "trophy" : "calendar-check"} size={28} /></div>
-                                <div><p className="text-[10px] uppercase font-black text-[#FF007F]">{nextEvent.type==='game' ? (nextEvent.isHome ? 'HEIM-REBELLION' : 'AUSWÄRTS-REBELLION') : 'NEXT REBELLION'}</p><h3 className="rebel-font font-black italic text-xl uppercase leading-none mt-1">{nextEvent.label}</h3></div>
+                <div className="space-y-8 pb-10">
+                    {myConflict && (
+                        <div className="bg-[#FF007F]/10 border-2 border-[#FF007F] p-5 rounded-3xl animate-pulse">
+                            <div className="flex gap-4 items-center">
+                                <RebelIcon name="alert-triangle" className="text-[#FF007F]" size={32} />
+                                <div><h4 className="font-black uppercase italic text-[#FF007F] text-sm leading-none">Nummern-Konflikt!</h4><p className="text-[11px] leading-tight mt-2">Die Nummer <span className="font-black">#{myConflict.num}</span> ist doppelt belegt. Klär das mit <span className="font-black">{myConflict.mate}</span>.</p></div>
                             </div>
-                            <div className="grid grid-cols-2 gap-3 text-center">
-                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
-                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
+                        </div>
+                    )}
+
+                    {nextEvent && (
+                        <div className="space-y-4">
+                            <div className={`glass-card p-6 rounded-3xl border-[#FF007F]/20 ${nextEvent.type==='game' ? 'match-day-theme' : ''}`}>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name={nextEvent.type==='game' ? "trophy" : "calendar-check"} size={28} /></div>
+                                    <div><p className="text-[10px] uppercase font-black text-[#FF007F]">{nextEvent.type==='game' ? (nextEvent.isHome ? 'HEIM-REBELLION' : 'AUSWÄRTS-REBELLION') : 'NEXT REBELLION'}</p><h3 className="rebel-font font-black italic text-xl uppercase leading-none mt-1">{nextEvent.label}</h3></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-center">
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
+                                </div>
+                                {nextEvent.type==='game' && nextEvent.meetingTime && (
+                                    <div className="mt-3 bg-black/50 p-2.5 rounded-xl border border-[#FF007F]/30 text-center"><p className="text-[10px] uppercase font-black tracking-widest leading-none">Treffpunkt: <span className="text-white">{nextEvent.meetingTime} Uhr</span> @ <span className="text-white">{nextEvent.meetingLocation || 'Halle'}</span></p></div>
+                                )}
+                            </div>
+
+                            {/* SCHNELLWAHL - JETZT AUF DER STARTSEITE */}
+                            <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl">
+                                <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4 leading-none text-center">Schnellwahl: Bist du dabei?</h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['Dabei', 'Nein', 'Maybe'].map(opt => {
+                                        const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id];
+                                        return (
+                                            <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5 text-zinc-600'}`}>{opt}</button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -475,13 +508,12 @@
             </div>
         );
 
-        const ProfileManagement = ({ me, profile, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onSaveStats, onVote, votesData }) => {
+        const ProfileManagement = ({ me, profile, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const isAdmin = me.id === 'hc' || me.id === 'tm';
             const currentHealth = health[me.id] || 'Fit';
-            const nextEvent = schedule?.find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
@@ -509,25 +541,6 @@
                         </div>
                     </section>
 
-                    {/* QUICK VOTE NEXT EVENT */}
-                    {nextEvent && (
-                        <section className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl">
-                            <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4 leading-none">Nächster Einsatz</h3>
-                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 mb-4">
-                                <p className="text-[#FF007F] font-black italic text-sm uppercase leading-none">{nextEvent.label}</p>
-                                <p className="text-[10px] text-zinc-500 uppercase font-bold mt-1">{new Date(nextEvent.date).toLocaleDateString('de-DE')} @ {nextEvent.time} Uhr</p>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                {['Dabei', 'Nein', 'Maybe'].map(opt => {
-                                    const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id];
-                                    return (
-                                        <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5 text-zinc-600'}`}>{opt}</button>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    )}
-
                     {isAdmin && (
                         <div className="space-y-8">
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
@@ -554,8 +567,8 @@
                                                 <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{newEvent.isHome ? 'Heimspiel🏠' : 'Ausw🚌'}</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input type="time" placeholder="Treff-Zeit" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
-                                                <input type="text" placeholder="Treff-Ort" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
+                                                <input type="time" placeholder="Treff-Zeit" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingTime} onChange={e => setNewEvent({...meetingTime, meetingTime: e.target.value})} />
+                                                <input type="text" placeholder="Treff-Ort" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingLocation} onChange={e => setNewEvent({...meetingLocation, meetingLocation: e.target.value})} />
                                             </div>
                                         </div>
                                     )}
