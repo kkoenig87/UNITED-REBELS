@@ -61,6 +61,10 @@
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--rebel-pink); }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Custom Scrollbar for Stats Table */
+        .stats-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { border-collapse: separate; border-spacing: 0 8px; }
     </style>
 </head>
 <body class="dark no-scrollbar">
@@ -240,6 +244,19 @@
                 await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
             };
 
+            // Aggregated Goal Logic
+            const squadGoals = useMemo(() => {
+                const goalsMap = {};
+                schedule.forEach(event => {
+                    if (event.stats && event.stats.players) {
+                        Object.entries(event.stats.players).forEach(([pid, stat]) => {
+                            goalsMap[pid] = (goalsMap[pid] || 0) + (parseInt(stat.g) || 0);
+                        });
+                    }
+                });
+                return goalsMap;
+            }, [schedule]);
+
             if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RebelIcon name="zap" className="text-[#FF007F] animate-pulse" size={48} /></div>;
 
             if (!user) return (
@@ -276,7 +293,7 @@
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} />}
                         {activeTab === 'power' && <PowerView />}
                         {activeTab === 'base' && <BaseView />}
-                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} health={health['current'] || {}} schedule={schedule} onSave={async (d) => {
                             const { doc, setDoc } = window.FB;
                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', user.id), d, { merge: true });
@@ -359,7 +376,6 @@
                                 )}
                             </div>
 
-                            {/* SCHNELLWAHL - JETZT AUF DER STARTSEITE */}
                             <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl">
                                 <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-4 leading-none text-center">Schnellwahl: Bist du dabei?</h3>
                                 <div className="grid grid-cols-3 gap-2">
@@ -441,9 +457,19 @@
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4 items-center overflow-hidden">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
-                                        <div className="truncate"><h4 className="font-black italic uppercase text-lg leading-none truncate text-white">{event.label}</h4><p className="text-[11px] text-zinc-500 mt-2 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} - {event.endTime || '?'} | {event.location || 'Hasengrund'}</p></div>
+                                        <div className="truncate">
+                                            <h4 className="font-black italic uppercase text-lg leading-none truncate text-white">{event.label}</h4>
+                                            <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} - {event.endTime || '?'} | {event.location || 'Hasengrund'}</p>
+                                        </div>
                                     </div>
+                                    {event.type==='game' && <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border shrink-0 ${event.isHome ? 'border-[#FF007F] text-[#FF007F] bg-[#FF007F]/10' : 'border-zinc-700 text-zinc-400 bg-zinc-800'}`}>{event.isHome ? '🏠 HEIM' : '🚌 AUSW'}</span>}
                                 </div>
+
+                                {event.type==='game' && event.meetingTime && (
+                                    <div className="bg-black/30 p-2 rounded-xl border border-white/5 text-[10px] uppercase font-bold text-zinc-400">
+                                        Treffpunkt: <span className="text-white">{event.meetingTime} Uhr</span> @ <span className="text-white">{event.meetingLocation || 'Halle'}</span>
+                                    </div>
+                                )}
                                 
                                 <div className="grid grid-cols-3 gap-3">
                                     {['Dabei', 'Nein', 'Maybe'].map(opt => (
@@ -455,10 +481,10 @@
                                     {Object.entries(grouped).map(([label, items]) => (
                                         items.length > 0 && (
                                             <div key={label} className="flex flex-col gap-2">
-                                                <span className={`text-[10px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
+                                                <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {items.map((it, idx) => (
-                                                        <span key={idx} className="text-[12px] text-zinc-200 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 font-bold">
+                                                        <span key={idx} className="text-[13px] text-zinc-200 bg-white/5 px-3 py-2 rounded-xl border border-white/5 flex items-center gap-2 font-black">
                                                             <span className={`w-2 h-2 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_5px_currentColor]`}></span>
                                                             {it.name}
                                                         </span>
@@ -475,7 +501,7 @@
             );
         };
 
-        const SquadView = ({ myId, profiles, health }) => {
+        const SquadView = ({ myId, profiles, health, goals }) => {
             const hStatus = health || {};
             return (
                 <div className="space-y-12 pb-20">
@@ -484,9 +510,10 @@
                         {SQUAD_DATA.map(m => {
                             const prof = profiles[m.id] || {};
                             const s = hStatus[m.id] || 'Fit';
+                            const gCount = goals[m.id] || 0;
                             return (
                                 <div key={m.id} className="relative">
-                                    <RebelCard member={{...m, ...prof}} isMe={m.id === myId} />
+                                    <RebelCard member={{...m, ...prof}} isMe={m.id === myId} goals={gCount} />
                                     <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${s==='Verletzt'?'bg-red-500 border-red-400 text-white':s==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`}>
                                         {s}
                                     </div>
@@ -498,16 +525,22 @@
             );
         };
 
-        const RebelCard = ({ member, isMe }) => (
+        const RebelCard = ({ member, isMe, goals = 0 }) => (
             <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up`}>
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-3xl blur opacity-20 transition duration-500"></div>
                 <div className="relative h-full w-full bg-[#050505] rounded-3xl border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-all duration-300 group-hover:border-[#FF007F]/50">
                     <div className="p-5 flex justify-between items-start z-20 text-white leading-none">
                         <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic">{isMe ? '99' : '88'}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
-                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name="zap" size={20}/></div>
+                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name={member.icon || "zap"} size={20}/></div>
                     </div>
                     <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">88</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
-                    <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate">{member.name}</h3><div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-2 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
+                    <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate">{member.name}</h3>
+                        <div className="flex items-center justify-center gap-2 my-2">
+                             <div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div>
+                             <span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest whitespace-nowrap bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20">{goals} Tore 🔥</span>
+                             <div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]"><StatItem label="Grip" val={85}/><StatItem label="Vibe" val={99}/><StatItem label="Power" val={88}/><StatItem label="Soul" val={95}/></div>
                     </div>
                 </div>
@@ -519,10 +552,39 @@
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
+            const [showGlobalStats, setShowGlobalStats] = useState(false);
             
             const isAdmin = me.id === 'hc' || me.id === 'tm';
             const currentHealth = health[me.id] || 'Fit';
             const nextEvent = schedule?.find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
+
+            // Aggregate Data for Global Stats
+            const globalStats = useMemo(() => {
+                const results = SQUAD_DATA.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    goals: 0,
+                    p2m: 0,
+                    y: 0,
+                    r: 0,
+                    b: 0
+                }));
+                schedule.forEach(event => {
+                    if (event.stats && event.stats.players) {
+                        Object.entries(event.stats.players).forEach(([pid, stat]) => {
+                            const pEntry = results.find(r => r.id === pid);
+                            if (pEntry) {
+                                pEntry.goals += parseInt(stat.g) || 0;
+                                pEntry.p2m += parseInt(stat.p) || 0;
+                                if (stat.y) pEntry.y += 1;
+                                if (stat.r) pEntry.r += 1;
+                                if (stat.b) pEntry.b += 1;
+                            }
+                        });
+                    }
+                });
+                return results;
+            }, [schedule]);
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
@@ -553,14 +615,17 @@
                     {isAdmin && (
                         <div className="space-y-8">
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
-                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest">Event Creator (Admin)</h3>
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest">Admin Control Center</h3>
                                 <div className="space-y-3">
+                                    <button onClick={() => setShowGlobalStats(true)} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mb-4 shadow-xl flex items-center justify-center gap-3">
+                                        <RebelIcon name="bar-chart-2" size={16}/> Team-Statistik Übersicht
+                                    </button>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'border-transparent bg-black/20 text-zinc-600'}`}>Training</button>
                                         <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'border-transparent bg-black/20 text-zinc-600'}`}>Spiel</button>
                                     </div>
-                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort (Halle)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
+                                    <input type="text" placeholder="Ort (Halle)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
                                     
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="space-y-1"><label className="text-[8px] uppercase font-bold text-zinc-600 ml-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
@@ -571,7 +636,7 @@
 
                                     {newEvent.type === 'game' && (
                                         <div className="space-y-3 pt-2">
-                                            <div className="flex items-center gap-4 bg-black/40 p-3 rounded-lg border border-white/5">
+                                            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-lg border border-white/5">
                                                 <label className="switch"><input type="checkbox" checked={newEvent.isHome} onChange={e => setNewEvent({...newEvent, isHome: e.target.checked})} /><span className="slider"></span></label>
                                                 <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{newEvent.isHome ? 'Heimspiel🏠' : 'Ausw🚌'}</span>
                                             </div>
@@ -581,12 +646,12 @@
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl active:scale-95">Event speichern</button>
+                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl">Event speichern</button>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest">Event Verwaltung</h3>
+                                <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-[10px] px-2 leading-none tracking-widest">Events Verwalten</h3>
                                 {schedule.map(event => (
                                     <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md hover:border-[#FF007F]/30 transition-all">
                                         <div className="truncate pr-4 leading-tight"><p className="text-white font-bold text-xs uppercase italic truncate">{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-1">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
@@ -601,6 +666,41 @@
                         </div>
                     )}
                     
+                    {/* GLOBAL STATS MODAL */}
+                    {showGlobalStats && (
+                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
+                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up">
+                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-[10px] uppercase font-black text-[#FF007F] tracking-widest">
+                                                <th className="p-3">Spielerin</th>
+                                                <th className="p-3 text-center">Tore</th>
+                                                <th className="p-3 text-center">2M</th>
+                                                <th className="p-3 text-center">Y</th>
+                                                <th className="p-3 text-center">R</th>
+                                                <th className="p-3 text-center">B</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {globalStats.map(s => (
+                                                <tr key={s.id} className="bg-black/40 border-b border-white/5">
+                                                    <td className="p-3 text-sm font-black italic text-white">{s.name}</td>
+                                                    <td className="p-3 text-center text-lg font-black text-[#FF007F]">{s.goals}</td>
+                                                    <td className="p-3 text-center font-bold text-zinc-400">{s.p2m}</td>
+                                                    <td className="p-3 text-center font-bold text-yellow-500">{s.y}</td>
+                                                    <td className="p-3 text-center font-bold text-red-500">{s.r}</td>
+                                                    <td className="p-3 text-center font-bold text-blue-500">{s.b}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* EDIT EVENT MODAL */}
                     {editingEvent && (
                         <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
@@ -649,9 +749,9 @@
                                                 <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none" />
                                                 <div className="flex gap-3">
-                                                    <label className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black transition-all">Y</span></label>
-                                                    <label className="text-[10px] text-red-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black transition-all">R</span></label>
-                                                    <label className="text-[10px] text-blue-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black transition-all">B</span></label>
+                                                    <label className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black">Y</span></label>
+                                                    <label className="text-[10px] text-red-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black">R</span></label>
+                                                    <label className="text-[10px] text-blue-500 font-bold flex items-center gap-1 cursor-pointer"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black">B</span></label>
                                                 </div>
                                             </div>
                                         ))}
