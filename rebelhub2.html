@@ -40,7 +40,6 @@
         .glass-card { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         body.light { background-color: #f4f4f5; color: #18181b; }
         body.light .glass-card { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.1); }
-        body.light header, body.light nav { background: rgba(255, 255, 255, 0.9); border-color: rgba(0, 0, 0, 0.1); }
         .match-day-theme { border: 2px solid var(--rebel-pink); box-shadow: 0 0 25px rgba(255, 0, 127, 0.4); background: linear-gradient(135deg, #050505 0%, #300018 100%) !important; }
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -55,13 +54,13 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, orderBy, limit };
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useCallback, useRef, useMemo } = React;
+        const { useState, useEffect, useRef } = React;
 
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk",
@@ -94,20 +93,15 @@
 
         const APP_ID = 'hsg-rebelhub';
 
+        // Stabilisierter Icon-Loader
         const Icon = ({ name, size = 24, className = "" }) => {
-            const containerRef = useRef(null);
+            const iconRef = useRef(null);
             useEffect(() => {
-                if (window.lucide && containerRef.current) {
-                    containerRef.current.innerHTML = '';
-                    const i = document.createElement('i');
-                    i.setAttribute('data-lucide', name);
-                    i.style.width = `${size}px`; i.style.height = `${size}px`;
-                    i.className = className;
-                    containerRef.current.appendChild(i);
-                    window.lucide.createIcons({ elements: [i] });
+                if (window.lucide && iconRef.current) {
+                    window.lucide.createIcons({ elements: [iconRef.current] });
                 }
-            }, [name, size, className]);
-            return <span ref={containerRef} style={{ display: 'inline-flex', width: size, height: size }}></span>;
+            }, [name]);
+            return <i ref={iconRef} data-lucide={name} className={className} style={{ width: size, height: size, display: 'inline-block' }}></i>;
         };
 
         const App = () => {
@@ -124,23 +118,16 @@
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
-                document.body.className = theme;
-                const meta = document.getElementById('theme-meta');
-                if (meta) meta.setAttribute('content', theme === 'dark' ? '#050505' : '#f4f4f5');
-            }, [theme]);
-
-            useEffect(() => {
                 const init = async () => {
                     let attempts = 0;
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
                     if (!window.FB) { setLoading(false); return; }
-                    const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FB;
                     try {
-                        const app = initializeApp(MANUAL_FIREBASE_CONFIG);
-                        const firestore = getFirestore(app);
+                        const app = window.FB.initializeApp(MANUAL_FIREBASE_CONFIG);
+                        const firestore = window.FB.getFirestore(app);
                         setDb(firestore);
-                        await signInAnonymously(getAuth(app));
-                        onAuthStateChanged(getAuth(app), (u) => {
+                        await window.FB.signInAnonymously(window.FB.getAuth(app));
+                        window.FB.onAuthStateChanged(window.FB.getAuth(app), (u) => {
                             if (u) {
                                 const savedId = localStorage.getItem('rebel_hub_user_id');
                                 if (savedId) setUser(SQUAD_DATA.find(m => m.id === savedId));
@@ -155,20 +142,25 @@
             useEffect(() => {
                 if (!db) return;
                 const { collection, onSnapshot } = window.FB;
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes'), (snap) => {
+                const appIdToUse = APP_ID;
+                
+                onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'team_votes'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setVotesData(data);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), (snap) => {
+
+                onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'shoutbox'), (snap) => {
                     const messages = []; snap.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
                     messages.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                     setShoutbox(messages);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'profiles'), (snap) => {
+
+                onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'profiles'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setProfiles(data);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), (snap) => {
+
+                onSnapshot(collection(db, 'artifacts', appIdToUse, 'public', 'data', 'schedule'), (snap) => {
                     const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                     list.sort((a, b) => new Date(a.date) - new Date(b.date));
                     setSchedule(list);
@@ -182,58 +174,19 @@
                 else setLoginError('Passwort ungültig.');
             };
 
-            const handleLogout = () => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); };
-            const triggerHype = () => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] });
-
-            const saveProfileData = async (data) => {
-                const { doc, setDoc } = window.FB;
-                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', user.id), data, { merge: true });
-            };
-
-            const postShout = async (text, isAnonymous) => {
-                if (!db || !user || !text.trim()) return;
-                const { collection, addDoc, serverTimestamp } = window.FB;
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), {
-                    userId: isAnonymous ? 'anon' : user.id,
-                    userName: isAnonymous ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name,
-                    text: text,
-                    timestamp: serverTimestamp()
-                });
-            };
-
-            const addEvent = async (event) => {
-                const { collection, addDoc } = window.FB;
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), event);
-            };
-
-            const deleteEvent = async (id) => {
-                const { doc, deleteDoc } = window.FB;
-                await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id));
-            };
-
-            const submitVote = async (eventId, val) => {
-                const { doc, setDoc } = window.FB;
-                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${eventId}`), { [user.id]: val }, { merge: true });
-            };
-
-            const saveStats = async (eventId, stats) => {
-                const { doc, setDoc } = window.FB;
-                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', eventId), { stats }, { merge: true });
-            };
-
             if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><Icon name="zap" className="text-[#FF007F] animate-pulse" size={48} /></div>;
 
             if (!user) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
                         <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-[#FF007F]/20 shadow-2xl animate-slide-up">
-                            <div className="flex justify-center mb-8"><Icon name="zap" size={60} className="text-[#FF007F] neon-glow"/></div>
-                            <h1 className="text-3xl rebel-font font-black italic text-white text-center uppercase tracking-tighter mb-8 text-white">Rebel Hub</h1>
+                            <div className="flex justify-center mb-8 text-[#FF007F]"><Icon name="zap" size={60} className="neon-glow"/></div>
+                            <h1 className="text-3xl rebel-font font-black italic text-white text-center uppercase tracking-tighter mb-8">Rebel Hub</h1>
                             <form onSubmit={handleLogin} className="space-y-5">
-                                <select className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white outline-none" value={loginData.nameId} onChange={(e) => setLoginData({...loginData, nameId: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
-                                <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white text-center" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})}/>
+                                <select className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white outline-none appearance-none" value={loginData.nameId} onChange={(e) => setLoginData({...loginData, nameId: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                                <input type="password" placeholder="Rebel PW" className="w-full bg-black border border-zinc-800 rounded-xl py-4 px-4 text-white text-center" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})}/>
                                 {loginError && <p className="text-[#FF007F] text-xs font-bold text-center">{loginError}</p>}
-                                <button type="submit" className="w-full bg-[#FF007F] hover:bg-[#D4006A] text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all">Anmelden</button>
+                                <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest">Anmelden</button>
                             </form>
                         </div>
                     </div>
@@ -241,32 +194,50 @@
             }
 
             return (
-                <div className="min-h-screen pb-24 no-scrollbar transition-colors duration-500">
+                <div className={`min-h-screen pb-24 no-scrollbar transition-colors duration-500 ${theme}`}>
                     <header className="p-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
                         <div className="flex items-center gap-3">
                             <Icon name="zap" size={28} className="text-[#FF007F] neon-glow"/>
                             <h2 className="rebel-font font-black italic text-lg leading-none uppercase text-white">Rebel Hub</h2>
                         </div>
                         <div className="flex items-center gap-2">
-                             <button onClick={toggleTheme} className="text-zinc-500 p-2"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button>
-                             <button onClick={triggerHype} className="text-[#FF007F] p-2"><Icon name="sparkles" size={18}/></button>
-                             <button onClick={handleLogout} className="text-zinc-500 p-2"><Icon name="log-out" size={18}/></button>
+                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button>
+                             <button onClick={() => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] })} className="text-[#FF007F] p-2"><Icon name="sparkles" size={18}/></button>
+                             <button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><Icon name="log-out" size={18}/></button>
                         </div>
                     </header>
 
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} onPostShout={postShout} profiles={profiles} />}
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={submitVote} />}
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => {
+                            const { collection, addDoc, serverTimestamp } = window.FB;
+                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
+                        }} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={async (id, val) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+                        }} />}
                         {activeTab === 'power' && <PowerView />}
                         {activeTab === 'base' && <BaseView />}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} />}
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} onSave={saveProfileData} isAdmin={user.id==='hc'||user.id==='tm'} schedule={schedule} onAddEvent={addEvent} onDeleteEvent={deleteEvent} onSaveStats={saveStats} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} schedule={schedule} onSave={async (d) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', user.id), d, { merge: true });
+                        }} onAddEvent={async (e) => {
+                            const { collection, addDoc } = window.FB;
+                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), e);
+                        }} onDeleteEvent={async (id) => {
+                            const { doc, deleteDoc } = window.FB;
+                            await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id));
+                        }} onSaveStats={async (id, s) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), { stats: s }, { merge: true });
+                        }} />}
                     </main>
 
-                    <nav className="fixed bottom-0 left-0 w-full bg-black/95 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 overflow-x-auto">
+                    <nav className="fixed bottom-0 left-0 w-full bg-black/95 backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 overflow-x-auto no-scrollbar">
                         <NavButton icon="zap" label="Ich" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
-                        <NavButton icon="timer" label="Timer" active={activeTab === 'power'} onClick={() => setActiveTab('power')} />
+                        <NavButton icon="timer" label="Power" active={activeTab === 'power'} onClick={() => setActiveTab('power')} />
                         <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
                         <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
@@ -278,9 +249,11 @@
         const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles }) => {
             const [newShout, setNewShout] = useState('');
             const [isAnon, setIsAnon] = useState(false);
-            const nextEvent = schedule.find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
+            const nextEvent = (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
-            const bdayGirls = Object.values(profiles).filter(p => p.birthday === today);
+            const bdayGirl = Object.values(profiles || {}).find(p => p.birthday === today);
+            const startDate = new Date('2026-02-08T16:30:00'); 
+            const daysSinceStart = Math.max(1, Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24)));
 
             return (
                 <div className="space-y-8">
@@ -292,20 +265,25 @@
                             </div>
                             <div className="grid grid-cols-2 gap-3 text-center">
                                 <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="text-white font-black text-sm">{nextEvent.time} Uhr</span></div>
-                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Halle'}</span></div>
+                                <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-white font-black text-[10px] uppercase truncate">{nextEvent.location || 'Hasengrund'}</span></div>
                             </div>
                         </div>
                     )}
 
-                    {bdayGirls.length > 0 && <div className="bg-gradient-to-r from-purple-600 to-[#FF007F] p-6 rounded-3xl animate-pulse flex items-center justify-between shadow-2xl text-white"><div><h3 className="rebel-font font-black italic text-xl leading-none uppercase">Happy Birthday! 🎂</h3><p className="font-bold mt-1 uppercase text-xs">{bdayGirls.map(g => g.name || 'Rebellin').join(' & ')} feiert!</p></div><button onClick={() => confetti()} className="bg-white/20 p-4 rounded-2xl"><Icon name="party-popper"/></button></div>}
+                    {bdayGirl && <div className="bg-gradient-to-r from-purple-600 to-[#FF007F] p-6 rounded-3xl animate-pulse flex items-center justify-between shadow-2xl text-white"><div><h3 className="rebel-font font-black italic text-xl leading-none">BIRTHDAY! 🎂</h3><p className="font-bold mt-1 uppercase text-xs">{bdayGirl.name} feiert!</p></div><button onClick={() => confetti()} className="bg-white/20 p-4 rounded-2xl"><Icon name="party-popper"/></button></div>}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Rebel Streak</p><p className="text-3xl font-black italic text-[#FF007F] leading-none">{daysSinceStart}</p><p className="text-[8px] uppercase font-bold text-zinc-600 mt-1">Tage Rebellion</p></div>
+                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Squad Power</p><p className="text-3xl font-black italic text-white leading-none">17/18</p><p className="text-[8px] uppercase font-bold text-zinc-600 mt-1">Kader Status</p></div>
+                    </div>
 
                     <section className="space-y-4">
                         <div className="flex justify-between items-end px-2"><h3 className="rebel-font font-black italic text-white uppercase text-xl leading-none">Digital Cabin Wall</h3></div>
                         <div className="bg-[#111] rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
                             <div className="p-4 bg-zinc-900/50 space-y-3">
                                 <div className="flex gap-3">
-                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-[#FF007F] outline-none transition-all" value={newShout} onChange={(e) => setNewShout(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (onPostShout(newShout, isAnon), setNewShout(''))} />
-                                    <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white"><Icon name="send" size={18}/></button>
+                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
+                                    <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><Icon name="send" size={18}/></button>
                                 </div>
                                 <div className="flex items-center gap-2 px-1">
                                     <label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label>
@@ -330,7 +308,7 @@
         };
 
         const LongTermVotes = ({ schedule, votesData, userId, onVote }) => {
-            const upcoming = schedule.filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
+            const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
                 <div className="space-y-6">
                     <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Schedule</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Wochen im Voraus planen.</p></header>
@@ -341,9 +319,9 @@
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4 items-center">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><Icon name={event.type==='game'?'trophy':'calendar'} size={20}/></div>
-                                        <div><h4 className="text-white font-black italic uppercase leading-none">{event.label}</h4><p className="text-[9px] text-zinc-500 mt-1 uppercase font-bold">{new Date(event.date).toLocaleDateString('de-DE', {weekday:'short'})}, {new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | <span className="text-zinc-400">{event.location || 'Halle'}</span></p></div>
+                                        <div className="truncate"><h4 className="text-white font-black italic uppercase leading-none truncate">{event.label}</h4><p className="text-[9px] text-zinc-500 mt-1 uppercase font-bold">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Hasengrund'}</p></div>
                                     </div>
-                                    {event.type === 'game' && <div className={`text-[8px] font-black uppercase px-2 py-1 rounded border ${event.isHome ? 'bg-pink-900/30 border-pink-500 text-pink-500' : 'bg-zinc-800 border-zinc-600 text-zinc-400'}`}>{event.isHome ? 'Heim' : 'Auswärts'}</div>}
+                                    {event.type === 'game' && <div className={`text-[8px] font-black uppercase px-2 py-1 rounded border ${event.isHome ? 'bg-pink-900/30 border-pink-500 text-pink-500' : 'bg-zinc-800 border-zinc-600 text-zinc-400'}`}>{event.isHome ? 'Heim' : 'Ausw'}</div>}
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     {['Dabei', 'Nein', 'Maybe'].map(opt => (
@@ -359,7 +337,7 @@
 
         const SquadView = ({ myId, profiles }) => (
             <div className="space-y-8 pb-10">
-                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none text-white">The Rebels</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest">Gründungsmitglieder 2026</p></header>
+                <header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Gründungsmitglieder 2026</p></header>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {SQUAD_DATA.map(m => {
                         const prof = profiles[m.id] || {};
@@ -369,70 +347,38 @@
             </div>
         );
 
-        const RebelCard = ({ member, isMe }) => (
-            <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up`}>
-                <div className={`absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
-                <div className="relative h-full w-full bg-[#050505] rounded-3xl border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow">
-                    <div className="p-5 flex justify-between items-start z-20">
-                        <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic text-white leading-none">88</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">{member.pos || 'Squad'}</span></div>
-                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F]"><Icon name="zap" size={20}/></div>
-                    </div>
-                    <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">88</div><Icon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70"/></div>
-                    <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic text-white uppercase tracking-tighter leading-none">{member.name}</h3><div className="h-1 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-1 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest mt-2">{member.trait || 'Rebel Spirit'} • #{member.number || '??'}</p></div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] shadow-inner"><StatItem label="Grip" val={85}/><StatItem label="Vibe" val={99}/><StatItem label="Power" val={88}/><StatItem label="Soul" val={95}/></div>
-                    </div>
-                </div>
-            </div>
-        );
-
-        const ProfileManagement = ({ me, profile, onSave, isAdmin, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
+        const ProfileManagement = ({ me, profile, onSave, schedule, onAddEvent, onDeleteEvent, onSaveStats }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || '', trait: profile.trait || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', label: '', location: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
-
-            const handleSaveStats = (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const stats = { ht: formData.get('ht'), ft: formData.get('ft'), players: {} };
-                SQUAD_DATA.forEach(s => {
-                    stats.players[s.id] = {
-                        goals: formData.get(`goals_${s.id}`),
-                        p2m: formData.get(`p2m_${s.id}`),
-                        yellow: formData.get(`yellow_${s.id}`) === 'on',
-                        red: formData.get(`red_${s.id}`) === 'on',
-                        blue: formData.get(`blue_${s.id}`) === 'on'
-                    };
-                });
-                onSaveStats(editingStats.id, stats);
-                setEditingStats(null);
-            };
+            const isAdmin = me.id === 'hc' || me.id === 'tm';
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
-                    <section className="glass-card p-6 rounded-3xl border border-white/5">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
                         <h3 className="rebel-font font-black italic text-white uppercase text-lg mb-6 leading-none">Dein Profil</h3>
                         <div className="space-y-4">
                             <input type="text" placeholder="Voller Name" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="text" placeholder="Birthday (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
-                                <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
+                                <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
+                                <input type="text" placeholder="Trikot #" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
                             </div>
-                            <input type="text" placeholder="Charakter (z.B. Lead)" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.trait} onChange={e => setLocal({...local, trait: e.target.value})} />
+                            <input type="text" placeholder="Deine Rolle (z.B. Power Forward)" className="w-full bg-black border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.trait} onChange={e => setLocal({...local, trait: e.target.value})} />
                         </div>
                         <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg">Profil speichern</button>
                     </section>
 
                     {isAdmin && (
                         <div className="space-y-8">
-                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
-                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none">Event Creator (Admin)</h3>
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800">
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase">Event Creator (Admin)</h3>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'border-transparent bg-black/20 text-zinc-600'}`}>Training</button>
                                         <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'border-transparent bg-black/20 text-zinc-600'}`}>Spiel</button>
                                     </div>
-                                    <input type="text" placeholder="Name" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort (Halle/Adresse)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
+                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-2">
                                         <input type="date" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
                                         <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
@@ -450,7 +396,7 @@
                             <section className="space-y-4">
                                 <h3 className="rebel-font font-black italic text-zinc-500 uppercase text-sm px-1">Verwaltung</h3>
                                 {schedule.map(event => (
-                                    <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                                    <div key={event.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
                                         <div className="truncate pr-4">
                                             <p className="text-white font-bold text-xs uppercase italic truncate">{event.label}</p>
                                             <p className="text-[9px] text-zinc-600 truncate">{new Date(event.date).toLocaleDateString('de-DE')} • {event.location || 'Halle'}</p>
@@ -464,31 +410,31 @@
                             </section>
                         </div>
                     )}
-
+                    
                     {editingStats && (
                         <div className="fixed inset-0 bg-black/95 z-[100] p-6 overflow-y-auto pt-24">
                             <div className="max-w-xl mx-auto space-y-6">
-                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-xl">Spiel-Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500"><Icon name="x" size={24}/></button></div>
-                                <form onSubmit={handleSaveStats} className="space-y-8 pb-10">
+                                <div className="flex justify-between items-center"><h2 className="rebel-font font-black italic text-white uppercase text-xl">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500"><Icon name="x" size={24}/></button></div>
+                                <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { ht: fd.get('ht'), ft: fd.get('ft'), players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { goals: fd.get(`g_${sq.id}`), p2m: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-8 pb-10">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input name="ht" placeholder="Halbzeit (12:10)" defaultValue={editingStats.stats?.ht} className="bg-black border border-white/10 rounded-xl p-4 text-white text-center" />
-                                        <input name="ft" placeholder="Endstand (24:20)" defaultValue={editingStats.stats?.ft} className="bg-black border border-white/10 rounded-xl p-4 text-white text-center" />
+                                        <input name="ht" placeholder="Halbzeit" defaultValue={editingStats.stats?.ht} className="bg-black border border-white/10 rounded-xl p-4 text-white text-center" />
+                                        <input name="ft" placeholder="Endstand" defaultValue={editingStats.stats?.ft} className="bg-black border border-white/10 rounded-xl p-4 text-white text-center" />
                                     </div>
                                     <div className="space-y-2">
                                         {SQUAD_DATA.map(s => (
                                             <div key={s.id} className="bg-white/5 p-4 rounded-2xl flex flex-wrap items-center gap-4">
                                                 <span className="text-white font-black italic text-xs w-24">{s.name}</span>
-                                                <input name={`goals_${s.id}`} type="number" placeholder="Tore" defaultValue={editingStats.stats?.players?.[s.id]?.goals} className="w-16 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" />
-                                                <input name={`p2m_${s.id}`} type="number" placeholder="2 Min" defaultValue={editingStats.stats?.players?.[s.id]?.p2m} className="w-16 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" />
+                                                <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.goals} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" />
+                                                <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p2m} className="w-12 bg-black border border-white/10 rounded-lg p-2 text-center text-xs" />
                                                 <div className="flex gap-2">
-                                                    <label className="flex items-center gap-1 text-[10px] text-yellow-500 font-bold"><input name={`yellow_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.yellow}/> Y</label>
-                                                    <label className="flex items-center gap-1 text-[10px] text-red-500 font-bold"><input name={`red_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.red}/> R</label>
-                                                    <label className="flex items-center gap-1 text-[10px] text-blue-500 font-bold"><input name={`blue_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.blue}/> B</label>
+                                                    <label className="text-[10px] text-yellow-500 font-bold"><input name={`y_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/> Y</label>
+                                                    <label className="text-[10px] text-red-500 font-bold"><input name={`r_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/> R</label>
+                                                    <label className="text-[10px] text-blue-500 font-bold"><input name={`b_${s.id}`} type="checkbox" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/> B</label>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl">Speichern</button>
+                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl">Statistiken speichern</button>
                                 </form>
                             </div>
                         </div>
@@ -497,15 +443,32 @@
             );
         };
 
+        const RebelCard = ({ member, isMe }) => (
+            <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up`}>
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-3xl blur opacity-20 transition duration-500"></div>
+                <div className="relative h-full w-full bg-[#050505] rounded-3xl border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-all duration-300 group-hover:border-[#FF007F]/50">
+                    <div className="p-5 flex justify-between items-start z-20">
+                        <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic text-white leading-none">88</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
+                        <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><Icon name="zap" size={20}/></div>
+                    </div>
+                    <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">88</div><Icon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
+                    <div className="mt-auto relative z-20"><div className="px-5 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic text-white uppercase tracking-tighter leading-none">{member.name}</h3><div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[#FF007F] to-transparent my-2 opacity-50"></div><p className="text-[10px] text-[#FF007F] font-bold uppercase tracking-widest leading-none mt-1">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] shadow-inner"><StatItem label="Grip" val={85}/><StatItem label="Vibe" val={99}/><StatItem label="Power" val={88}/><StatItem label="Soul" val={95}/></div>
+                    </div>
+                </div>
+            </div>
+        );
+
         const PowerView = () => {
             const [time, setTime] = useState(20); const [isActive, setIsActive] = useState(false); const [duration, setDuration] = useState(20);
             useEffect(() => { let interval = null; if (isActive && time > 0) interval = setInterval(() => setTime(t => t - 1), 1000); else if (time === 0) { setIsActive(false); confetti(); } return () => clearInterval(interval); }, [isActive, time]);
-            return (<div className="space-y-8 text-center animate-slide-up"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Rebel Timer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Focus & Burn</p></header><div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${isActive ? 'border-[#FF007F] shadow-[0_0_40px_#FF007F33]' : 'border-white/5'}`}><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div><div className="grid grid-cols-3 gap-3">{[20, 30, 60].map(s => (<button key={s} onClick={() => {setDuration(s); setTime(s); setIsActive(true);}} className={`py-4 rounded-2xl border font-black uppercase text-xs transition-all ${duration === s && isActive ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-black/40 border-white/5 text-zinc-500'}`}>{s}s</button>))}</div><button onClick={() => setIsActive(!isActive)} className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl">{isActive ? 'Pause' : 'Start Timer'}</button></div>);
+            return (<div className="space-y-8 text-center animate-slide-up"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none">Rebel Timer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest">Focus & Burn</p></header><div className={`w-64 h-64 rounded-full mx-auto flex flex-col items-center justify-center border-[12px] transition-all duration-500 shadow-2xl ${isActive ? 'border-[#FF007F] shadow-[0_0_40px_#FF007F33]' : 'border-white/5'}`}><span className="text-7xl rebel-font font-black italic text-white leading-none">{time}</span></div><div className="grid grid-cols-3 gap-3">{[20, 30, 60].map(s => (<button key={s} onClick={() => {setDuration(s); setTime(s); setIsActive(true);}} className={`py-4 rounded-2xl border font-black uppercase text-xs transition-all ${duration === s && isActive ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-black/40 border-white/5 text-zinc-500'}`}>{s}s</button>))}</div><button onClick={() => setIsActive(!isActive)} className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl">{isActive ? 'Pause' : 'Start Burn'}</button></div>);
         };
 
         const BaseView = () => (
             <div className="space-y-6 animate-slide-up pb-10"><header><h2 className="text-2xl rebel-font font-black italic text-white uppercase leading-none text-white">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest">Hasengrundhalle</p></header>
-                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl"><div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-[0_0_15px_rgba(255,127,0,0.2)]"><Icon name="map-pin" size={32} /></div><div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-2">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+                <div className="bg-[#111] p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl"><div className="flex items-center gap-4"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-[0_0_15px_rgba(255,127,0,0.2)]"><Icon name="map-pin" size={32} /></div><div><h3 className="text-white font-black italic text-xl uppercase leading-none mb-2 leading-none">Hasengrundhalle</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-tight">Reinhard-Strecker-Straße 15,<br/>65428 Rüsselsheim am Main</p></div></div>
+                    <div className="grid grid-cols-2 gap-4 text-center"><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Training</span><span className="text-white font-black text-sm uppercase">Mi, 20-22h</span></div><div className="bg-black/40 p-5 rounded-2xl border border-white/5 shadow-inner transition-all"><span className="block text-[9px] uppercase text-zinc-600 font-black mb-1 tracking-widest">Status</span><span className="text-green-500 font-black text-sm uppercase font-bold">Fix ✅</span></div></div>
                     <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=de&amp;q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim%20am%20Main+(Hasengrundhalle)&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"></iframe></div></div></div>
         );
 
