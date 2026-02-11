@@ -78,9 +78,8 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // Firebase Config Handling
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "", 
+            apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk", 
             authDomain: "hsg-rebelhub.firebaseapp.com",
             projectId: "hsg-rebelhub",
             storageBucket: "hsg-rebelhub.firebasestorage.app",
@@ -109,7 +108,7 @@
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsg-rebelhub';
 
-        // --- UI COMPONENTS ---
+        // --- COMPONENTS ---
 
         const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
             <div className={`relative ${className}`}>
@@ -158,7 +157,7 @@
             // --- INITIALIZATION ---
 
             useEffect(() => {
-                const initFirebase = async () => {
+                const startApp = async () => {
                     let attempts = 0;
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
                     if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
@@ -189,11 +188,12 @@
                         });
                         return () => unsubscribe();
                     } catch (e) { 
+                        console.error("Firebase Init Failed:", e);
                         setLoading(false); 
                         setCloudStatus('error'); 
                     }
                 };
-                initFirebase();
+                startApp();
             }, []);
 
             // --- DATA SYNC (ONLY IF AUTHENTICATED) ---
@@ -205,7 +205,7 @@
                 const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setVotesData(data);
-                }, (err) => setCloudStatus('error'));
+                }, () => setCloudStatus('error'));
 
                 const unsubShout = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), (snap) => {
                     const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
@@ -258,7 +258,8 @@
             };
 
             const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
-            
+            const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
+
             const handleVote = async (id, val) => {
                 if (!db || !user) return;
                 const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
@@ -311,58 +312,58 @@
                         </div>
                     </header>
 
+                    {announcement && (
+                        <div className="px-6 pt-4">
+                            <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start">
+                                <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} />
+                                <div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div>
+                            </div>
+                        </div>
+                    )}
+
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => {
-                            const { collection, addDoc, serverTimestamp } = window.FB;
                             if (!db || !user) return;
+                            const { collection, addDoc, serverTimestamp } = window.FB;
                             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
                             if (t.match(/sieg|hype|rebel/i)) triggerHype();
-                        }} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { 
-                            const { doc, deleteDoc } = window.FB; 
+                        }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { 
                             if (!db) return;
-                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); 
+                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); 
                         }} />}
                         
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
                         
                         {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { 
-                            const { doc, setDoc } = window.FB; 
                             if (!db) return;
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); 
+                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); 
                         }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
                         
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} />}
                         
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { 
-                            const { doc, setDoc } = window.FB; 
+                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { 
                             if (!db || !user) return;
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); 
+                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); 
                         }} onHealthUpdate={async (s) => { 
-                            const { doc, setDoc } = window.FB; 
                             if (!db || !user) return;
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); 
+                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); 
                         }} onAddEvent={async (e) => { 
-                            const { collection, addDoc } = window.FB; 
                             if (!db) return;
-                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); 
+                            const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); 
                         }} onDeleteEvent={async (id) => { 
-                            const { doc, deleteDoc } = window.FB; 
                             if (!db) return;
-                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); 
+                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); 
                         }} onUpdateEvent={async (id, d) => { 
-                            const { doc, updateDoc } = window.FB; 
                             if (!db) return;
-                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); 
+                            const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); 
                         }} onSaveStats={async (id, s) => { 
-                            const { doc, setDoc } = window.FB; 
                             if (!db) return;
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); 
+                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); 
                         }} onUpdateNews={async (t) => { 
-                            const { doc, setDoc } = window.FB; 
                             if (!db) return;
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); 
+                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); 
                         }} announcement={announcement} />}
                     </main>
 
@@ -586,14 +587,22 @@
             );
         };
 
-        const ProfileManagement = ({ me, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement }) => {
+        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
-            const [showCardEditor, setShowCardEditor] = useState(false);
             const [newsInput, setNewsInput] = useState(announcement);
             const isAdmin = me.id === 'hc' || me.id === 'tm';
+
+            const handleSaveProfile = async () => {
+                await onSave(local, me.id);
+            };
+
+            const handleAddEvent = async () => {
+                await onAddEvent(newEvent);
+                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+            };
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
@@ -612,7 +621,7 @@
                             <div className="flex items-center gap-3"><label className="switch"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider"></span></label><span className="text-[10px] font-black uppercase tracking-widest">Rebel Taxi (Mitfahrgelegenheit)</span></div>
                             {local.carpool && <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />}
                         </div>
-                        <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg">Speichern</button>
+                        <button onClick={handleSaveProfile} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">Speichern</button>
                     </section>
 
                     <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
@@ -631,7 +640,7 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
-                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl"><RebelIcon name="check" size={16}/></button></div></div>
+                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl"><RebelIcon name="check" size={16}/></button></div></div>
                                     
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
@@ -662,12 +671,7 @@
                                                 </div>
                                             </div>
                                         )}
-                                        <button onClick={() => { 
-                                            const { collection, addDoc } = window.FB; 
-                                            if (!window.FB.getFirestore()) return;
-                                            addDoc(collection(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'schedule'), newEvent); 
-                                            setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})
-                                        }} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Event speichern</button>
+                                        <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Event speichern</button>
                                     </div>
                                 </div>
                             </section>
@@ -680,7 +684,7 @@
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => setEditingEvent(ev)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5"><RebelIcon name="pencil" size={18}/></button>
                                             {ev.type==='game' && <button onClick={() => setEditingStats(ev)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl"><RebelIcon name="bar-chart-2" size={18}/></button>}
-                                            <button onClick={() => { const { doc, deleteDoc } = window.FB; deleteDoc(doc(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'schedule', ev.id)); }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
+                                            <button onClick={() => onDeleteEvent(ev.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
                                         </div>
                                     </div>
                                 ))}
@@ -714,7 +718,7 @@
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => { onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null); }} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl mt-4">Änderungen speichern</button>
+                                    <button onClick={() => { onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null); }} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl mt-4 active:scale-95 transition-transform">Änderungen speichern</button>
                                 </div>
                             </div>
                         </div>
@@ -724,7 +728,7 @@
                         <div className="fixed inset-0 bg-black/95 z-[110] p-6 pt-24 overflow-y-auto no-scrollbar">
                             <div className="max-w-xl mx-auto space-y-8 animate-slide-up">
                                 <div className="flex justify-between items-center text-white"><h2 className="rebel-font font-black italic uppercase text-xl">STATS: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)}><RebelIcon name="x" size={32}/></button></div>
-                                <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-6"><div className="space-y-3">{SQUAD_DATA.map(s => <div key={s.id} className="bg-white/5 p-4 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5"><span className="text-white font-black italic text-xs w-24 truncate text-left">{s.name}</span><input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><div className="flex gap-2"><label className="text-yellow-500 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-8 h-8 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black font-black text-[10px]">Y</span></label><label className="text-red-500 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-8 h-8 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black font-black text-[10px]">R</span></label></div></div>)}</div><button type="submit" className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase shadow-2xl">Stats Speichern</button></form>
+                                <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); await onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-6"><div className="space-y-3">{SQUAD_DATA.map(s => <div key={s.id} className="bg-white/5 p-4 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5"><span className="text-white font-black italic text-xs w-24 truncate text-left">{s.name}</span><input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><div className="flex gap-2"><label className="text-yellow-500 cursor-pointer"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-8 h-8 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black font-black text-[10px]">Y</span></label><label className="text-red-500 cursor-pointer"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-8 h-8 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black font-black text-[10px]">R</span></label></div></div>)}</div><button type="submit" className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase shadow-2xl">Stats Speichern</button></form>
                             </div>
                         </div>
                     )}
