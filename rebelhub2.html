@@ -57,11 +57,6 @@
 
         @keyframes pulse-border { 0%, 100% { border-color: var(--rebel-pink); } 50% { border-color: #ff5eb3; } }
 
-        /* News Ticker Styling */
-        .ticker-wrap { width: 100%; overflow: hidden; background: rgba(255, 0, 127, 0.15); border-bottom: 1px solid rgba(255, 0, 127, 0.3); backdrop-blur-md; }
-        .ticker { display: inline-block; white-space: nowrap; padding-right: 100%; animation: ticker 30s linear infinite; }
-        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
-
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
@@ -97,27 +92,27 @@
         };
 
         const SQUAD_DATA = [
-            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap", number: 'HC' },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "Zap", number: 'TM' }, 
-            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame", number: '99' },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap", number: '11' },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "Flame", number: '15' },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target", number: '21' },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame", number: '2' },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap", number: '3' },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair", number: '12' },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users", number: '9' },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "Zap", number: '15' },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles", number: '24' },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame", number: '4' },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers", number: '3' },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award", number: '28' }
+            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "zap", number: 'TM' }, 
+            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "flame", number: '99' },
+            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "flame", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "zap", number: '15' },
+            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
         ];
 
         const APP_ID = 'hsg-rebelhub';
 
-        // --- GLOBAL HELPER COMPONENTS ---
+        // --- CORE COMPONENTS ---
 
         const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
             <div className={`relative ${className}`}>
@@ -162,8 +157,6 @@
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
             const [cloudStatus, setCloudStatus] = useState('connecting');
-
-            // --- FUNCTION DEFINITIONS ---
 
             const handleLogin = (e) => {
                 e.preventDefault();
@@ -229,8 +222,6 @@
                 return goalsMap;
             }, [schedule]);
 
-            // --- FIREBASE INIT ---
-
             useEffect(() => {
                 const init = async () => {
                     let attempts = 0;
@@ -292,8 +283,6 @@
                 });
             }, [db]);
 
-            // --- RENDER LOGIC ---
-
             if (loading) return (
                 <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
                     <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
@@ -331,7 +320,15 @@
                     </header>
 
                     {announcement && (
-                        <div className="ticker-wrap relative z-40"><div className="ticker text-[10px] font-black uppercase tracking-widest py-2 text-[#FF007F]">+++ {announcement} +++ {announcement} +++</div></div>
+                        <div className="px-6 py-4 mt-2">
+                            <div className="glass-card p-4 rounded-2xl border-l-4 border-[#FF007F] bg-[#FF007F]/5 animate-slide-up flex items-start gap-4">
+                                <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-1" size={20} />
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#FF007F]">Rebel News</p>
+                                    <p className="text-sm font-bold leading-relaxed">{announcement}</p>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
@@ -436,6 +433,14 @@
 
             return (
                 <div className="space-y-8 pb-10">
+                    {/* Carpool Hint */}
+                    {profiles[me.id]?.carpool && (
+                        <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-2xl flex items-center gap-3 animate-slide-up">
+                            <RebelIcon name="car" className="text-green-500" size={24} />
+                            <p className="text-xs font-bold text-green-500 uppercase tracking-widest leading-none">Mitfahrgelegenheit aktiv 🚗</p>
+                        </div>
+                    )}
+
                     {matchDayEvent && (
                         <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5">
                             <div className="flex justify-between items-center">
@@ -456,7 +461,7 @@
                             <div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4">
                                 <div><span className="block text-[10px] uppercase font-black opacity-60 mb-1 text-white">Austragungsort</span><span className="text-lg font-black uppercase leading-tight text-white">{matchDayEvent.location || 'Halle'}</span></div>
                                 <div className="flex justify-between items-end gap-4">
-                                    <div className="flex-1 text-left"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] leading-tight block">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
+                                    <div className="flex-1 text-left"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white font-black uppercase">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] leading-tight block">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
                                     <div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white">Jersey</span><span className="text-lg font-black uppercase text-white bg-[#FF007F] px-4 py-1 rounded-lg leading-none inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div>
                                 </div>
                             </div>
@@ -468,11 +473,11 @@
                             <div className={`glass-card p-6 rounded-3xl border border-white/5 shadow-xl`}>
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="trophy" size={28} /></div>
-                                    <div><p className="text-[10px] uppercase font-black text-[#FF007F]">{nextEvent.type==='game' ? (nextEvent.isHome ? 'HEIM-REBELLION' : 'AUSWÄRTS-REBELLION') : 'NEXT REBELLION'}</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div>
+                                    <div><p className="text-[10px] uppercase font-black text-[#FF007F]">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 text-center">
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 px-1">{nextEvent.location || 'Halle'}</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 px-1">{nextEvent.location || 'Halle'}</span></div>
                                 </div>
                                 {nextEvent.type === 'game' && (
                                     <div className="mt-3 bg-black/50 p-2.5 rounded-xl border border-[#FF007F]/30 text-center text-white leading-none">
@@ -510,13 +515,13 @@
                                 </div>
                                 <div className="flex items-center gap-2 px-1">
                                     <label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label>
-                                    <span className={`text-[10px] uppercase font-black text-zinc-500 tracking-widest`}>{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span>
+                                    <span className={`text-[10px] uppercase font-black text-zinc-500 tracking-widest leading-none`}>{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span>
                                 </div>
                             </div>
                             <div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar text-white">
                                 {(shoutbox || []).map(shout => (
                                     <div key={shout.id} className="animate-slide-up relative group/shout">
-                                        <div className="flex justify-between items-center mb-1 px-1">
+                                        <div className="flex justify-between items-center mb-1 px-1 text-white">
                                             <div className="flex items-center gap-2 text-white">
                                                 <span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'}`}>{shout.userName}</span>
                                                 {isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover/shout:opacity-100 transition-opacity text-red-500 p-1 leading-none"><RebelIcon name="trash-2" size={12} /></button>}
@@ -551,7 +556,7 @@
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4 items-center overflow-hidden">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
-                                        <div className="truncate text-white">
+                                        <div className="truncate text-white leading-none">
                                             <h4 className={`font-black italic uppercase text-lg leading-none truncate ${theme==='light'?'text-black':'text-white'}`}>{event.label}</h4>
                                             <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Halle'}</p>
                                         </div>
@@ -568,7 +573,7 @@
                                         items.length > 0 && (
                                             <div key={label} className="flex flex-col gap-2">
                                                 <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
-                                                <div className="flex flex-wrap gap-2 text-white">
+                                                <div className="flex flex-wrap gap-2 text-white text-white">
                                                     {items.map((it, idx) => (
                                                         <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black text-zinc-200 dark:text-white light:text-black"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>{it.name} {it.car && <RebelIcon name="car" size={14} className="text-[#FF007F]" />}</span>
                                                     ))}
@@ -597,11 +602,6 @@
                             {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5'}`}>{size}</button>)}
                         </div>
                         {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 leading-none"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest leading-none">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2 leading-none text-white">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 leading-none text-white"><span className="text-sm font-bold text-white leading-none">{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-sm font-black text-[#FF007F] leading-none">{val}</span></div>))}</div></div>}
-                    </div>
-                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl text-white">
-                        <div className="flex items-center gap-4 mb-6 leading-none"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none"><RebelIcon name="music" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Playlist Wishes</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold text-zinc-400 leading-none text-white leading-none text-white">Spotify Kabinensound</p></div></div>
-                        <div className="flex gap-2 leading-none"><input type="text" placeholder="Song & Interpret..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none leading-none" value={songInput} onChange={e => setSongInput(e.target.value)} /><button onClick={() => {onVote('playlist_wishes', songInput); setSongInput("");}} className="bg-[#FF007F] text-white p-3 rounded-xl leading-none"><RebelIcon name="plus" size={18}/></button></div>
-                        <div className="mt-6 space-y-2 max-h-40 overflow-y-auto no-scrollbar text-white leading-none">{Object.entries(spotifyPoll).map(([uid, song]) => (<div key={uid} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5 leading-none text-white"><RebelIcon name="play-circle" size={14} className="text-zinc-600" /><span className="text-xs font-bold truncate text-white leading-none">{song}</span><span className="text-[8px] font-black uppercase text-zinc-700 ml-auto leading-none text-white">{SQUAD_DATA.find(s => s.id === uid)?.name}</span></div>))}</div>
                     </div>
                 </div>
             );
@@ -638,15 +638,15 @@
             return (
                 <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white`}>
                     <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500"></div>
-                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow group-hover:border-[#FF007F]/50 transition-all text-white leading-none">
-                        <div className="p-5 flex justify-between items-start z-20 text-white leading-none">
+                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow group-hover:border-[#FF007F]/50 transition-all text-white leading-none text-white">
+                        <div className="p-5 flex justify-between items-start z-20 text-white leading-none text-white">
                             <div className="flex flex-col items-center leading-none"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1 text-center leading-none">SQUAD MEMBER</span></div>
                             <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)] leading-none"><RebelIcon name={member.icon || "zap"} size={20}/></div>
                         </div>
                         <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">{rating}</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500 text-white"/></div>
                         <div className="mt-auto relative z-20 text-white leading-none text-center">
                             <div className="px-5 pb-2 text-center text-white leading-none"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate text-white">{member.name}</h3>
-                                <div className="flex items-center justify-center gap-2 my-2 leading-none"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap leading-none">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div>
+                                <div className="flex items-center justify-center gap-2 my-2 leading-none"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap leading-none text-white">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div>
                                 <p className="text-[9px] text-[#FF007F] font-black uppercase tracking-[0.3em] italic mb-1 leading-none">"{member.motto || 'UNITED WE REBEL'}"</p>
                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1 text-white">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] leading-none text-white text-white"><StatItem label="Grip" val={stats.grip}/><StatItem label="Vibe" val={stats.vibe}/><StatItem label="Power" val={stats.power}/><StatItem label="Soul" val={stats.soul}/></div>
@@ -691,7 +691,7 @@
 
                     <section className="glass-card p-6 rounded-3xl border border-white/5 text-center leading-none">
                         <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'}`}>Health Status</h3>
-                        <div className="grid grid-cols-3 gap-3 leading-none">
+                        <div className="grid grid-cols-3 gap-3 leading-none text-white">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
                                 <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
                                     <RebelIcon name={status.icon} className={status.color} size={24}/><span className={`text-[8px] font-black uppercase tracking-widest mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{status.id}</span>
@@ -721,10 +721,10 @@
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                     <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-2 leading-none text-white">
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
                                     </div>
-                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white leading-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
+                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white leading-none text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
                                     <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})}} className="w-full bg-white light:bg-black light:text-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl leading-none">Event hinzufügen</button>
                                 </div>
                             </section>
@@ -751,7 +751,7 @@
                                 <div className="flex justify-between items-center leading-none"><h2 className={`rebel-font font-black italic uppercase text-2xl leading-none ${theme==='light'?'text-black':'text-white'}`}>Vote History</h2><button onClick={()=>setShowVoteHistory(false)} className="text-zinc-500 p-2 leading-none"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="space-y-3 leading-none text-white">
                                     {voteHistory.length > 0 ? voteHistory.map(entry => (
-                                        <div key={entry.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left text-white dark:text-white light:text-black leading-tight leading-none">
+                                        <div key={entry.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left text-white dark:text-white light:text-black leading-tight leading-none text-white">
                                             <div className="flex justify-between items-start mb-1 leading-none text-white">
                                                 <span className="text-[10px] font-black uppercase text-[#FF007F] leading-none text-white">{entry.userName}</span>
                                                 <span className="text-[8px] font-bold text-zinc-600 italic leading-none text-white">{new Date(entry.timestamp?.seconds * 1000).toLocaleString('de-DE')}</span>
@@ -767,14 +767,14 @@
                     {showCardEditor && (
                         <div className="fixed inset-0 bg-black/90 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
                             <div className={`max-w-2xl mx-auto space-y-8 pb-20 p-8 rounded-3xl border border-white/10 shadow-2xl animate-slide-up ${theme === 'dark' ? 'bg-[#111]' : 'bg-white'}`}>
-                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black leading-none text-white"><h2 className={`rebel-font font-black italic uppercase text-2xl`}>Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2 leading-none text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black leading-none text-white"><h2 className={`rebel-font font-black italic uppercase text-2xl`}>Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2 leading-none text-white text-white"><RebelIcon name="x" size={32}/></button></div>
                                 <div className="space-y-4 leading-none text-white">
                                     {SQUAD_DATA.map(s => {
                                         const p = profiles[s.id] || { grip: 85, vibe: 99, power: 88, soul: 95, attendance: 0 };
                                         return (
                                             <div key={s.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 flex flex-wrap items-center gap-4 text-white dark:text-white light:text-black leading-none text-white">
                                                 <span className={`font-black italic text-sm w-24 leading-none text-white`}>{s.name}</span>
-                                                <div className="grid grid-cols-5 gap-2 flex-grow leading-none text-white">
+                                                <div className="grid grid-cols-5 gap-2 flex-grow leading-none text-white text-white">
                                                     <input type="number" defaultValue={p.grip} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ grip: parseInt(e.target.value) || 0 }, s.id)} />
                                                     <input type="number" defaultValue={p.vibe} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ vibe: parseInt(e.target.value) || 0 }, s.id)} />
                                                     <input type="number" defaultValue={p.power} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ power: parseInt(e.target.value) || 0 }, s.id)} />
@@ -788,7 +788,24 @@
                             </div>
                         </div>
                     )}
-                    {/* Event Stats and Global Stats modals truncated for space - identical functional logic as per requirement to fix ReferenceError */}
+                    
+                    {showGlobalStats && (
+                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white">
+                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
+                                <div className="flex justify-between items-center leading-none text-white"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2 leading-none text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl text-white leading-none">
+                                    <table className="w-full text-left text-xs leading-none text-white">
+                                        <thead><tr className="text-[10px] uppercase font-black text-[#FF007F] leading-none text-white"><th>Spielerin</th><th className="text-center">Tore</th><th className="text-center">2M</th><th className="text-center">Y</th><th className="text-center">R</th><th className="text-center">B</th></tr></thead>
+                                        <tbody>{SQUAD_DATA.map(s => {
+                                            const stats = { goals: 0, p2m: 0, y: 0, r: 0, b: 0 };
+                                            schedule.forEach(ev => { if (ev.stats?.players?.[s.id]) { stats.goals += parseInt(ev.stats.players[s.id].g) || 0; stats.p2m += parseInt(ev.stats.players[s.id].p) || 0; if (ev.stats.players[s.id].y) stats.y++; if (ev.stats.players[s.id].r) stats.r++; if (ev.stats.players[s.id].b) stats.b++; } });
+                                            return <tr key={s.id} className="bg-black/40 border-b border-white/5 leading-none text-white"><td className="leading-none text-white">{s.name}</td><td className="text-center text-lg font-black text-[#FF007F] leading-none text-white">{stats.goals}</td><td className="text-center font-bold text-zinc-400 leading-none text-white">{stats.p2m}</td><td className="text-center font-bold text-yellow-500 leading-none text-white">{stats.y}</td><td className="text-center font-bold text-red-500 leading-none text-white">{stats.r}</td><td className="text-center font-bold text-blue-500 leading-none text-white">{stats.b}</td></tr>;
+                                        })}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -801,14 +818,14 @@
                 { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Im Reis 51 Rüsselsheim' }
             ];
             return (
-                <div className="space-y-6 animate-slide-up pb-10 leading-none">
-                    <header className="leading-none"><h2 className="text-2xl rebel-font font-black italic uppercase leading-none">Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none text-zinc-400">Training Locations</p></header>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white leading-none">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border leading-none ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-white/5 light:bg-black/5 text-zinc-500 border-white/5'}`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
+                <div className="space-y-6 animate-slide-up pb-10 leading-none text-white">
+                    <header className="leading-none"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none text-zinc-400">Training Locations</p></header>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white leading-none text-white">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border leading-none ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-white/5 light:bg-black/5 text-zinc-500 border-white/5'}`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
                     <div className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 space-y-6 shadow-2xl leading-none">
-                        <div className="flex items-center gap-4 leading-none"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl leading-none"><MapPin size={32} /></div><div className="leading-none"><h3 className={`font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight text-white dark:text-white light:text-zinc-600">{halls[activeHall].addr}</p></div></div>
+                        <div className="flex items-center gap-4 leading-none"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl leading-none text-white"><RebelIcon name="map-pin" size={32} /></div><div className="leading-none"><h3 className={`font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight text-white dark:text-white light:text-zinc-600 leading-none">{halls[activeHall].addr}</p></div></div>
                         <div className="grid grid-cols-2 gap-4 leading-none text-white text-white">
                             <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].search)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-white leading-none text-white"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white">Google Maps</span></a>
-                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-[#FF007F] leading-none"><RebelIcon name="navigation" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white">Apple Maps</span></a>
+                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-[#FF007F] leading-none text-white"><RebelIcon name="navigation" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white">Apple Maps</span></a>
                         </div>
                         <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 light:border-zinc-200 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl leading-none text-white"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map}></iframe></div>
                     </div>
@@ -816,9 +833,13 @@
             );
         };
 
-        const StatItem = ({ label, val }) => (<div className="flex flex-col gap-1 leading-none"><div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest leading-none"><span>{label}</span><span className={`font-black`}>{val}%</span></div><div className="h-1 w-full bg-white/5 light:bg-black/5 rounded-full overflow-hidden leading-none"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_#FF007F] leading-none" style={{width: `${val}%`}}></div></div></div>);
-        const NavButton = ({ icon, label, active, onClick }) => (<button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>{icon}<span className="text-[8px] font-black uppercase tracking-widest mt-1 leading-none">{label}</span></button>);
-        
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <RebelIcon name={icon} size={22} />
+                <span className="text-[8px] font-black uppercase tracking-widest mt-1 leading-none">{label}</span>
+            </button>
+        );
+
         const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
 </body>
