@@ -411,31 +411,10 @@
 
             return (
                 <div className="space-y-8 pb-10">
-                    {birthdayGirls.length > 0 && (
-                        <div className="bg-gradient-to-r from-pink-500/20 to-[#FF007F]/20 border border-[#FF007F] p-6 rounded-3xl shadow-[0_0_20px_rgba(255,0,127,0.3)] animate-bounce-slow text-center space-y-3">
-                            <div className="flex justify-center gap-2 text-2xl">🎉 🎂 🎈</div>
-                            <div>
-                                <h3 className="rebel-font font-black italic uppercase text-xl text-white">REBEL BIRTHDAY!</h3>
-                                <p className="text-sm font-bold text-zinc-300 mt-1">
-                                    Heute feiern wir {birthdayGirls.map((g, i) => <span key={g.id}>{i > 0 && " & "}<span className="text-[#FF007F]">{g.name}</span></span>)}!
-                                </p>
-                            </div>
-                            <button 
-                                onClick={() => {
-                                    birthdayGirls.forEach(g => onPostShout(`Happy Birthday, ${g.name}! 🎉🎈 Let's celebrate!`, false));
-                                    triggerBalloons();
-                                }} 
-                                className="bg-[#FF007F] text-white px-6 py-2 rounded-full font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-transform"
-                            >
-                                GRATULIEREN
-                            </button>
-                        </div>
-                    )}
-
                     {announcement && (
                         <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start">
                             <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} />
-                            <div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div>
+                            <div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><pBox className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</pBox></div>
                         </div>
                     )}
 
@@ -469,6 +448,28 @@
                                     {['Dabei', 'Nein', 'Maybe'].map(opt => { const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id]; return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>; })}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Birthday Box - Moved below announcements and games, narrower design */}
+                    {birthdayGirls.length > 0 && (
+                        <div className="max-w-xs mx-auto bg-gradient-to-br from-purple-800/90 to-[#FF007F]/90 border border-white/10 p-5 rounded-3xl shadow-xl animate-slide-up text-center space-y-2">
+                            <div className="flex justify-center gap-1.5 text-xl">🎉 🎂</div>
+                            <div>
+                                <h3 className="rebel-font font-black italic uppercase text-sm text-white">REBEL BIRTHDAY!</h3>
+                                <p className="text-[11px] font-bold text-white/90 mt-0.5">
+                                    Heute: {birthdayGirls.map((g, i) => <span key={g.id}>{i > 0 && " & "}{g.name}</span>)}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    birthdayGirls.forEach(g => onPostShout(`Happy Birthday, ${g.name}! 🎉🎈 Let's celebrate!`, false));
+                                    triggerBalloons();
+                                }} 
+                                className="bg-white text-black px-5 py-1.5 rounded-full font-black uppercase text-[9px] tracking-widest shadow-lg active:scale-95 transition-transform"
+                            >
+                                GRATULIEREN
+                            </button>
                         </div>
                     )}
 
