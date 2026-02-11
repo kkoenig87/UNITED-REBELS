@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA / iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="REBEL HUB">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#050505" id="theme-meta">
+    
+    <title>UNITED REBELS - Squad Hub Ultimate</title>
+    
+    <!-- Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;0,900;1,100;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --safe-top: env(safe-area-inset-top); 
+            --safe-bottom: env(safe-area-inset-bottom); 
+            --rebel-pink: #FF007F; 
+            --rebel-dark: #050505;
+        }
+        
+        body { 
+            font-family: 'Lato', sans-serif; 
+            transition: background-color 0.3s, color 0.3s; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .dark { background-color: var(--rebel-dark); color: #d4d4d8; }
+        .light { background-color: #f4f4f5; color: #18181b; }
+
+        .rebel-font { font-family: 'Poppins', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .neon-glow { text-shadow: 0 0 12px rgba(255, 0, 127, 0.7); }
+        .neon-border { box-shadow: 0 0 15px rgba(255, 0, 127, 0.3); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+
+        .glass-card { backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
+        .dark .glass-card { background: rgba(20, 20, 20, 0.6); }
+        .light .glass-card { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.05); }
+
+        .match-day-theme {
+            border: 2px solid var(--rebel-pink);
+            box-shadow: 0 0 40px rgba(255, 0, 127, 0.4);
+            background: linear-gradient(135deg, #050505 0%, #3a001e 100%) !important;
+            animation: pulse-border 3s infinite;
+        }
+
+        @keyframes pulse-border { 0%, 100% { border-color: var(--rebel-pink); } 50% { border-color: #ff60ad; } }
+
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--rebel-pink); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .stats-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        
+        /* Custom Checkbox Style */
+        .rebel-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .rebel-checkbox:checked {
+            background: var(--rebel-pink);
+            border-color: var(--rebel-pink);
+        }
+        .rebel-checkbox:checked::after {
+            content: "✓";
+            color: white;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="dark no-scrollbar">
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const FIREBASE_CONFIG = {
+            apiKey: "", // Wird von der Umgebung bereitgestellt
+            authDomain: "hsg-rebelhub.firebaseapp.com",
+            projectId: "hsg-rebelhub",
+            storageBucket: "hsg-rebelhub.firebasestorage.app",
+            messagingSenderId: "240623232398",
+            appId: "1:240623232398:web:012f79f0ebfa20cc3ff0df"
+        };
+
+        const SQUAD_DATA = [
+            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "zap", number: 'TM' }, 
+            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "flame", number: '99' },
+            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "flame", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "zap", number: '15' },
+            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
+        ];
+
+        const APP_ID = 'hsg-rebelhub';
+
+        // --- UI COMPONENTS ---
+
+        const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
+            <div className={`relative ${className}`}>
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_10px_rgba(255,0,127,0.6)]">
+                    <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" strokeWidth="6" />
+                    <text x="50" y="65" fontFamily="Poppins" fontSize="32" fontWeight="900" fill="#FF007F" textAnchor="middle" fontStyle="italic">UR</text>
+                </svg>
+                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${status === 'connected' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-zinc-500'} transition-colors`}></div>
+            </div>
+        );
+
+        const RebelIcon = ({ name, size = 24, className = "" }) => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && containerRef.current) {
+                    containerRef.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    const iconName = name ? name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() : 'zap';
+                    i.setAttribute('data-lucide', iconName);
+                    i.style.width = `${size}px`; i.style.height = `${size}px`;
+                    i.className = className;
+                    containerRef.current.appendChild(i);
+                    window.lucide.createIcons({ elements: [i] });
+                }
+            }, [name, size, className]);
+            return <span ref={containerRef} style={{ display: 'inline-flex', width: size, height: size }}></span>;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loginData, setLoginData] = useState({ id: '', pw: '' });
+            const [loginError, setLoginError] = useState('');
+            const [votesData, setVotesData] = useState({});
+            const [shoutbox, setShoutbox] = useState([]);
+            const [profiles, setProfiles] = useState({});
+            const [schedule, setSchedule] = useState([]);
+            const [health, setHealth] = useState({});
+            const [challenges, setChallenges] = useState([]);
+            const [announcement, setAnnouncement] = useState("");
+            const [theme, setTheme] = useState('dark');
+            const [db, setDb] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [cloudStatus, setCloudStatus] = useState('connecting');
+
+            // --- DATA HANDLERS ---
+
+            const initAuth = async (auth) => {
+                try {
+                    await window.FB.signInAnonymously(auth);
+                } catch (e) {
+                    console.error("Auth failed", e);
+                    setCloudStatus('error');
+                }
+            };
+
+            useEffect(() => {
+                const init = async () => {
+                    let attempts = 0;
+                    while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
+                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
+                    
+                    try {
+                        const app = window.FB.initializeApp(FIREBASE_CONFIG);
+                        const firestore = window.FB.getFirestore(app);
+                        const auth = window.FB.getAuth(app);
+                        setDb(firestore);
+                        
+                        await initAuth(auth);
+                        
+                        window.FB.onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setCloudStatus('connected');
+                                const savedId = localStorage.getItem('rebel_hub_user_id');
+                                if (savedId) {
+                                    const found = SQUAD_DATA.find(m => m.id === savedId);
+                                    if (found) setUser(found);
+                                }
+                            }
+                            setLoading(false);
+                        });
+                    } catch (e) { setLoading(false); setCloudStatus('error'); }
+                };
+                init();
+            }, []);
+
+            useEffect(() => {
+                if (!db || !window.FB) return;
+                const { collection, onSnapshot, doc } = window.FB;
+                
+                const unsubVotes = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setVotesData(data);
+                }, () => setCloudStatus('error'));
+
+                const unsubShouts = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), (snap) => {
+                    const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+                    msgs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    setShoutbox(msgs.slice(0, 50));
+                }, () => setCloudStatus('error'));
+
+                const unsubProfiles = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'profiles'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setProfiles(data);
+                });
+
+                const unsubSchedule = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), (snap) => {
+                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                    list.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    setSchedule(list);
+                });
+
+                const unsubHealth = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'health'), (snap) => {
+                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
+                    setHealth(data);
+                });
+
+                const unsubNews = onSnapshot(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), (snap) => {
+                    if (snap.exists()) setAnnouncement(snap.data().text || "");
+                });
+
+                const unsubChallenges = onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'challenges'), (snap) => {
+                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                    setChallenges(list);
+                });
+
+                return () => {
+                    unsubVotes(); unsubShouts(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubNews(); unsubChallenges();
+                };
+            }, [db]);
+
+            // --- ACTIONS ---
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const found = SQUAD_DATA.find(m => m.id === loginData.id);
+                if (found && found.pw === loginData.pw) {
+                    setUser(found);
+                    localStorage.setItem('rebel_hub_user_id', found.id);
+                } else {
+                    setLoginError('Passwort ungültig.');
+                }
+            };
+
+            const triggerHype = () => {
+                if (window.confetti) {
+                    window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff', '#4a0026'] });
+                }
+            };
+
+            const handleVote = async (eventId, val) => {
+                if (!db || !user) return;
+                const { doc, setDoc } = window.FB;
+                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${eventId}`), { [user.id]: val }, { merge: true });
+            };
+
+            const toggleChallenge = async (cid, currentState) => {
+                if (!db || !user) return;
+                const { doc, setDoc } = window.FB;
+                const updatedDone = currentState ? currentState.filter(id => id !== user.id) : [];
+                if (!currentState?.includes(user.id)) updatedDone.push(user.id);
+                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'challenges', cid), { doneBy: updatedDone }, { merge: true });
+                if (!currentState?.includes(user.id)) triggerHype();
+            };
+
+            // --- VIEWS ---
+
+            if (loading) return (
+                <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
+                    <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
+                    <p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">Systems Loading</p>
+                </div>
+            );
+
+            if (!user) return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
+                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
+                        <div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" status={cloudStatus} /></div>
+                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}>
+                                <option value="" disabled>Wer bist du?</option>
+                                {SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                            <input type="password" placeholder="Rebel Password" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>
+                            {loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}
+                            <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl active:scale-95 transition-transform">Get In</button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
+                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
+                        <div className="flex items-center gap-3">
+                            <RebelLogo className="w-9 h-9" status={cloudStatus} />
+                            <h2 className={`rebel-font font-black italic text-lg leading-none uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button>
+                             <button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button>
+                             <button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button>
+                        </div>
+                    </header>
+
+                    <main className="p-6 max-w-4xl mx-auto animate-slide-up space-y-8">
+                        {activeTab === 'dashboard' && <DashboardView user={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} votesData={votesData} onVote={handleVote} db={db} announcement={announcement} theme={theme} challenges={challenges} onToggleChallenge={toggleChallenge} />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} schedule={schedule} theme={theme} />}
+                        {activeTab === 'base' && <BaseView theme={theme} />}
+                        {activeTab === 'settings' && <SettingsView me={user} profile={profiles[user.id] || {}} theme={theme} onSave={async (d) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', user.id), d, { merge: true });
+                        }} onHealthUpdate={async (s) => {
+                            const { doc, setDoc } = window.FB;
+                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true });
+                        }} currentHealth={(health['current'] || {})[user.id] || 'Fit'} isAdmin={user.id === 'hc' || user.id === 'tm'} db={db} schedule={schedule} />}
+                    </main>
+
+                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
+                        <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
+                        <NavButton icon="settings" label="Setup" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    </nav>
+                </div>
+            );
+        };
+
+        // --- SUB-VIEWS ---
+
+        const DashboardView = ({ user, schedule, shoutbox, profiles, votesData, onVote, db, announcement, theme, challenges, onToggleChallenge }) => {
+            const [msg, setMsg] = useState("");
+
+            const nextGame = useMemo(() => schedule.find(e => e.type === 'game' && new Date(e.date) >= new Date().setHours(0,0,0,0)), [schedule]);
+            const nextTraining = useMemo(() => schedule.find(e => e.type === 'training' && new Date(e.date) >= new Date().setHours(0,0,0,0)), [schedule]);
+
+            const postShout = async () => {
+                if (!msg.trim() || !db) return;
+                const { collection, addDoc, serverTimestamp } = window.FB;
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), {
+                    userId: user.id, userName: user.name, text: msg, timestamp: serverTimestamp()
+                });
+                setMsg("");
+            };
+
+            return (
+                <div className="space-y-8 pb-10">
+                    {announcement && (
+                        <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl animate-pulse">
+                            <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">Rebel Alert</p>
+                            <p className="text-sm font-bold mt-1 text-white">{announcement}</p>
+                        </div>
+                    )}
+
+                    {nextGame && (
+                        <div className="match-day-theme p-6 rounded-[2.5rem] space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="bg-white text-black px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest italic">Next Rebellion</span>
+                                <span className="text-white text-xs font-black">{new Date(nextGame.date).toLocaleDateString('de-DE')}</span>
+                            </div>
+                            <h3 className="rebel-font font-black italic text-3xl text-white uppercase leading-none">{nextGame.label}</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white/10 p-3 rounded-2xl border border-white/10 text-center">
+                                    <p className="text-[8px] uppercase font-black text-zinc-400">Anpfiff</p>
+                                    <p className="text-xl font-black text-white">{nextGame.time} Uhr</p>
+                                </div>
+                                <div className="bg-white/10 p-3 rounded-2xl border border-white/10 text-center">
+                                    <p className="text-[8px] uppercase font-black text-zinc-400">Trikot</p>
+                                    <p className="text-xl font-black text-[#FF007F]">{nextGame.jerseyColor || 'Black'}</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                {['Dabei', 'Nein', 'Maybe'].map(opt => {
+                                    const active = (votesData[`event_${nextGame.id}`] || {})[user.id] === opt;
+                                    return <button key={opt} onClick={() => onVote(nextGame.id, opt)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase border transition-all ${active ? 'bg-white text-black border-white' : 'bg-black/40 border-white/10 text-white'}`}>{opt}</button>
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="glass-card p-6 rounded-3xl space-y-4">
+                            <h4 className="rebel-font font-black italic uppercase text-lg text-[#FF007F]">Rebel Challenges</h4>
+                            <div className="space-y-3">
+                                {challenges.length > 0 ? challenges.map(c => (
+                                    <div key={c.id} className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5">
+                                        <input type="checkbox" className="rebel-checkbox" checked={c.doneBy?.includes(user.id)} onChange={() => onToggleChallenge(c.id, c.doneBy)} />
+                                        <div className="flex-grow">
+                                            <p className="text-xs font-black uppercase leading-none text-white">{c.title}</p>
+                                            <div className="w-full bg-zinc-800 h-1 rounded-full mt-2">
+                                                <div className="bg-[#FF007F] h-full rounded-full transition-all" style={{ width: `${(c.doneBy?.length || 0) / SQUAD_DATA.length * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-zinc-500">{c.doneBy?.length || 0}/{SQUAD_DATA.length}</span>
+                                    </div>
+                                )) : <p className="text-xs italic text-zinc-600">Keine aktiven Challenges.</p>}
+                            </div>
+                        </div>
+
+                        <div className="glass-card p-6 rounded-3xl space-y-4">
+                            <h4 className="rebel-font font-black italic uppercase text-lg text-white">Digital Cabin Wall</h4>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none text-white" value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && postShout()} />
+                                <button onClick={postShout} className="bg-[#FF007F] p-2 rounded-xl text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto space-y-3 no-scrollbar">
+                                {shoutbox.map(s => (
+                                    <div key={s.id} className="text-sm">
+                                        <span className="font-black text-[10px] text-[#FF007F] uppercase tracking-tighter mr-2">{s.userName}:</span>
+                                        <span className="text-zinc-300">{s.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        const SquadView = ({ myId, profiles, health, schedule, theme }) => {
+            const squadGoals = useMemo(() => {
+                const goals = {};
+                schedule.forEach(ev => {
+                    if (ev.stats?.players) {
+                        Object.entries(ev.stats.players).forEach(([pid, s]) => {
+                            goals[pid] = (goals[pid] || 0) + (parseInt(s.g) || 0);
+                        });
+                    }
+                });
+                return goals;
+            }, [schedule]);
+
+            return (
+                <div className="space-y-8 pb-10">
+                    <header>
+                        <h2 className={`text-3xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>The Squad</h2>
+                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-widest">UNITED REBELS 2026</p>
+                    </header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        {SQUAD_DATA.map(m => {
+                            const p = profiles[m.id] || {};
+                            const h = health[m.id] || 'Fit';
+                            const g = squadGoals[m.id] || 0;
+                            return (
+                                <div key={m.id} className="relative">
+                                    <div className={`absolute -top-3 -right-3 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${h==='Verletzt'?'bg-red-500 border-red-400 text-white':h==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`}>
+                                        {h}
+                                    </div>
+                                    <div className="glass-card p-6 rounded-[2rem] border border-[#FF007F]/20 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                                            <RebelIcon name={m.icon} size={80} className="text-[#FF007F]" />
+                                        </div>
+                                        <div className="relative z-10 flex flex-col items-center">
+                                            <div className="text-5xl font-black italic text-[#FF007F] leading-none mb-2">#{m.number}</div>
+                                            <h3 className="text-2xl font-black italic uppercase text-white truncate w-full text-center mb-1">{m.name}</h3>
+                                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">"{p.motto || 'UNITED WE REBEL'}"</p>
+                                            
+                                            <div className="grid grid-cols-2 gap-4 w-full mt-6">
+                                                <div className="text-center bg-black/40 p-3 rounded-2xl border border-white/5">
+                                                    <p className="text-[8px] font-black text-zinc-500 uppercase">Saison Tore</p>
+                                                    <p className="text-xl font-black text-white">{g}</p>
+                                                </div>
+                                                <div className="text-center bg-black/40 p-3 rounded-2xl border border-white/5">
+                                                    <p className="text-[8px] font-black text-zinc-500 uppercase">Vibe Score</p>
+                                                    <p className="text-xl font-black text-[#FF007F]">{p.vibe || 99}%</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const BaseView = ({ theme }) => {
+            const halls = [
+                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' },
+                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, Bauschheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }
+            ];
+            const [sel, setSel] = useState(0);
+
+            return (
+                <div className="space-y-8 pb-10">
+                    <header>
+                        <h2 className={`text-3xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2>
+                        <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar">
+                            {halls.map((h, i) => (
+                                <button key={i} onClick={() => setSel(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${sel === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/20 text-zinc-500 border-white/5'}`}>{h.name.split(' ')[1]}</button>
+                            ))}
+                        </div>
+                    </header>
+                    <div className="glass-card p-6 rounded-[2.5rem] space-y-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20"><RebelIcon name="map-pin" size={32} /></div>
+                            <div>
+                                <h3 className="font-black italic text-xl uppercase text-white leading-none">{halls[sel].name}</h3>
+                                <p className="text-[10px] text-zinc-500 font-bold mt-1 uppercase">{halls[sel].addr}</p>
+                            </div>
+                        </div>
+                        <div className="w-full h-64 rounded-3xl overflow-hidden border border-white/10 grayscale opacity-60">
+                            <iframe width="100%" height="100%" frameBorder="0" src={halls[sel].map}></iframe>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsView = ({ me, profile, theme, onSave, onHealthUpdate, currentHealth, isAdmin, db, schedule }) => {
+            const [local, setLocal] = useState({ motto: profile.motto || '', trait: profile.trait || '' });
+            const [newChall, setNewChall] = useState("");
+            const [newsInput, setNewsInput] = useState("");
+
+            const handleSave = () => onSave(local);
+
+            const addChallenge = async () => {
+                if (!newChall.trim() || !db) return;
+                const { collection, addDoc } = window.FB;
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'challenges'), { title: newChall, doneBy: [] });
+                setNewChall("");
+            };
+
+            const updateNews = async () => {
+                if (!db) return;
+                const { doc, setDoc } = window.FB;
+                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), { text: newsInput });
+                setNewsInput("");
+            };
+
+            return (
+                <div className="space-y-8 pb-10">
+                    <section className="glass-card p-6 rounded-3xl space-y-6">
+                        <h3 className="rebel-font font-black italic uppercase text-xl text-white">Rebel Profile</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block">Dein Rebel Motto</label>
+                                <input type="text" className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#FF007F]" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
+                            </div>
+                            <button onClick={handleSave} className="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl">Update Identity</button>
+                        </div>
+                    </section>
+
+                    <section className="glass-card p-6 rounded-3xl space-y-4">
+                        <h3 className="rebel-font font-black italic uppercase text-lg text-white text-center">Health Status</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[{id:'Fit', icon:'zap', col:'text-green-500'}, {id:'Angeschlagen', icon:'thermometer', col:'text-yellow-500'}, {id:'Verletzt', icon:'alert-triangle', col:'text-red-500'}].map(s => (
+                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${currentHealth === s.id ? 'bg-white/10 border-[#FF007F]' : 'bg-black/40 border-white/5 opacity-40'}`}>
+                                    <RebelIcon name={s.icon} className={s.col} size={24}/><span className="text-[8px] font-black uppercase text-white">{s.id}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
+                    {isAdmin && (
+                        <section className="bg-[#FF007F]/5 border border-[#FF007F]/20 p-6 rounded-3xl space-y-6">
+                            <h3 className="rebel-font font-black italic uppercase text-xl text-[#FF007F] text-center">Admin Command Center</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block">Global News Alert</label>
+                                    <div className="flex gap-2">
+                                        <input type="text" className="flex-grow bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} />
+                                        <button onClick={updateNews} className="bg-[#FF007F] px-4 rounded-xl text-white font-black uppercase text-[10px]">Post</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-zinc-500 mb-2 block">New Team Challenge</label>
+                                    <div className="flex gap-2">
+                                        <input type="text" className="flex-grow bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white" value={newChall} onChange={e => setNewChall(e.target.value)} />
+                                        <button onClick={addChallenge} className="bg-white text-black px-4 rounded-xl font-black uppercase text-[10px]">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+                </div>
+            );
+        };
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all flex-1 ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.5)]' : 'text-zinc-600'}`}>
+                <RebelIcon name={icon} size={24} />
+                <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
+    </script>
+</body>
+</html>
