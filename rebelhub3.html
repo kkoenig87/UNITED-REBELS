@@ -11,7 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#050505" id="theme-meta">
     
-    <title>UNITED REBELS - Squad Hub Ultimate</title>
+    <title>UNITED REBELS - Rebel Hub Ultimate</title>
     
     <!-- Libraries -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -71,14 +71,15 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, where };
+        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        // Firebase Config Handling
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "", 
             authDomain: "hsg-rebelhub.firebaseapp.com",
             projectId: "hsg-rebelhub",
@@ -106,9 +107,9 @@
             { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
         ];
 
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'hsg-rebelhub';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsg-rebelhub';
 
-        // --- COMPONENTS ---
+        // --- UI COMPONENTS ---
 
         const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
             <div className={`relative ${className}`}>
@@ -154,22 +155,28 @@
             const [loading, setLoading] = useState(true);
             const [cloudStatus, setCloudStatus] = useState('connecting');
 
+            // --- INITIALIZATION ---
+
             useEffect(() => {
-                const init = async () => {
+                const initFirebase = async () => {
                     let attempts = 0;
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
                     if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
+                    
                     try {
-                        const app = window.FB.initializeApp(FIREBASE_CONFIG);
-                        const firestore = window.FB.getFirestore(app);
-                        const auth = window.FB.getAuth(app);
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore } = window.FB;
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
                         setDb(firestore);
+
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await window.FB.signInWithCustomToken(auth, __initial_auth_token);
+                            await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
-                            await window.FB.signInAnonymously(auth);
+                            await signInAnonymously(auth);
                         }
-                        window.FB.onAuthStateChanged(auth, (u) => {
+
+                        const unsubscribe = onAuthStateChanged(auth, (u) => {
                             if (u) {
                                 setCloudStatus('connected');
                                 const savedId = localStorage.getItem('rebel_hub_user_id');
@@ -180,45 +187,64 @@
                             }
                             setLoading(false);
                         });
-                    } catch (e) { setLoading(false); setCloudStatus('error'); }
+                        return () => unsubscribe();
+                    } catch (e) { 
+                        setLoading(false); 
+                        setCloudStatus('error'); 
+                    }
                 };
-                init();
+                initFirebase();
             }, []);
 
+            // --- DATA SYNC (ONLY IF AUTHENTICATED) ---
+
             useEffect(() => {
-                if (!db || !window.FB) return;
+                if (!db || !user || !window.FB) return;
                 const { collection, onSnapshot, doc } = window.FB;
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes'), (snap) => {
+                
+                const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setVotesData(data);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), (snap) => {
+                }, (err) => setCloudStatus('error'));
+
+                const unsubShout = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), (snap) => {
                     const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
                     msgs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setShoutbox(msgs);
+                    setShoutbox(msgs.slice(0, 50));
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'profiles'), (snap) => {
+
+                const unsubProfiles = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setProfiles(data);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), (snap) => {
+
+                const unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), (snap) => {
                     const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                     list.sort((a, b) => new Date(a.date) - new Date(b.date));
                     setSchedule(list);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'health'), (snap) => {
+
+                const unsubHealth = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'health'), (snap) => {
                     const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
                     setHealth(data);
                 });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), (snap) => {
+
+                const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), (snap) => {
                     const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                     list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                     setVoteHistory(list.slice(0, 50));
                 });
-                onSnapshot(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), (snap) => {
+
+                const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), (snap) => {
                     if (snap.exists()) setAnnouncement(snap.data().text || "");
                 });
-            }, [db]);
+
+                return () => {
+                    unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubHistory(); unsubNews();
+                };
+            }, [db, user]);
+
+            // --- ACTIONS ---
 
             const handleLogin = (e) => {
                 e.preventDefault();
@@ -232,15 +258,14 @@
             };
 
             const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
-            const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
-
+            
             const handleVote = async (id, val) => {
                 if (!db || !user) return;
                 const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
                 const event = schedule.find(ev => ev.id === id);
-                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), {
-                    userId: user.id, userName: user.name, eventLabel: event?.label || 'Votings', voteValue: val, timestamp: serverTimestamp()
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), {
+                    userId: user.id, userName: user.name, eventLabel: event?.label || 'Planung', voteValue: val, timestamp: serverTimestamp()
                 });
             };
 
@@ -253,7 +278,7 @@
             if (loading) return (
                 <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
                     <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
-                    <p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">System Ready</p>
+                    <p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">Systems Operational</p>
                 </div>
             );
 
@@ -261,7 +286,7 @@
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
                     <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
                         <div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" status={cloudStatus} /></div>
-                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8">Rebel Hub</h1>
+                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
                         <form onSubmit={handleLogin} className="space-y-6">
                             <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
                             <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>
@@ -289,19 +314,56 @@
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => {
                             const { collection, addDoc, serverTimestamp } = window.FB;
-                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
+                            if (!db || !user) return;
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
                             if (t.match(/sieg|hype|rebel/i)) triggerHype();
-                        }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox', id)); }} />}
+                        }} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { 
+                            const { doc, deleteDoc } = window.FB; 
+                            if (!db) return;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); 
+                        }} />}
                         
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
                         
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
+                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { 
+                            const { doc, setDoc } = window.FB; 
+                            if (!db) return;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); 
+                        }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
                         
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} />}
                         
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); }} onHealthUpdate={async (s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id, d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id, s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { 
+                            const { doc, setDoc } = window.FB; 
+                            if (!db || !user) return;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); 
+                        }} onHealthUpdate={async (s) => { 
+                            const { doc, setDoc } = window.FB; 
+                            if (!db || !user) return;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); 
+                        }} onAddEvent={async (e) => { 
+                            const { collection, addDoc } = window.FB; 
+                            if (!db) return;
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); 
+                        }} onDeleteEvent={async (id) => { 
+                            const { doc, deleteDoc } = window.FB; 
+                            if (!db) return;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); 
+                        }} onUpdateEvent={async (id, d) => { 
+                            const { doc, updateDoc } = window.FB; 
+                            if (!db) return;
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); 
+                        }} onSaveStats={async (id, s) => { 
+                            const { doc, setDoc } = window.FB; 
+                            if (!db) return;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); 
+                        }} onUpdateNews={async (t) => { 
+                            const { doc, setDoc } = window.FB; 
+                            if (!db) return;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); 
+                        }} announcement={announcement} />}
                     </main>
 
                     <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
@@ -316,7 +378,7 @@
             );
         };
 
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, onDeleteShout, profiles, triggerBalloons, onVote, votesData, isAdmin, goals, theme, announcement }) => {
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, onDeleteShout, profiles, onVote, votesData, isAdmin, goals, theme, announcement }) => {
             const [newShout, setNewShout] = useState('');
             const [isAnon, setIsAnon] = useState(false);
             const [countdown, setCountdown] = useState("");
@@ -342,10 +404,6 @@
 
             const carpoolList = useMemo(() => Object.entries(profiles).filter(([uid, p]) => p.carpool).map(([uid, p]) => ({ name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebel', location: p.carpoolLocation || 'Halle' })), [profiles]);
             const nextEvent = !matchDayEvent ? (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0)) : null;
-            const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
-            const bdayGirls = Object.values(profiles || {}).filter(p => p.birthday && p.birthday.trim().startsWith(todayStr.slice(0, 5)));
-            
-            useEffect(() => { if (bdayGirls.length > 0) triggerBalloons(); }, [bdayGirls.length]);
 
             return (
                 <div className="space-y-8 pb-10">
@@ -509,7 +567,7 @@
                     <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow">
                         <div className="p-5 flex justify-between items-start z-20">
                             <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
-                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)]"><RebelIcon name={member.icon} size={20}/></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><RebelIcon name={member.icon} size={20}/></div>
                         </div>
                         <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{rating}</div><RebelIcon name={member.icon} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
                         <div className="mt-auto relative z-20">
@@ -573,7 +631,7 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
-                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(window.FB.getFirestore(), 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl"><RebelIcon name="check" size={16}/></button></div></div>
+                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl"><RebelIcon name="check" size={16}/></button></div></div>
                                     
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
@@ -604,7 +662,12 @@
                                                 </div>
                                             </div>
                                         )}
-                                        <button onClick={() => { const { collection, addDoc } = window.FB; addDoc(collection(window.FB.getFirestore(), 'artifacts', APP_ID, 'public', 'data', 'schedule'), newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})}} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Event speichern</button>
+                                        <button onClick={() => { 
+                                            const { collection, addDoc } = window.FB; 
+                                            if (!window.FB.getFirestore()) return;
+                                            addDoc(collection(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'schedule'), newEvent); 
+                                            setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})
+                                        }} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Event speichern</button>
                                     </div>
                                 </div>
                             </section>
@@ -617,7 +680,7 @@
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => setEditingEvent(ev)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5"><RebelIcon name="pencil" size={18}/></button>
                                             {ev.type==='game' && <button onClick={() => setEditingStats(ev)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl"><RebelIcon name="bar-chart-2" size={18}/></button>}
-                                            <button onClick={() => { const { doc, deleteDoc } = window.FB; deleteDoc(doc(window.FB.getFirestore(), 'artifacts', APP_ID, 'public', 'data', 'schedule', ev.id)); }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
+                                            <button onClick={() => { const { doc, deleteDoc } = window.FB; deleteDoc(doc(window.FB.getFirestore(), 'artifacts', appId, 'public', 'data', 'schedule', ev.id)); }} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><RebelIcon name="trash-2" size={18}/></button>
                                         </div>
                                     </div>
                                 ))}
@@ -641,7 +704,7 @@
                                         <div className="space-y-4 pt-4 border-t border-white/5">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Treffzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.meetingTime} onChange={e => setEditingEvent({...editingEvent, meetingTime: e.target.value})} /></div>
-                                                <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Treffort</label><input type="text" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} /></div>
+                                                <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Treffort</label><input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} /></div>
                                             </div>
                                             <div className="flex gap-2 items-center">
                                                 <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.jerseyColor} onChange={e => setEditingEvent({...editingEvent, jerseyColor: e.target.value})} />
