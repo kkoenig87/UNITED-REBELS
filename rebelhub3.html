@@ -196,7 +196,7 @@
                 startApp();
             }, []);
 
-            // --- DATA SYNC (ONLY IF AUTHENTICATED) ---
+            // --- DATA SYNC ---
 
             useEffect(() => {
                 if (!db || !user || !window.FB) return;
@@ -408,13 +408,6 @@
 
             return (
                 <div className="space-y-8 pb-10">
-                    {announcement && (
-                        <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start">
-                            <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} />
-                            <div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div>
-                        </div>
-                    )}
-
                     {matchDayEvent && (
                         <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5">
                             <div className="flex justify-between items-center"><span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest animate-bounce italic">MATCH DAY</span><div className="text-right text-white font-black text-xs uppercase">Anpfiff in: {countdown}</div></div>
@@ -587,7 +580,7 @@
             );
         };
 
-        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement }) => {
+        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, onAddEvent, onUpdateNews, theme, announcement }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
@@ -609,17 +602,17 @@
                     <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl space-y-4">
                         <h3 className={`rebel-font font-black italic uppercase text-lg ${theme==='light'?'text-black':'text-white'}`}>Mein Profil</h3>
                         <div className="grid grid-cols-2 gap-4 text-white">
-                            <input type="text" placeholder="Name" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
-                            <input type="text" placeholder="Emoji" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-center" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
+                            <input type="text" placeholder="Name" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
+                            <input type="text" placeholder="Emoji" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-center text-white" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
                         </div>
                         <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
                         <div className="grid grid-cols-2 gap-4 text-white">
-                            <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
-                            <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
+                            <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
+                            <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
                         </div>
                         <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 text-white">
                             <div className="flex items-center gap-3"><label className="switch"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider"></span></label><span className="text-[10px] font-black uppercase tracking-widest">Rebel Taxi (Mitfahrgelegenheit)</span></div>
-                            {local.carpool && <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />}
+                            {local.carpool && <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />}
                         </div>
                         <button onClick={handleSaveProfile} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">Speichern</button>
                     </section>
@@ -640,7 +633,7 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
-                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl"><RebelIcon name="check" size={16}/></button></div></div>
+                                    <div className="space-y-1"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
                                     
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
@@ -648,30 +641,30 @@
                                             <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'bg-black/20 text-zinc-600'}`}>Training</button>
                                             <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'bg-black/20 text-zinc-600'}`}>Spiel</button>
                                         </div>
-                                        <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                        <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                        <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
+                                        <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
                                         
                                         <div className="grid grid-cols-3 gap-2 text-white">
-                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
-                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
-                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
                                         </div>
 
                                         {newEvent.type === 'game' && (
                                             <div className="space-y-3 bg-white/5 p-3 rounded-xl border border-white/5 animate-slide-up">
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} /></div>
-                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffort</label><input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} /></div>
+                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} /></div>
+                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffort</label><input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} /></div>
                                                 </div>
                                                 <div className="flex gap-2 items-center">
-                                                    <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
+                                                    <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
                                                     <button onClick={() => setNewEvent({...newEvent, isHome: !newEvent.isHome})} className={`px-4 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>
                                                         {newEvent.isHome ? 'Heim' : 'Auswärts'}
                                                     </button>
                                                 </div>
                                             </div>
                                         )}
-                                        <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl">Event speichern</button>
+                                        <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform">Event speichern</button>
                                     </div>
                                 </div>
                             </section>
@@ -700,9 +693,9 @@
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
                                     <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
                                     <div className="grid grid-cols-3 gap-4 text-white">
-                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
-                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
-                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} /></div>
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} /></div>
                                     </div>
                                     {editingEvent.type === 'game' && (
                                         <div className="space-y-4 pt-4 border-t border-white/5">
