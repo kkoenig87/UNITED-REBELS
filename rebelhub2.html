@@ -92,27 +92,27 @@
         };
 
         const SQUAD_DATA = [
-            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "zap", number: 'TM' }, 
-            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "flame", number: '99' },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "zap", number: '11' },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "flame", number: '15' },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "target", number: '21' },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "flame", number: '2' },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "zap", number: '3' },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "crosshair", number: '12' },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "users", number: '9' },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "zap", number: '15' },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "sparkles", number: '24' },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "flame", number: '4' },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "layers", number: '3' },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
+            { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "Zap", number: 'HC' },
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "Zap", number: 'TM' }, 
+            { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "Flame", number: '99' },
+            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "Zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "Flame", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "Target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "Flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "Zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "Crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "Users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "Zap", number: '15' },
+            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "Sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "Flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "Layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "Zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "Award", number: '28' }
         ];
 
         const APP_ID = 'hsg-rebelhub';
 
-        // --- CORE COMPONENTS ---
+        // --- COMPONENTS ---
 
         const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
             <div className={`relative ${className}`}>
@@ -158,16 +158,7 @@
             const [loading, setLoading] = useState(true);
             const [cloudStatus, setCloudStatus] = useState('connecting');
 
-            const handleLogin = (e) => {
-                e.preventDefault();
-                const found = SQUAD_DATA.find(m => m.id === loginData.id);
-                if (found && found.pw === loginData.pw) {
-                    setUser(found);
-                    localStorage.setItem('rebel_hub_user_id', found.id);
-                } else {
-                    setLoginError('Passwort ungültig.');
-                }
-            };
+            // --- FUNCTION DEFINITIONS ---
 
             const triggerHype = () => {
                 if (window.confetti) {
@@ -192,12 +183,16 @@
                 if (!db || !window.FB) return;
                 const { collection, addDoc, serverTimestamp } = window.FB;
                 await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), { 
-                    userId: a ? 'anon' : user.id, 
-                    userName: a ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name, 
-                    text: t, 
-                    timestamp: serverTimestamp() 
+                    userId: a ? 'anon' : user.id, userName: a ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name, 
+                    text: t, timestamp: serverTimestamp() 
                 });
                 if (t.toLowerCase().match(/sieg|hype|rebel|geil/)) triggerHype();
+            };
+
+            const deleteShout = async (id) => {
+                if (!db || !window.FB) return;
+                const { doc, deleteDoc } = window.FB;
+                await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox', id));
             };
 
             const handleVote = async (id, val) => {
@@ -221,6 +216,19 @@
                 });
                 return goalsMap;
             }, [schedule]);
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const found = SQUAD_DATA.find(m => m.id === loginData.id);
+                if (found && found.pw === loginData.pw) {
+                    setUser(found);
+                    localStorage.setItem('rebel_hub_user_id', found.id);
+                } else {
+                    setLoginError('Passwort ungültig.');
+                }
+            };
+
+            // --- FIREBASE EFFECT ---
 
             useEffect(() => {
                 const init = async () => {
@@ -283,6 +291,8 @@
                 });
             }, [db]);
 
+            // --- RENDERING ---
+
             if (loading) return (
                 <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
                     <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
@@ -320,21 +330,19 @@
                     </header>
 
                     {announcement && (
-                        <div className="px-6 pt-4">
-                            <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start">
-                                <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} />
+                        <div className="px-6 pt-4 animate-slide-up">
+                            <div className="glass-card p-5 rounded-2xl border-l-4 border-[#FF007F] bg-[#FF007F]/5 flex gap-4 items-start shadow-lg">
+                                <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-1" size={24} />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p>
-                                    <p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p>
+                                    <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">Rebel News</p>
+                                    <p className="text-sm font-bold dark:text-white light:text-black leading-relaxed">{announcement}</p>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} onDeleteShout={async (id) => {
-                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox', id));
-                        }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} />}
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} onDeleteShout={deleteShout} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} />}
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
                         {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => {
                             if (!window.FB) return;
@@ -388,10 +396,7 @@
         };
 
         const DashboardView = ({ me, schedule, shoutbox, onPostShout, onDeleteShout, profiles, triggerBalloons, onVote, votesData, isAdmin, goals, theme }) => {
-            const [newShout, setNewShout] = useState('');
-            const [isAnon, setIsAnon] = useState(false);
             const [countdown, setCountdown] = useState("");
-
             const matchDayEvent = useMemo(() => {
                 const now = new Date();
                 const dayEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -426,53 +431,55 @@
             const nextEvent = !matchDayEvent ? (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0)) : null;
             const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
             const bdayGirls = Object.values(profiles || {}).filter(p => p.birthday && p.birthday.trim().startsWith(todayStr.slice(0, 5)));
-            
-            useEffect(() => { if (bdayGirls.length > 0) triggerBalloons(); }, [bdayGirls.length]);
-
-            const totalTeamGoals = Object.values(goals).reduce((a, b) => a + b, 0);
+            const totalGoals = Object.values(goals).reduce((a, b) => a + b, 0);
             const topScorers = useMemo(() => {
                 return Object.entries(goals).map(([id, g]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', g })).sort((a, b) => b.g - a.g).slice(0, 3);
             }, [goals]);
 
+            useEffect(() => { if (bdayGirls.length > 0) triggerBalloons(); }, [bdayGirls.length]);
+
             return (
-                <div className="space-y-8 pb-10">
+                <div className="space-y-8 pb-10 leading-none">
                     {matchDayEvent && (
-                        <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5">
+                        <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5 leading-none">
                             <div className="flex justify-between items-center">
                                 <span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest animate-bounce italic leading-none">MATCH DAY</span>
                                 <div className="text-right text-white font-black text-xs uppercase leading-none">Anpfiff in: {countdown}</div>
                             </div>
                             <h2 className="rebel-font font-black italic text-3xl uppercase leading-none text-white leading-none">{matchDayEvent.label}</h2>
-                            <div className="grid grid-cols-2 gap-3 text-center text-white">
+                            <div className="grid grid-cols-2 gap-3 text-center text-white leading-none text-white leading-none">
                                 <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
-                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white">Anpfiff</span>
+                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white text-white">Anpfiff</span>
                                     <span className="text-xl font-black text-white leading-none">{matchDayEvent.time} Uhr</span>
                                 </div>
                                 <div className="bg-white/10 p-4 rounded-2xl border border-white/20 text-center">
-                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white">Treffpunkt</span>
+                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white text-white">Treffpunkt</span>
                                     <span className="text-xl font-black text-white leading-none">{matchDayEvent.meetingTime || '?'} Uhr</span>
                                 </div>
                             </div>
                             <div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4 text-white">
                                 <div><span className="block text-[10px] uppercase font-black opacity-60 mb-1 text-white leading-none">Austragungsort</span><span className="text-lg font-black uppercase leading-tight text-white leading-none">{matchDayEvent.location || 'Halle'}</span></div>
-                                <div className="flex justify-between items-end gap-4 leading-none">
-                                    <div className="flex-1 text-left leading-none"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white leading-none">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] leading-tight block leading-none">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
-                                    <div className="text-right leading-none"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white leading-none">Jersey</span><span className="text-lg font-black uppercase text-white bg-[#FF007F] px-4 py-1 rounded-lg leading-none inline-block leading-none">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div>
+                                <div className="flex justify-between items-end gap-4">
+                                    <div className="flex-1 text-left"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white font-black uppercase">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] leading-tight block">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
+                                    <div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white font-black">Jersey</span><span className="text-lg font-black uppercase text-white bg-[#FF007F] px-4 py-1 rounded-lg leading-none inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div>
                                 </div>
+                                {!matchDayEvent.isHome && (
+                                    <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2 text-[9px] font-black uppercase opacity-80 text-white">
+                                        <div className="flex items-center gap-1">✓ Trikot & Schuhe</div>
+                                        <div className="flex items-center gap-1">✓ Harz & Wasser</div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
                     {nextEvent && (
-                        <div className="space-y-4">
-                            <div className={`glass-card p-6 rounded-3xl border border-white/5 shadow-xl`}>
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none"><RebelIcon name="trophy" size={28} /></div>
-                                    <div><p className="text-[10px] uppercase font-black text-[#FF007F] leading-none">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 text-center">
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 leading-none">Zeit</span><span className="font-black text-sm leading-none">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 leading-none">Ort</span><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 px-1 truncate leading-none">{nextEvent.location || 'Halle'}</span></div>
+                        <div className="space-y-4 leading-none">
+                            <div className={`glass-card p-6 rounded-3xl border border-white/5 shadow-xl leading-none`}>
+                                <div className="flex items-center gap-4 mb-4 text-white leading-none"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none leading-none leading-none leading-none"><RebelIcon name="trophy" size={28} /></div><div><p className="text-[10px] uppercase font-black text-[#FF007F] leading-none">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div></div>
+                                <div className="grid grid-cols-2 gap-3 text-center text-white text-white leading-none text-white text-white leading-none text-white">
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white text-white leading-none text-white leading-none"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 leading-none text-white">Zeit</span><span className="font-black text-sm leading-none text-white leading-none text-white">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white text-white leading-none text-white leading-none text-white text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 leading-none text-white text-white">Ort</span><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 px-1 truncate leading-none text-white text-white leading-none">{nextEvent.location || 'Halle'}</span></div>
                                 </div>
                                 {nextEvent.type === 'game' && (
                                     <div className="mt-3 bg-black/50 p-2.5 rounded-xl border border-[#FF007F]/30 text-center text-white leading-none">
@@ -480,72 +487,41 @@
                                     </div>
                                 )}
                             </div>
-                            <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl text-center">
+                            <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl text-center leading-none text-white">
                                 <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'}`}>Schnellwahl: Bist du dabei?</h3>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['Dabei', 'Nein', 'Maybe'].map(opt => {
-                                        const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id];
-                                        return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>;
-                                    })}
+                                <div className="grid grid-cols-3 gap-2 leading-none text-white">
+                                    {['Dabei', 'Nein', 'Maybe'].map(opt => (
+                                        <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all leading-none ${votesData[`event_${nextEvent.id}`]?.[me.id]===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {carpoolList.length > 0 && (
-                        <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-3 animate-slide-up">
-                            <div className="flex items-center gap-2 leading-none">
-                                <RebelIcon name="car" className="text-green-500" size={24} />
-                                <h4 className="text-xs font-black uppercase text-green-500 tracking-widest leading-none">Rebel-Sammeltaxi</h4>
+                        <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-3 animate-slide-up leading-none text-white">
+                            <div className="flex items-center gap-2 leading-none text-white">
+                                <RebelIcon name="car" className="text-green-500 leading-none" size={24} />
+                                <h4 className="text-xs font-black uppercase text-green-500 tracking-widest leading-none text-white">Rebel-Sammeltaxi</h4>
                             </div>
-                            <div className="space-y-2 leading-none">
+                            <div className="space-y-2 leading-none text-white">
                                 {carpoolList.map((cp, idx) => (
-                                    <div key={idx} className="bg-black/20 p-3 rounded-xl flex justify-between items-center border border-green-500/10 leading-none">
-                                        <span className="text-sm font-black dark:text-white light:text-black leading-none">{cp.name}</span>
-                                        <span className="text-[10px] font-bold text-green-500 uppercase italic leading-none">ab {cp.location}</span>
+                                    <div key={idx} className="bg-black/20 p-3 rounded-xl flex justify-between items-center border border-green-500/10 leading-none text-white text-white">
+                                        <span className="text-sm font-black dark:text-white light:text-black leading-none text-white text-white">{cp.name}</span>
+                                        <span className="text-[10px] font-bold text-green-500 uppercase italic leading-none text-white">ab {cp.location}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5 leading-none"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 leading-none">Rebel Team Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1 leading-none">{totalTeamGoals}</p><p className="text-[8px] uppercase font-bold text-zinc-600 mt-1 leading-none">Saison 2026</p></div>
-                        <div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white leading-none">
-                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2 leading-none text-white leading-none">Top Scorers 👑</p>
-                            {topScorers.map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5 leading-none py-0.5 text-white dark:text-white light:text-black leading-none"><span className="truncate leading-none">{i+1}. {s.name}</span><span className="text-[#FF007F] leading-none">{s.g}</span></div>)}
+                    <div className="grid grid-cols-2 gap-4 leading-none text-white text-white leading-none text-white text-white">
+                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5 leading-none text-white text-white"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 leading-none text-white">Rebel Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1 leading-none text-white text-white">{totalGoals}</p><p className="text-[8px] uppercase font-bold text-zinc-600 mt-1 leading-none text-white text-white leading-none">Saison 2026</p></div>
+                        <div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white leading-none text-white text-white text-white text-white text-white">
+                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2 leading-none text-white text-white text-white text-white text-white text-white">Top Scorers 👑</p>
+                            {topScorers.map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5 leading-none py-0.5 text-white dark:text-white light:text-black text-white text-white text-white text-white text-white text-white leading-none"><span className="truncate leading-none text-white text-white text-white text-white text-white text-white">{i+1}. {s.name}</span><span className="text-[#FF007F] leading-none text-white text-white text-white text-white text-white text-white text-white">{s.g}</span></div>)}
                         </div>
                     </div>
-
-                    <section className="space-y-4">
-                        <div className="flex justify-between items-end px-2 leading-none"><h3 className={`rebel-font font-black italic uppercase text-xl leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Digital Cabin Wall</h3></div>
-                        <div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl leading-none">
-                            <div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3 leading-none text-white">
-                                <div className="flex gap-3 text-white dark:text-white light:text-black leading-none">
-                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none leading-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
-                                    <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg leading-none"><RebelIcon name="send" size={18}/></button>
-                                </div>
-                                <div className="flex items-center gap-2 px-1 leading-none">
-                                    <label className="switch leading-none"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider leading-none leading-none"></span></label>
-                                    <span className={`text-[10px] uppercase font-black text-zinc-500 tracking-widest leading-none`}>{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span>
-                                </div>
-                            </div>
-                            <div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar text-white leading-none">
-                                {(shoutbox || []).map(shout => (
-                                    <div key={shout.id} className="animate-slide-up relative group/shout leading-none">
-                                        <div className="flex justify-between items-center mb-1 px-1 text-white leading-none">
-                                            <div className="flex items-center gap-2 text-white leading-none">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'} leading-none`}>{shout.userName}</span>
-                                                {isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover/shout:opacity-100 transition-opacity text-red-500 p-1 leading-none"><RebelIcon name="trash-2" size={12} /></button>}
-                                            </div>
-                                            <span className="text-[7px] font-bold text-zinc-700 italic leading-none">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span>
-                                        </div>
-                                        <div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 shadow-sm text-white dark:text-white light:text-black leading-none leading-none"><p className="text-sm leading-relaxed leading-none">{shout.text}</p></div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
                 </div>
             );
         };
@@ -553,8 +529,8 @@
         const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme }) => {
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
-                <div className="space-y-6 pb-10 text-white leading-none">
-                    <header className="leading-none text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none">Wer ist dabei?</p></header>
+                <div className="space-y-6 pb-10 text-white leading-none text-white">
+                    <header className="leading-none text-white text-white text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white`}>Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none text-white text-white">Wer ist dabei?</p></header>
                     {upcoming.map(event => {
                         const eventVotes = votesData[`event_${event.id}`] || {};
                         const grouped = { 'Dabei': [], 'Nein': [], 'Maybe': [] };
@@ -564,30 +540,30 @@
                         });
 
                         return (
-                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col gap-5 shadow-xl text-white leading-none">
-                                <div className="flex justify-between items-start leading-none text-white">
-                                    <div className="flex gap-4 items-center overflow-hidden leading-none text-white">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'} leading-none text-white`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
-                                        <div className="truncate text-white leading-none">
-                                            <h4 className={`font-black italic uppercase text-lg leading-none truncate ${theme==='light'?'text-black':'text-white'} leading-none`}>{event.label}</h4>
-                                            <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Halle'}</p>
+                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col gap-5 shadow-xl text-white leading-none text-white text-white text-white">
+                                <div className="flex justify-between items-start leading-none text-white text-white text-white">
+                                    <div className="flex gap-4 items-center overflow-hidden leading-none text-white text-white text-white">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'} leading-none text-white text-white text-white`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
+                                        <div className="truncate text-white leading-none text-white text-white">
+                                            <h4 className={`font-black italic uppercase text-lg leading-none truncate ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>{event.label}</h4>
+                                            <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase leading-none text-white text-white text-white">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Halle'}</p>
                                         </div>
                                     </div>
-                                    {event.type==='game' && <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border shrink-0 ${event.isHome ? 'border-[#FF007F] text-[#FF007F] bg-[#FF007F]/10' : 'border-zinc-700 text-zinc-400 bg-zinc-800'} leading-none text-white`}>{event.isHome ? '🏠 HEIM' : '🚌 AUSW'}</span>}
+                                    {event.type==='game' && <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border shrink-0 ${event.isHome ? 'border-[#FF007F] text-[#FF007F] bg-[#FF007F]/10' : 'border-zinc-700 text-zinc-400 bg-zinc-800'} leading-none text-white text-white text-white`}>{event.isHome ? '🏠 HEIM' : '🚌 AUSW'}</span>}
                                 </div>
-                                <div className="grid grid-cols-3 gap-3 leading-none text-white">
+                                <div className="grid grid-cols-3 gap-3 leading-none text-white text-white">
                                     {['Dabei', 'Nein', 'Maybe'].map(opt => (
-                                        <button key={opt} onClick={() => onVote(event.id, opt)} className={`py-4 rounded-xl text-[12px] font-black uppercase border transition-all ${eventVotes[userId]===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'} leading-none`}>{opt}</button>
+                                        <button key={opt} onClick={() => onVote(event.id, opt)} className={`py-4 rounded-xl text-[12px] font-black uppercase border transition-all leading-none ${eventVotes[userId]===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'} leading-none text-white text-white text-white`}>{opt}</button>
                                     ))}
                                 </div>
-                                <div className="space-y-4 mt-2 pt-5 border-t border-white/5 text-white leading-none">
+                                <div className="space-y-4 mt-2 pt-5 border-t border-white/5 text-white leading-none text-white text-white text-white">
                                     {Object.entries(grouped).map(([label, items]) => (
                                         items.length > 0 && (
-                                            <div key={label} className="flex flex-col gap-2 leading-none text-white">
-                                                <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'} leading-none`}>{label} ({items.length})</span>
-                                                <div className="flex flex-wrap gap-2 text-white leading-none">
+                                            <div key={label} className="flex flex-col gap-2 leading-none text-white text-white text-white">
+                                                <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'} leading-none text-white text-white text-white`}>{label} ({items.length})</span>
+                                                <div className="flex flex-wrap gap-2 text-white leading-none text-white text-white text-white">
                                                     {items.map((it, idx) => (
-                                                        <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black text-zinc-200 dark:text-white light:text-black leading-none"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor] leading-none`}></span>{it.name} {it.car && <RebelIcon name="car" size={14} className="text-[#FF007F] leading-none" />}</span>
+                                                        <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black text-zinc-200 dark:text-white light:text-black leading-none text-white text-white text-white text-white text-white"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor] leading-none text-white text-white text-white`}></span>{it.name} {it.car && <RebelIcon name="car" size={14} className="text-[#FF007F] leading-none text-white text-white" />}</span>
                                                     ))}
                                                 </div>
                                             </div>
@@ -604,14 +580,14 @@
         const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme }) => {
             const sizePoll = votesData['warmup_shirt_size'] || {};
             return (
-                <div className="space-y-8 animate-slide-up pb-10 text-white leading-none">
-                    <header className="leading-none text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none">Bestimme mit.</p></header>
-                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl leading-none text-white">
-                        <div className="flex items-center gap-4 mb-6 text-white leading-none"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none text-white"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold text-zinc-400 leading-none text-white leading-none leading-none text-white">Bestellung neue Saison</p></div></div>
-                        <div className="grid grid-cols-4 gap-2 leading-none text-white">
-                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5'} leading-none text-white`}>{size}</button>)}
+                <div className="space-y-8 animate-slide-up pb-10 text-white leading-none text-white text-white text-white text-white">
+                    <header className="leading-none text-white text-white text-white text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none text-white text-white text-white">Bestimme mit.</p></header>
+                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl leading-none text-white text-white text-white text-white">
+                        <div className="flex items-center gap-4 mb-6 text-white leading-none text-white text-white text-white text-white text-white text-white"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none text-white text-white text-white text-white text-white text-white"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold text-zinc-400 leading-none text-white leading-none leading-none text-white text-white text-white">Bestellung neue Saison</p></div></div>
+                        <div className="grid grid-cols-4 gap-2 leading-none text-white text-white text-white text-white text-white">
+                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all leading-none text-white text-white text-white ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5'}`}>{size}</button>)}
                         </div>
-                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 leading-none text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest leading-none leading-none text-white">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2 leading-none text-white text-white">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 leading-none text-white text-white"><span className="text-sm font-bold text-white leading-none leading-none text-white">{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-sm font-black text-[#FF007F] leading-none leading-none text-white">{val}</span></div>))}</div></div>}
+                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 leading-none text-white text-white text-white text-white text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest leading-none leading-none text-white text-white text-white">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2 leading-none text-white text-white text-white text-white text-white">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 leading-none text-white text-white text-white text-white text-white"><span className="text-sm font-bold text-white leading-none leading-none text-white text-white text-white">{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-sm font-black text-[#FF007F] leading-none leading-none text-white text-white text-white">{val}</span></div>))}</div></div>}
                     </div>
                 </div>
             );
@@ -619,22 +595,20 @@
 
         const SquadView = ({ myId, profiles, health, goals, theme }) => {
             return (
-                <div className="space-y-12 pb-20 text-white leading-none">
-                    <header className="leading-none text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none leading-none text-white">Rebel Cards & Health Status</p></header>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 text-white text-white leading-none text-white">
+                <div className="space-y-12 pb-20 text-white leading-none text-white text-white text-white text-white">
+                    <header className="leading-none text-white text-white text-white text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none text-white text-white text-white text-white">Rebel Cards & Health Status</p></header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 text-white text-white leading-none text-white text-white text-white text-white">
                         {SQUAD_DATA.map(m => {
                             const prof = profiles[m.id] || {};
-                            const stats = { grip: prof.grip || 85, vibe: prof.vibe || 99, power: prof.power || 88, soul: prof.soul || 95 };
-                            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
                             return (
-                                <div key={m.id} className="relative leading-none text-white">
-                                    <RebelCard member={{...m, ...prof, rating}} isMe={m.id === myId} goals={goals[m.id] || 0} />
-                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'} leading-none text-white`}>
+                                <div key={m.id} className="relative leading-none text-white text-white">
+                                    <RebelCard member={{...m, ...prof}} isMe={m.id === myId} goals={goals[m.id] || 0} />
+                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'} leading-none text-white text-white`}>
                                         {health[m.id] || 'Fit'}
                                     </div>
-                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2 leading-none text-white">
-                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F] leading-none leading-none text-white">{prof.attendance || 0}% ATT</div>
-                                        {prof.emoji && <div className="text-2xl drop-shadow-lg leading-none leading-none text-white">{prof.emoji}</div>}
+                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2 leading-none text-white text-white">
+                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F] leading-none leading-none text-white text-white">{prof.attendance || 0}% ATT</div>
+                                        {prof.emoji && <div className="text-2xl drop-shadow-lg leading-none leading-none text-white text-white">{prof.emoji}</div>}
                                     </div>
                                 </div>
                             );
@@ -646,21 +620,22 @@
 
         const RebelCard = ({ member, isMe, goals = 0 }) => {
             const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
+            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
             return (
-                <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white leading-none text-white`}>
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500 leading-none text-white"></div>
-                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow group-hover:border-[#FF007F]/50 transition-all text-white leading-none text-white leading-none text-white">
-                        <div className="p-5 flex justify-between items-start z-20 text-white leading-none text-white leading-none text-white leading-none">
-                            <div className="flex flex-col items-center leading-none leading-none text-white"><span className="text-4xl rebel-font font-black italic leading-none leading-none text-white">{member.rating || 88}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1 text-center leading-none leading-none text-white">SQUAD MEMBER</span></div>
-                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)] leading-none leading-none text-white"><RebelIcon name={member.icon} size={20}/></div>
+                <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white leading-none text-white leading-none text-white`}>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500 leading-none text-white text-white"></div>
+                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow group-hover:border-[#FF007F]/50 transition-all text-white leading-none text-white leading-none text-white text-white leading-none">
+                        <div className="p-5 flex justify-between items-start z-20 text-white leading-none text-white leading-none text-white leading-none text-white text-white leading-none text-white">
+                            <div className="flex flex-col items-center leading-none leading-none text-white text-white"><span className="text-4xl rebel-font font-black italic leading-none leading-none text-white text-white">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1 text-center leading-none leading-none text-white text-white">SQUAD MEMBER</span></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)] leading-none leading-none text-white text-white text-white leading-none text-white text-white"><RebelIcon name={member.icon || "zap"} size={20}/></div>
                         </div>
-                        <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden leading-none text-white"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none leading-none text-white">{member.rating || 88}</div><RebelIcon name={member.icon} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500 text-white leading-none text-white"/></div>
-                        <div className="mt-auto relative z-20 text-white leading-none text-center text-white">
-                            <div className="px-5 pb-2 text-center text-white leading-none leading-none text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate text-white leading-none text-white">{member.name}</h3>
-                                <div className="flex items-center justify-center gap-2 my-2 leading-none leading-none leading-none text-white"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50 leading-none text-white"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap leading-none leading-none text-white">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50 leading-none text-white"></div></div>
-                                <p className="text-[9px] text-[#FF007F] font-black uppercase tracking-[0.3em] italic mb-1 leading-none leading-none text-white">"{member.motto || 'UNITED WE REBEL'}"</p>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1 text-white leading-none text-white">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] leading-none text-white text-white leading-none text-white"><StatItem label="Grip" val={stats.grip}/><StatItem label="Vibe" val={stats.vibe}/><StatItem label="Power" val={stats.power}/><StatItem label="Soul" val={stats.soul}/></div>
+                        <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden leading-none text-white text-white"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none leading-none text-white text-white">{rating}</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500 text-white leading-none text-white text-white"/></div>
+                        <div className="mt-auto relative z-20 text-white leading-none text-center text-white text-white">
+                            <div className="px-5 pb-2 text-center text-white leading-none leading-none text-white text-white text-white text-white leading-none text-white text-white"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate text-white leading-none text-white text-white text-white">{member.name}</h3>
+                                <div className="flex items-center justify-center gap-2 my-2 leading-none leading-none leading-none text-white text-white text-white text-white text-white text-white text-white"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50 leading-none text-white text-white text-white"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap leading-none leading-none text-white text-white text-white">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50 leading-none text-white text-white text-white text-white text-white"></div></div>
+                                <p className="text-[9px] text-[#FF007F] font-black uppercase tracking-[0.3em] italic mb-1 leading-none leading-none text-white text-white text-white">"{member.motto || 'UNITED WE REBEL'}"</p>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1 text-white leading-none text-white text-white text-white">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] leading-none text-white text-white leading-none text-white text-white text-white leading-none text-white text-white text-white text-white"><StatItem label="Grip" val={stats.grip}/><StatItem label="Vibe" val={stats.vibe}/><StatItem label="Power" val={stats.power}/><StatItem label="Soul" val={stats.soul}/></div>
                         </div>
                     </div>
                 </div>
@@ -668,16 +643,7 @@
         };
 
         const ProfileManagement = ({ me, profile, profiles, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateNews, voteHistory, theme, announcement }) => {
-            const [local, setLocal] = useState({ 
-                name: profile.name || me.name, 
-                birthday: profile.birthday || '', 
-                number: profile.number || me.number || '', 
-                trait: profile.trait || '', 
-                motto: profile.motto || '', 
-                emoji: profile.emoji || '', 
-                carpool: profile.carpool || false,
-                carpoolLocation: profile.carpoolLocation || ''
-            });
+            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
@@ -688,90 +654,94 @@
             const isAdmin = me.id === 'hc' || me.id === 'tm';
 
             return (
-                <div className="space-y-8 animate-slide-up pb-10 leading-none">
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl leading-none">
-                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-6 leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Mein Profil</h3>
-                        <div className="space-y-4 leading-none text-white">
-                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white leading-none">
-                                <input type="text" placeholder="Name" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white leading-none" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
-                                <input type="text" placeholder="Emoji" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none text-center leading-none text-white leading-none" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
+                <div className="space-y-8 animate-slide-up pb-10 leading-none text-white">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl leading-none text-white">
+                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-6 leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white`}>Mein Profil</h3>
+                        <div className="space-y-4 leading-none text-white text-white">
+                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white leading-none text-white text-white">
+                                <input type="text" placeholder="Name" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white leading-none text-white text-white text-white" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
+                                <input type="text" placeholder="Emoji" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none text-center leading-none text-white leading-none text-white text-white text-white" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
                             </div>
-                            <input type="text" placeholder="Dein Motto..." className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
-                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white leading-none">
-                                <input type="text" placeholder="Birthday (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
-                                <input type="text" placeholder="Trikot #" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
+                            <input type="text" placeholder="Dein Motto..." className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none text-white text-white text-white text-white text-white text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
+                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white leading-none text-white text-white text-white text-white text-white text-white">
+                                <input type="text" placeholder="Birthday (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none text-white text-white text-white text-white text-white text-white text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
+                                <input type="text" placeholder="Trikot #" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white leading-none text-white text-white text-white text-white text-white text-white text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
                             </div>
-                            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 leading-none text-white">
-                                <div className="flex items-center gap-3 leading-none text-white">
-                                    <label className="switch leading-none"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider leading-none leading-none text-white"></span></label>
-                                    <span className={`text-[10px] font-black uppercase leading-none leading-none text-white`}>Mitfahrgelegenheit</span>
+                            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 leading-none text-white text-white text-white">
+                                <div className="flex items-center gap-3 leading-none text-white text-white text-white text-white">
+                                    <label className="switch leading-none text-white"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider leading-none leading-none text-white text-white"></span></label>
+                                    <span className={`text-[10px] uppercase font-black ${theme==='light'?'text-black':'text-white'} leading-none leading-none text-white text-white text-white text-white`}>Biete Mitfahrgelegenheit</span>
                                 </div>
                                 {local.carpool && (
-                                    <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none leading-none text-white" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />
+                                    <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none leading-none text-white text-white text-white" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />
                                 )}
                             </div>
                         </div>
-                        <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg active:scale-95 transition-all leading-none leading-none text-white">Speichern</button>
+                        <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg active:scale-95 transition-all leading-none leading-none text-white text-white text-white">Speichern</button>
                     </section>
 
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center leading-none">
-                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Health Status</h3>
-                        <div className="grid grid-cols-3 gap-3 leading-none text-white">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center leading-none text-white text-white text-white">
+                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>Health Status</h3>
+                        <div className="grid grid-cols-3 gap-3 leading-none text-white text-white text-white text-white">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
                                 <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
-                                    <RebelIcon name={status.icon} className={status.color} size={24}/><span className={`text-[8px] font-black uppercase tracking-widest mt-1 leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white`}>{status.id}</span>
+                                    <RebelIcon name={status.icon} className={status.color} size={24}/><span className={`text-[8px] font-black uppercase tracking-widest mt-1 leading-none ${theme==='light'?'text-black':'text-white'} leading-none text-white text-white text-white`}>{status.id}</span>
                                 </button>
                             ))}
                         </div>
                     </section>
 
                     {isAdmin && (
-                        <div className="space-y-8 leading-none leading-none text-white">
-                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 shadow-2xl text-white leading-none leading-none text-white">
-                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest text-center leading-none text-white">Admin Control</h3>
-                                <div className="space-y-3 leading-none leading-none text-white">
-                                    <div className="space-y-1 mb-4 leading-none text-white leading-none text-white">
-                                         <label className="text-[8px] font-black uppercase text-zinc-500 ml-2 leading-none leading-none text-white">News Ticker Management</label>
-                                         <div className="flex gap-2 leading-none text-white leading-none text-white"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs leading-none text-white outline-none leading-none text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl leading-none text-white leading-none leading-none text-white"><RebelIcon name="check" size={16}/></button><button onClick={() => { onUpdateNews(""); setNewsInput(""); }} className="bg-red-500/20 p-3 rounded-xl leading-none text-red-500 leading-none leading-none text-white"><RebelIcon name="trash-2" size={16}/></button></div>
+                        <div className="space-y-8 leading-none leading-none text-white text-white text-white text-white">
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 shadow-2xl text-white leading-none leading-none text-white text-white text-white text-white text-white">
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest text-center leading-none text-white text-white text-white text-white">Admin Control</h3>
+                                <div className="space-y-3 leading-none leading-none text-white text-white text-white text-white">
+                                    <div className="space-y-1 mb-4 leading-none text-white leading-none text-white text-white text-white">
+                                         <label className="text-[8px] font-black uppercase text-zinc-500 ml-2 leading-none leading-none text-white text-white text-white">News Ticker Management</label>
+                                         <div className="flex gap-2 leading-none text-white leading-none text-white text-white text-white text-white"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs leading-none text-white outline-none leading-none text-white text-white text-white" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl leading-none text-white leading-none leading-none text-white text-white text-white text-white"><RebelIcon name="check" size={16}/></button><button onClick={() => { onUpdateNews(""); setNewsInput(""); }} className="bg-red-500/20 p-3 rounded-xl leading-none text-red-500 leading-none leading-none text-white text-white text-white text-white"><RebelIcon name="trash-2" size={16}/></button></div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 leading-none text-white leading-none text-white">
-                                        <button onClick={() => setShowGlobalStats(true)} className="w-full bg-black/40 border border-[#FF007F] py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white dark:text-white light:text-black leading-none text-white leading-none leading-none text-white"><RebelIcon name="bar-chart-2" size={14}/> Stats</button>
-                                        <button onClick={() => setShowCardEditor(true)} className="w-full bg-[#FF007F] text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none text-white leading-none text-white text-white leading-none"><RebelIcon name="refresh-cw" size={14}/> Cards</button>
-                                        <button onClick={() => setShowVoteHistory(true)} className="w-full bg-blue-500 text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none text-white leading-none text-white text-white leading-none"><RebelIcon name="history" size={14}/> History</button>
+                                    <div className="grid grid-cols-3 gap-2 leading-none text-white leading-none text-white text-white text-white text-white text-white">
+                                        <button onClick={() => setShowGlobalStats(true)} className="w-full bg-black/40 border border-[#FF007F] py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white dark:text-white light:text-black leading-none text-white leading-none leading-none text-white text-white text-white text-white"><RebelIcon name="bar-chart-2" size={14}/> Stats</button>
+                                        <button onClick={() => setShowCardEditor(true)} className="w-full bg-[#FF007F] text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none leading-none text-white text-white text-white text-white text-white leading-none"><RebelIcon name="refresh-cw" size={14}/> Cards</button>
+                                        <button onClick={() => setShowVoteHistory(true)} className="w-full bg-blue-500 text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none leading-none text-white text-white text-white text-white text-white leading-none"><RebelIcon name="history" size={14}/> History</button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-4 text-white leading-none text-white">
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none text-white`}>Training</button>
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500 shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none text-white`}>Spiel</button>
+                                    <div className="grid grid-cols-2 gap-2 mt-4 text-white leading-none text-white text-white text-white text-white text-white">
+                                        <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none text-white text-white`}>Training</button>
+                                        <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500 shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none text-white text-white`}>Spiel</button>
                                     </div>
-                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-2 leading-none text-white">
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
+                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
+                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-2 leading-none text-white text-white text-white">
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white text-white text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
+                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white text-white text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
                                     </div>
-                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white leading-none text-white text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
+                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white leading-none text-white text-white text-white text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
                                     {newEvent.type === 'game' && (
-                                        <div className="space-y-2 pt-2 leading-none text-white text-white">
-                                            <input type="text" placeholder="Jersey-Farbe" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs outline-none focus:border-[#FF007F] text-white leading-none text-white" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
-                                            <div className="grid grid-cols-2 gap-2 leading-none text-white text-white text-white">
-                                                <input type="time" placeholder="Treff" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
-                                                <input type="text" placeholder="Treffort" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
+                                        <div className="space-y-2 pt-2 leading-none text-white text-white text-white text-white text-white">
+                                            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-lg border border-white/5 leading-none text-white text-white text-white text-white">
+                                                <label className="switch leading-none text-white"><input type="checkbox" checked={newEvent.isHome} onChange={e => setNewEvent({...newEvent, isHome: e.target.checked})} /><span className="slider leading-none leading-none text-white text-white text-white"></span></label>
+                                                <span className={`text-[10px] uppercase font-black tracking-widest leading-none text-white text-white text-white text-white`}>{newEvent.isHome ? 'Heimspiel🏠' : 'Ausw🚌'}</span>
+                                            </div>
+                                            <input type="text" placeholder="Jersey-Farbe" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs outline-none focus:border-[#FF007F] text-white leading-none text-white text-white text-white" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
+                                            <div className="grid grid-cols-2 gap-2 leading-none text-white text-white text-white text-white text-white text-white text-white">
+                                                <input type="time" placeholder="Treff" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white text-white" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} />
+                                                <input type="text" placeholder="Treffort" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white text-white text-white" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} />
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})}} className="w-full bg-white light:bg-black light:text-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl leading-none text-white text-white">Event hinzufügen</button>
+                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})}} className="w-full bg-white light:bg-black light:text-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl leading-none text-white text-white text-white text-white text-white">Event hinzufügen</button>
                                 </div>
                             </section>
 
-                            <section className="space-y-4 leading-none text-white text-white">
-                                <h3 className={`rebel-font font-black italic uppercase text-[10px] px-2 leading-none tracking-widest text-zinc-500 text-white`}>Events Verwalten</h3>
+                            <section className="space-y-4 leading-none text-white text-white text-white text-white text-white">
+                                <h3 className={`rebel-font font-black italic uppercase text-[10px] px-2 leading-none tracking-widest text-zinc-500 text-white text-white text-white`}>Events Verwalten</h3>
                                 {schedule.map(event => (
-                                    <div key={event.id} className="bg-[#111] light:bg-white p-4 rounded-2xl flex justify-between items-center border border-white/5 light:border-zinc-200 shadow-md leading-none text-white text-white">
-                                        <div className="truncate pr-4 leading-tight leading-none text-white dark:text-white light:text-black text-white text-white leading-none"><p className={`font-bold text-xs uppercase italic truncate leading-none text-white`}>{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2 leading-none text-white leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
-                                        <div className="flex gap-2 shrink-0 leading-none text-white text-white text-white">
-                                            <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5 leading-none text-white text-white leading-none"><RebelIcon name="pencil" size={18}/></button>
-                                            {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl leading-none text-white text-white leading-none"><RebelIcon name="bar-chart-2" size={18}/></button>}
-                                            <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl leading-none text-white text-white leading-none"><RebelIcon name="trash-2" size={18}/></button>
+                                    <div key={event.id} className="bg-[#111] light:bg-white p-4 rounded-2xl flex justify-between items-center border border-white/5 light:border-zinc-200 shadow-md leading-none text-white text-white text-white text-white">
+                                        <div className="truncate pr-4 leading-tight leading-none text-white dark:text-white light:text-black text-white text-white text-white text-white leading-none text-white text-white"><p className={`font-bold text-xs uppercase italic truncate leading-none text-white text-white text-white text-white`}>{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2 leading-none text-white text-white text-white text-white text-white text-white text-white leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
+                                        <div className="flex gap-2 shrink-0 leading-none text-white text-white text-white text-white text-white text-white">
+                                            <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5 leading-none text-white text-white text-white text-white text-white leading-none"><RebelIcon name="pencil" size={18}/></button>
+                                            {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl leading-none text-white text-white text-white text-white text-white leading-none"><RebelIcon name="bar-chart-2" size={18}/></button>}
+                                            <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl leading-none text-white text-white text-white text-white text-white leading-none"><RebelIcon name="trash-2" size={18}/></button>
                                         </div>
                                     </div>
                                 ))}
@@ -782,17 +752,17 @@
                     {showVoteHistory && (
                          <div className="fixed inset-0 bg-black/90 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
                             <div className={`max-w-xl mx-auto space-y-8 pb-20 p-8 rounded-3xl border border-white/10 shadow-2xl animate-slide-up ${theme === 'dark' ? 'bg-[#111]' : 'bg-white'}`}>
-                                <div className="flex justify-between items-center leading-none"><h2 className={`rebel-font font-black italic uppercase text-2xl leading-none ${theme==='light'?'text-black':'text-white'}`}>Vote History</h2><button onClick={()=>setShowVoteHistory(false)} className="text-zinc-500 p-2 leading-none"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-3 leading-none text-white">
+                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black"><h2 className={`rebel-font font-black italic uppercase text-2xl leading-none`}>Vote History</h2><button onClick={()=>setShowVoteHistory(false)} className="text-zinc-500 p-2 leading-none text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="space-y-3 leading-none text-white text-white">
                                     {voteHistory.length > 0 ? voteHistory.map(entry => (
-                                        <div key={entry.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left text-white dark:text-white light:text-black leading-tight leading-none text-white">
-                                            <div className="flex justify-between items-start mb-1 leading-none text-white">
-                                                <span className="text-[10px] font-black uppercase text-[#FF007F] leading-none text-white">{entry.userName}</span>
-                                                <span className="text-[8px] font-bold text-zinc-600 italic leading-none text-white">{new Date(entry.timestamp?.seconds * 1000).toLocaleString('de-DE')}</span>
+                                        <div key={entry.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left text-white dark:text-white light:text-black leading-tight leading-none text-white text-white">
+                                            <div className="flex justify-between items-start mb-1 leading-none text-white text-white text-white">
+                                                <span className="text-[10px] font-black uppercase text-[#FF007F] leading-none text-white text-white">{entry.userName}</span>
+                                                <span className="text-[8px] font-bold text-zinc-600 italic leading-none text-white text-white">{new Date(entry.timestamp?.seconds * 1000).toLocaleString('de-DE')}</span>
                                             </div>
-                                            <p className="text-xs leading-none text-white">{entry.eventLabel}: <span className="text-[#FF007F] font-black italic leading-none text-white">{entry.voteValue}</span></p>
+                                            <p className="text-xs leading-none text-white text-white">{entry.eventLabel}: <span className="text-[#FF007F] font-black italic leading-none text-white text-white">{entry.voteValue}</span></p>
                                         </div>
-                                    )) : <p className="text-zinc-500 text-center py-10 uppercase text-xs font-bold leading-none text-white">Keine Einträge</p>}
+                                    )) : <p className="text-zinc-500 text-center py-10 uppercase text-xs font-bold leading-none text-white text-white text-white">Keine Einträge</p>}
                                 </div>
                             </div>
                         </div>
@@ -801,19 +771,19 @@
                     {showCardEditor && (
                         <div className="fixed inset-0 bg-black/90 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
                             <div className={`max-w-2xl mx-auto space-y-8 pb-20 p-8 rounded-3xl border border-white/10 shadow-2xl animate-slide-up ${theme === 'dark' ? 'bg-[#111]' : 'bg-white'}`}>
-                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black leading-none text-white"><h2 className={`rebel-font font-black italic uppercase text-2xl`}>Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2 leading-none text-white text-white"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-4 leading-none text-white">
+                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black leading-none text-white text-white"><h2 className={`rebel-font font-black italic uppercase text-2xl text-white dark:text-white light:text-black`}>Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2 leading-none text-white text-white text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="space-y-4 leading-none text-white text-white">
                                     {SQUAD_DATA.map(s => {
                                         const p = profiles[s.id] || { grip: 85, vibe: 99, power: 88, soul: 95, attendance: 0 };
                                         return (
-                                            <div key={s.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 flex flex-wrap items-center gap-4 text-white dark:text-white light:text-black leading-none text-white">
-                                                <span className={`font-black italic text-sm w-24 leading-none text-white`}>{s.name}</span>
-                                                <div className="grid grid-cols-5 gap-2 flex-grow leading-none text-white text-white">
-                                                    <input type="number" defaultValue={p.grip} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ grip: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.vibe} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ vibe: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.power} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ power: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.soul} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ soul: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.attendance} className="bg-[#FF007F]/20 border border-[#FF007F]/40 rounded-lg p-2 text-center text-xs text-[#FF007F] leading-none outline-none" onBlur={(e) => onSave({ attendance: parseInt(e.target.value) || 0 }, s.id)} />
+                                            <div key={s.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 flex flex-wrap items-center gap-4 text-white dark:text-white light:text-black leading-none text-white text-white text-white">
+                                                <span className={`font-black italic text-sm w-24 leading-none text-white text-white text-white dark:text-white light:text-black`}>{s.name}</span>
+                                                <div className="grid grid-cols-5 gap-2 flex-grow leading-none text-white text-white text-white">
+                                                    <input type="number" defaultValue={p.grip} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white text-white outline-none" onBlur={(e) => onSave({ grip: parseInt(e.target.value) || 0 }, s.id)} />
+                                                    <input type="number" defaultValue={p.vibe} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white text-white outline-none" onBlur={(e) => onSave({ vibe: parseInt(e.target.value) || 0 }, s.id)} />
+                                                    <input type="number" defaultValue={p.power} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white text-white outline-none" onBlur={(e) => onSave({ power: parseInt(e.target.value) || 0 }, s.id)} />
+                                                    <input type="number" defaultValue={p.soul} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white text-white outline-none" onBlur={(e) => onSave({ soul: parseInt(e.target.value) || 0 }, s.id)} />
+                                                    <input type="number" defaultValue={p.attendance} className="bg-[#FF007F]/20 border border-[#FF007F]/40 rounded-lg p-2 text-center text-xs text-[#FF007F] leading-none outline-none text-white" onBlur={(e) => onSave({ attendance: parseInt(e.target.value) || 0 }, s.id)} />
                                                 </div>
                                             </div>
                                         );
@@ -824,16 +794,16 @@
                     )}
                     
                     {showGlobalStats && (
-                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white">
-                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
-                                <div className="flex justify-between items-center leading-none text-white"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2 leading-none text-white"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl text-white leading-none text-white">
-                                    <table className="w-full text-left text-xs leading-none text-white text-white">
-                                        <thead><tr className="text-[10px] uppercase font-black text-[#FF007F] leading-none text-white text-white"><th>Spielerin</th><th className="text-center">Tore</th><th className="text-center">2M</th><th className="text-center">Y</th><th className="text-center">R</th><th className="text-center">B</th></tr></thead>
+                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white text-white text-white">
+                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center text-white text-white">
+                                <div className="flex justify-between items-center leading-none text-white text-white text-white"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none text-white text-white">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2 leading-none text-white text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl text-white leading-none text-white text-white text-white text-white">
+                                    <table className="w-full text-left text-xs leading-none text-white text-white text-white text-white text-white">
+                                        <thead><tr className="text-[10px] uppercase font-black text-[#FF007F] leading-none text-white text-white text-white text-white text-white"><th>Spielerin</th><th className="text-center">Tore</th><th className="text-center">2M</th><th className="text-center">Y</th><th className="text-center">R</th><th className="text-center">B</th></tr></thead>
                                         <tbody>{SQUAD_DATA.map(s => {
                                             const stats = { goals: 0, p2m: 0, y: 0, r: 0, b: 0 };
                                             schedule.forEach(ev => { if (ev.stats?.players?.[s.id]) { stats.goals += parseInt(ev.stats.players[s.id].g) || 0; stats.p2m += parseInt(ev.stats.players[s.id].p) || 0; if (ev.stats.players[s.id].y) stats.y++; if (ev.stats.players[s.id].r) stats.r++; if (ev.stats.players[s.id].b) stats.b++; } });
-                                            return <tr key={s.id} className="bg-black/40 border-b border-white/5 leading-none text-white text-white"><td className="leading-none text-white">{s.name}</td><td className="text-center text-lg font-black text-[#FF007F] leading-none text-white">{stats.goals}</td><td className="text-center font-bold text-zinc-400 leading-none text-white">{stats.p2m}</td><td className="text-center font-bold text-yellow-500 leading-none text-white">{stats.y}</td><td className="text-center font-bold text-red-500 leading-none text-white">{stats.r}</td><td className="text-center font-bold text-blue-500 leading-none text-white">{stats.b}</td></tr>;
+                                            return <tr key={s.id} className="bg-black/40 border-b border-white/5 leading-none text-white text-white text-white text-white"><td className="leading-none text-white text-white text-white">{s.name}</td><td className="text-center text-lg font-black text-[#FF007F] leading-none text-white text-white text-white">{stats.goals}</td><td className="text-center font-bold text-zinc-400 leading-none text-white text-white text-white">{stats.p2m}</td><td className="text-center font-bold text-yellow-500 leading-none text-white text-white text-white">{stats.y}</td><td className="text-center font-bold text-red-500 leading-none text-white text-white text-white">{stats.r}</td><td className="text-center font-bold text-blue-500 leading-none text-white text-white text-white">{stats.b}</td></tr>;
                                         })}</tbody>
                                     </table>
                                 </div>
@@ -843,81 +813,47 @@
 
                     {editingEvent && (
                         <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
-                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center leading-none">
-                                <div className="flex justify-between items-center text-white leading-none text-white"><h2 className="rebel-font font-black italic text-[#FF007F] uppercase text-xl leading-none">Event Bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-4 bg-[#111] p-6 rounded-3xl border border-[#FF007F]/20 text-white text-left leading-none text-white">
-                                    <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
-                                    <input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-4 leading-none text-white">
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} />
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} />
+                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center leading-none text-white text-white text-white">
+                                <div className="flex justify-between items-center text-white leading-none text-white text-white text-white text-white"><h2 className="rebel-font font-black italic text-[#FF007F] uppercase text-xl leading-none text-white text-white">Event Bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-zinc-500 p-2 leading-none text-white text-white text-white text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="space-y-4 bg-[#111] p-6 rounded-3xl border border-[#FF007F]/20 text-white text-left leading-none text-white text-white">
+                                    <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Titel</label><input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white text-white text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} /></div>
+                                    <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Ort</label><input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white text-white text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} /></div>
+                                    <div className="grid grid-cols-2 gap-4 leading-none text-white text-white">
+                                        <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Start</label><input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white text-white text-white text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
+                                        <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Ende</label><input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white text-white text-white text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} /></div>
                                     </div>
-                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} />
-                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6 shadow-xl leading-none text-white text-white">Speichern</button>
+                                    <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white leading-none text-white text-white text-white text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
+                                    {editingEvent.type === 'game' && (
+                                        <div className="space-y-4 pt-2">
+                                            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/5">
+                                                <label className="switch"><input type="checkbox" checked={editingEvent.isHome} onChange={e => setEditingEvent({...editingEvent, isHome: e.target.checked})} /><span className="slider"></span></label>
+                                                <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{editingEvent.isHome ? 'Heimspiel🏠' : 'Auswärts🚌'}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Treff-Zeit</label><input type="time" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white w-full" value={editingEvent.meetingTime} onChange={e => setEditingEvent({...editingEvent, meetingTime: e.target.value})} /></div>
+                                                <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Treff-Ort</label><input type="text" className="bg-black border border-white/5 rounded-lg p-4 text-sm text-white w-full" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} /></div>
+                                            </div>
+                                            <div className="space-y-1"><label className="text-[8px] uppercase font-black text-zinc-500">Jersey</label><input type="text" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.jerseyColor} onChange={e => setEditingEvent({...editingEvent, jerseyColor: e.target.value})} /></div>
+                                        </div>
+                                    )}
+                                    <button onClick={() => {onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null);}} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest mt-6 shadow-xl active:scale-95 transition-all text-white text-white text-white">Speichern</button>
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    {editingStats && (
-                        <div className="fixed inset-0 bg-black/95 z-[110] p-6 overflow-y-auto pt-24 no-scrollbar">
-                            <div className="max-w-xl mx-auto space-y-8 pb-20 animate-slide-up text-center leading-none">
-                                <div className="flex justify-between items-center text-white leading-none text-white"><h2 className="rebel-font font-black italic text-white uppercase text-xl leading-none">Stats: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-zinc-500 p-2"><RebelIcon name="x" size={32}/></button></div>
-                                <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { ht: fd.get('ht'), ft: fd.get('ft'), players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-10 leading-none text-white text-white">
-                                    <div className="grid grid-cols-2 gap-5 text-center leading-none text-white">
-                                        <input name="ht" placeholder="HT" defaultValue={editingStats.stats?.ht} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black leading-none text-white" />
-                                        <input name="ft" placeholder="FT" defaultValue={editingStats.stats?.ft} className="bg-black border border-white/10 rounded-2xl p-4 text-white text-center text-xl font-black leading-none text-white" />
-                                    </div>
-                                    <div className="space-y-3 leading-none text-white">
-                                        {SQUAD_DATA.map(s => (
-                                            <div key={s.id} className="bg-white/5 p-5 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5 leading-none text-white">
-                                                <span className="text-white font-black italic text-xs w-28 truncate text-left leading-none text-white">{s.name}</span>
-                                                <input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none text-white leading-none text-white" />
-                                                <input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-14 bg-black border border-white/10 rounded-xl p-3 text-center text-xs outline-none text-white leading-none text-white" />
-                                                <div className="flex gap-3 leading-none text-white">
-                                                    <label className="text-[10px] text-yellow-500 flex items-center gap-1 cursor-pointer leading-none text-white"><input name={`y_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-7 h-7 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black leading-none text-white">Y</span></label>
-                                                    <label className="text-[10px] text-red-500 flex items-center gap-1 cursor-pointer leading-none text-white"><input name={`r_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-7 h-7 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black leading-none text-white">R</span></label>
-                                                    <label className="text-[10px] text-blue-500 flex items-center gap-1 cursor-pointer leading-none text-white"><input name={`b_${s.id}`} type="checkbox" className="hidden peer" defaultChecked={editingStats.stats?.players?.[s.id]?.b}/><span className="w-7 h-7 border border-blue-500/30 rounded-lg flex items-center justify-center peer-checked:bg-blue-500 peer-checked:text-black leading-none text-white">B</span></label>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button type="submit" className="w-full bg-[#FF007F] text-white py-6 rounded-3xl font-black uppercase shadow-2xl active:scale-95 transition-all leading-none text-white">Stats Speichern</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
 
-        const BaseView = ({ theme }) => {
-            const [activeHall, setActiveHall] = useState(0);
-            const halls = [
-                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Hasengrundhalle Rüsselsheim' },
-                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Am Weinfaß 83 Bauschheim' },
-                { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Im Reis 51 Königstädten' }
-            ];
-            return (
-                <div className="space-y-6 animate-slide-up pb-10 leading-none">
-                    <header className="leading-none text-white"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none text-zinc-400 leading-none">Training Locations</p></header>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white leading-none text-white leading-none">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border leading-none ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-white/5 light:bg-black/5 text-zinc-500 border-white/5'} leading-none`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
-                    <div className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 space-y-6 shadow-2xl leading-none">
-                        <div className="flex items-center gap-4 leading-none text-white"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl leading-none text-white"><RebelIcon name="map-pin" size={32} /></div><div className="leading-none text-white"><h3 className={`font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'} leading-none`}>{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight text-white dark:text-white light:text-zinc-600 leading-none leading-none text-white">{halls[activeHall].addr}</p></div></div>
-                        <div className="grid grid-cols-2 gap-4 leading-none text-white text-white leading-none">
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].search)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-white leading-none text-white leading-none"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white leading-none text-white">Google Maps</span></a>
-                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-[#FF007F] leading-none text-white leading-none text-white"><RebelIcon name="navigation" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white leading-none text-white">Apple Maps</span></a>
-                        </div>
-                        <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 light:border-zinc-200 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl leading-none text-white leading-none"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map}></iframe></div>
-                    </div>
-                </div>
-            );
-        };
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'} leading-none`}>
+                <RebelIcon name={icon} size={22} />
+                <span className="text-[8px] font-black uppercase tracking-widest mt-1 leading-none leading-none">{label}</span>
+            </button>
+        );
 
-        const StatItem = ({ label, val }) => (<div className="flex flex-col gap-1 leading-none leading-none"><div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest leading-none leading-none"><span>{label}</span><span className={`font-black leading-none leading-none`}>{val}%</span></div><div className="h-1 w-full bg-white/5 light:bg-black/5 rounded-full overflow-hidden leading-none leading-none"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_#FF007F] leading-none leading-none" style={{width: `${val}%`}}></div></div></div>);
-        const NavButton = ({ icon, label, active, onClick }) => (<button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'} leading-none`}><RebelIcon name={icon} size={22} /><span className="text-[8px] font-black uppercase tracking-widest mt-1 leading-none leading-none">{label}</span></button>);
-        
-        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root')); 
+        root.render(<App />);
     </script>
 </body>
 </html>
