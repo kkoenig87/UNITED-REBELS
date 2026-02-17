@@ -67,6 +67,12 @@
 
         .stats-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-collapse: separate; border-spacing: 0 8px; }
+
+        .shop-card-hover:active { transform: scale(0.98); }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FF007F; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255,0,127,0.8); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
     </style>
 </head>
 <body class="dark no-scrollbar">
@@ -93,29 +99,38 @@
 
         const SQUAD_DATA = [
             { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "zap", number: 'TM' }, 
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "sparkles", number: 'TM' }, 
             { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "flame", number: '99' },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "zap", number: '11' },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "flame", number: '15' },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "target", number: '21' },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "flame", number: '2' },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "zap", number: '3' },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "crosshair", number: '12' },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "users", number: '9' },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "zap", number: '15' },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "sparkles", number: '24' },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "flame", number: '4' },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "layers", number: '3' },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
+            { id: 'p2', name: "Jana", pw: "November", icon: "zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "@DoRi019903", icon: "flame", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "73N00S73", icon: "target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "7295", icon: "flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "MamaspieltHandball", icon: "zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "Rebel12!", icon: "crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "tirnag27!", icon: "users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "Hallo2684", icon: "zap", number: '15' },
+            { id: 'p10', name: "Lara", pw: "Weihnachten123!", icon: "sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "8080", icon: "flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "PINK#3", icon: "layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "Jackson", icon: "zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "v3rr@t1cHd1rnIch7", icon: "award", number: '28' }
+        ];
+
+        const SHOP_PRODUCTS = [
+            { id: 's1', name: "Rebel Hoodie 'Classic'", price: 45, category: 'fashion', img: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=600', sizes: ['XS', 'S', 'M', 'L', 'XL'] },
+            { id: 's2', name: "Game Jersey 'Pink Edition'", price: 35, category: 'fashion', img: 'https://images.unsplash.com/photo-1577212017184-80cc0da11583?auto=format&fit=crop&q=80&w=600', sizes: ['S', 'M', 'L'] },
+            { id: 's3', name: "Rebel Cap 'Snapback'", price: 25, category: 'access', img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&q=80&w=600', sizes: ['One Size'] },
+            { id: 's4', name: "Training Socks (3-Pack)", price: 15, category: 'access', img: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&q=80&w=600', sizes: ['35-38', '39-42', '43-46'] },
+            { id: 's5', name: "Rebel Gym Bag", price: 30, category: 'access', img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600', sizes: ['One Size'] },
+            { id: 's6', name: "Water Bottle 'Stay Hydrated'", price: 12, category: 'access', img: 'https://images.unsplash.com/photo-1602143407151-01114195bc51?auto=format&fit=crop&q=80&w=600', sizes: ['0.7L'] }
         ];
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsg-rebelhub';
 
-        // --- COMPONENTS ---
+        // --- HELPER COMPONENTS ---
 
-        const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
-            <div className={`relative ${className}`}>
+        const RebelLogo = ({ className = "w-12 h-12", status = "connecting", onClick }) => (
+            <div className={`relative ${className} cursor-pointer`} onClick={onClick}>
                 <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">
                     <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" strokeWidth="6" />
                     <text x="50" y="65" fontFamily="Poppins" fontSize="32" fontWeight="900" fill="#FF007F" textAnchor="middle" fontStyle="italic">UR</text>
@@ -141,235 +156,137 @@
             return <span ref={containerRef} style={{ display: 'inline-flex', width: size, height: size }}></span>;
         };
 
-        const App = () => {
-            const [user, setUser] = useState(null); 
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [loginData, setLoginData] = useState({ id: '', pw: '' });
-            const [loginError, setLoginError] = useState('');
-            const [votesData, setVotesData] = useState({});
-            const [shoutbox, setShoutbox] = useState([]);
-            const [profiles, setProfiles] = useState({});
-            const [schedule, setSchedule] = useState([]);
-            const [health, setHealth] = useState({});
-            const [voteHistory, setVoteHistory] = useState([]);
-            const [announcement, setAnnouncement] = useState("");
-            const [theme, setTheme] = useState('dark');
-            const [db, setDb] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [cloudStatus, setCloudStatus] = useState('connecting');
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <RebelIcon name={icon} size={22} />
+                <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
+            </button>
+        );
 
-            // --- INITIALIZATION ---
+        // --- VIEW COMPONENTS ---
 
-            useEffect(() => {
-                const startApp = async () => {
-                    let attempts = 0;
-                    while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
-                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
-                    
-                    try {
-                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore } = window.FB;
-                        const app = initializeApp(firebaseConfig);
-                        const auth = getAuth(app);
-                        const firestore = getFirestore(app);
-                        setDb(firestore);
-
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-
-                        const unsubscribe = onAuthStateChanged(auth, (u) => {
-                            if (u) {
-                                setCloudStatus('connected');
-                                const savedId = localStorage.getItem('rebel_hub_user_id');
-                                if (savedId) {
-                                    const found = SQUAD_DATA.find(m => m.id === savedId);
-                                    if (found) setUser(found);
-                                }
-                            }
-                            setLoading(false);
-                        });
-                        return () => unsubscribe();
-                    } catch (e) { 
-                        console.error("Firebase Init Failed:", e);
-                        setLoading(false); 
-                        setCloudStatus('error'); 
-                    }
-                };
-                startApp();
-            }, []);
-
-            // --- DATA SYNC ---
-
-            useEffect(() => {
-                if (!db || !user || !window.FB) return;
-                const { collection, onSnapshot, doc } = window.FB;
-                
-                const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setVotesData(data);
-                }, () => setCloudStatus('error'));
-
-                const unsubShout = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), (snap) => {
-                    const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                    msgs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setShoutbox(msgs.slice(0, 50));
-                });
-
-                const unsubProfiles = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setProfiles(data);
-                });
-
-                const unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), (snap) => {
-                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                    list.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    setSchedule(list);
-                });
-
-                const unsubHealth = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'health'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setHealth(data);
-                });
-
-                const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), (snap) => {
-                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                    list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setVoteHistory(list.slice(0, 50));
-                });
-
-                const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), (snap) => {
-                    if (snap.exists()) setAnnouncement(snap.data().text || "");
-                });
-
-                return () => {
-                    unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubHistory(); unsubNews();
-                };
-            }, [db, user]);
-
-            // --- ACTIONS ---
-
-            const handleLogin = (e) => {
-                e.preventDefault();
-                const found = SQUAD_DATA.find(m => m.id === loginData.id);
-                if (found && found.pw === loginData.pw) {
-                    setUser(found);
-                    localStorage.setItem('rebel_hub_user_id', found.id);
-                } else {
-                    setLoginError('Passwort ungültig.');
-                }
+        const RebelCard = ({ member, goals = 0, isMe }) => {
+            const cardRef = useRef(null);
+            const [rotate, setRotate] = useState({ x: 0, y: 0 });
+            
+            const onMove = (e) => {
+                if (!cardRef.current) return;
+                const rect = cardRef.current.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                setRotate({ x: ((y - centerY) / centerY) * -10, y: ((x - centerX) / centerX) * 10 });
             };
 
-            const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
-            const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
+            const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
+            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
 
-            const handleVote = async (id, val) => {
-                if (!db || !user) return;
-                const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
-                const event = schedule.find(ev => ev.id === id);
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), {
-                    userId: user.id, userName: user.name, eventLabel: event?.label || 'Planung', voteValue: val, timestamp: serverTimestamp()
-                });
-            };
-
-            const squadGoals = useMemo(() => {
-                const map = {};
-                schedule.forEach(ev => { if (ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid, s]) => map[pid] = (map[pid] || 0) + (parseInt(s.g) || 0)); });
-                return map;
-            }, [schedule]);
-
-            if (loading) return (
-                <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
-                    <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
-                    <p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">Systems Operational</p>
-                </div>
-            );
-
-            if (!user) return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
-                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
-                        <div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" status={cloudStatus} /></div>
-                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
-                            <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>
-                            {loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}
-                            <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl">Anmelden</button>
-                        </form>
+            return (
+                <div ref={cardRef} onMouseMove={onMove} onMouseLeave={() => setRotate({x:0,y:0})} onTouchMove={onMove} onTouchEnd={() => setRotate({x:0,y:0})} className="relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white" style={{ perspective: '1000px' }}>
+                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-transform duration-100 ease-linear will-change-transform" style={{ transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg) scale3d(1.02, 1.02, 1)`, transformStyle: 'preserve-3d' }}>
+                         <div className="absolute inset-0 pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(${115 + rotate.y * 2}deg, transparent 20%, rgba(255, 255, 255, 0.1) 40%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 60%, transparent 80%)` }} />
+                         <div className={`absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500 ${isMe ? 'opacity-40' : ''}`} style={{transform: 'translateZ(-50px)'}}></div>
+                         <div className="p-5 flex justify-between items-start z-20" style={{transform: 'translateZ(30px)'}}>
+                            <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><RebelIcon name={member.icon} size={20}/></div>
+                         </div>
+                         <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden">
+                             <div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none" style={{transform: 'translateZ(10px)'}}>{rating}</div>
+                             <RebelIcon name={member.icon} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500" style={{transform: 'translateZ(20px)'}} />
+                         </div>
+                         <div className="mt-auto relative z-20" style={{transform: 'translateZ(30px)'}}>
+                            <div className="px-5 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic uppercase leading-none truncate">{member.name}</h3><div className="flex items-center justify-center gap-2 my-2"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div><p className="text-[9px] text-[#FF007F] font-black uppercase italic mb-1">"{member.motto || 'UNITED WE REBEL'}"</p><p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">#{member.number || '??'}</p></div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]">
+                                {['Grip', 'Vibe', 'Power', 'Soul'].map(l => (
+                                    <div key={l} className="flex flex-col gap-1">
+                                        <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest"><span>{l}</span><span>{stats[l.toLowerCase()]}%</span></div>
+                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_currentColor]" style={{width: `${stats[l.toLowerCase()]}%`}}></div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
+        };
+
+        const SquadView = ({ myId, profiles, health, goals, theme }) => {
+            return (
+                <div className="space-y-12 pb-20">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>The Squad</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Cards & Health Status</p></header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                        {SQUAD_DATA.map(m => {
+                            const prof = profiles[m.id] || {};
+                            return (
+                                <div key={m.id} className="relative">
+                                    <RebelCard member={{...m, ...prof}} goals={goals[m.id] || 0} isMe={m.id === myId} />
+                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`} style={{transform: 'translateZ(40px)'}}>{health[m.id] || 'Fit'}</div>
+                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2" style={{transform: 'translateZ(40px)'}}>
+                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F]">{prof.attendance || 0}% ATT</div>
+                                        {prof.emoji && <div className="text-2xl drop-shadow-lg">{prof.emoji}</div>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme }) => {
+            const sizePoll = votesData['warmup_shirt_size'] || {};
+            return (
+                <div className="space-y-8 animate-slide-up pb-10">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Bestimme mit.</p></header>
+                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
+                        <div className="flex items-center gap-4 mb-6 text-white"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
+                        <div className="grid grid-cols-4 gap-2">
+                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 border-white/5 text-white'}`}>{size}</button>)}
+                        </div>
+                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest text-center">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 text-sm font-bold"><span>{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-[#FF007F]">{val}</span></div>))}</div></div>}
+                    </div>
+                </div>
+            );
+        };
+
+        const FanShopView = ({ theme, products, onAddToCart, cartCount, onOpenCart }) => {
+            const [filter, setFilter] = useState('all');
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [selectedSize, setSelectedSize] = useState('');
+            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
 
             return (
-                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
-                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
-                        <div className="flex items-center gap-3">
-                            <RebelLogo className="w-9 h-9" status={cloudStatus} />
-                            <h2 className={`rebel-font font-black italic text-lg leading-none uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button>
-                             <button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button>
-                             <button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button>
-                        </div>
+                <div className="space-y-6 animate-slide-up pb-20">
+                    <header className="flex justify-between items-end">
+                        <div><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Store</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Look like a Pro.</p></div>
+                        <button onClick={onOpenCart} className="relative p-3 bg-[#FF007F]/10 text-[#FF007F] rounded-xl border border-[#FF007F]/20"><RebelIcon name="shopping-cart" size={24} />{cartCount > 0 && <span className="absolute -top-2 -right-2 bg-[#FF007F] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg">{cartCount}</span>}</button>
                     </header>
-
-                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => {
-                            if (!db || !user) return;
-                            const { collection, addDoc, serverTimestamp } = window.FB;
-                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() });
-                            if (t.match(/sieg|hype|rebel/i)) triggerHype();
-                        }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { 
-                            if (!db) return;
-                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); 
-                        }} />}
-                        
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
-                        
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { 
-                            if (!db) return;
-                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); 
-                        }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
-                        
-                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} />}
-                        
-                        {activeTab === 'base' && <BaseView theme={theme} />}
-                        
-                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { 
-                            if (!db || !user) return;
-                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); 
-                        }} onHealthUpdate={async (s) => { 
-                            if (!db || !user) return;
-                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); 
-                        }} onAddEvent={async (e) => { 
-                            if (!db) return;
-                            const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); 
-                        }} onDeleteEvent={async (id) => { 
-                            if (!db) return;
-                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); 
-                        }} onUpdateEvent={async (id, d) => { 
-                            if (!db) return;
-                            const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); 
-                        }} onSaveStats={async (id, s) => { 
-                            if (!db) return;
-                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); 
-                        }} onUpdateNews={async (t) => { 
-                            if (!db) return;
-                            const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); 
-                        }} announcement={announcement} />}
-                    </main>
-
-                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
-                        <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-                        <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
-                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
-                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
-                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
-                        <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
-                    </nav>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                        {[{id:'all', l:'Alles'}, {id:'fashion', l:'Fashion'}, {id:'access', l:'Accessoires'}].map(f => (<button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap border transition-all ${filter === f.id ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-800'}`}>{f.l}</button>))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {filtered.map(p => (
+                            <div key={p.id} onClick={() => { setSelectedProduct(p); setSelectedSize(p.sizes[0]); }} className="group shop-card-hover bg-black/40 border border-white/5 rounded-2xl overflow-hidden relative cursor-pointer">
+                                <div className="aspect-[4/5] bg-zinc-900 relative"><img src={p.img} alt={p.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" /><div className="absolute top-2 right-2 bg-[#FF007F] text-white px-2 py-1 rounded-lg text-[10px] font-black shadow-lg">{p.price} €</div></div>
+                                <div className="p-3"><h3 className="text-white font-black italic uppercase text-xs truncate leading-tight">{p.name}</h3><p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{p.category}</p></div>
+                            </div>
+                        ))}
+                    </div>
+                    {selectedProduct && (
+                        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedProduct(null)}></div>
+                            <div className="relative bg-[#111] w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] border-t sm:border border-white/10 p-6 animate-slide-up flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+                                <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-zinc-500 z-10 bg-black/50 p-2 rounded-full"><RebelIcon name="x" size={24} /></button>
+                                <div className="aspect-square rounded-2xl overflow-hidden relative shadow-2xl"><img src={selectedProduct.img} className="w-full h-full object-cover" /></div>
+                                <div><div className="flex justify-between items-start"><h2 className="rebel-font font-black italic uppercase text-2xl text-white leading-none">{selectedProduct.name}</h2><span className="text-2xl font-black text-[#FF007F]">{selectedProduct.price} €</span></div><p className="text-zinc-500 text-xs mt-2 font-bold uppercase">Offizielles Team Gear</p></div>
+                                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-zinc-500">Größe wählen</label><div className="flex flex-wrap gap-2">{selectedProduct.sizes.map(s => (<button key={s} onClick={() => setSelectedSize(s)} className={`px-4 py-3 rounded-xl text-xs font-black border transition-all ${selectedSize === s ? 'bg-white text-black border-white' : 'bg-black border-zinc-800 text-zinc-500'}`}>{s}</button>))}</div></div>
+                                <button onClick={() => { onAddToCart(selectedProduct, selectedSize); setSelectedProduct(null); }} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">In den Warenkorb</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -398,122 +315,25 @@
                 return () => clearInterval(timer);
             }, [matchDayEvent]);
 
+            const birthdayGirls = useMemo(() => {
+                const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return Object.entries(profiles).filter(([uid, p]) => p.birthday && p.birthday.startsWith(todayStr)).map(([uid, p]) => ({ id: uid, name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin' }));
+            }, [profiles]);
+
+            useEffect(() => { if (birthdayGirls.length > 0) triggerBalloons(); }, [birthdayGirls]);
+
             const carpoolList = useMemo(() => Object.entries(profiles).filter(([uid, p]) => p.carpool).map(([uid, p]) => ({ name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebel', location: p.carpoolLocation || 'Halle' })), [profiles]);
             const nextEvent = !matchDayEvent ? (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0)) : null;
 
-            // Birthday Check
-            const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-            const birthdayGirls = useMemo(() => {
-                return Object.entries(profiles)
-                    .filter(([uid, p]) => p.birthday && p.birthday.startsWith(todayStr))
-                    .map(([uid, p]) => ({ id: uid, name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin' }));
-            }, [profiles, todayStr]);
-
-            useEffect(() => {
-                if (birthdayGirls.length > 0) triggerBalloons();
-            }, [birthdayGirls]);
-
             return (
                 <div className="space-y-8 pb-10">
-                    {announcement && (
-                        <div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start">
-                            <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} />
-                            <div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div>
-                        </div>
-                    )}
-
-                    {matchDayEvent && (
-                        <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5">
-                            <div className="flex justify-between items-center"><span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic">MATCH DAY</span><div className="text-right text-white font-black text-xs uppercase">Anpfiff in: {countdown}</div></div>
-                            <h2 className="rebel-font font-black italic text-3xl uppercase text-white leading-none">{matchDayEvent.label}</h2>
-                            <div className="grid grid-cols-2 gap-3 text-white text-center">
-                                <div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Anpfiff</span><span className="text-xl font-black">{matchDayEvent.time} Uhr</span></div>
-                                <div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Treff</span><span className="text-xl font-black">{matchDayEvent.meetingTime || '?'} Uhr</span></div>
-                            </div>
-                            <div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4 text-white">
-                                <div><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Ort</span><span className="text-lg font-black uppercase truncate block">{matchDayEvent.location || 'Halle'}</span></div>
-                                <div className="flex justify-between items-end gap-4">
-                                    <div className="flex-1"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] block">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
-                                    <div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Jersey</span><span className="text-lg font-black uppercase bg-[#FF007F] px-4 py-1 rounded-lg inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {nextEvent && (
-                        <div className="space-y-4">
-                            <div className="glass-card p-6 rounded-3xl border border-white/5 shadow-xl animate-slide-up">
-                                <div className="flex items-center gap-4 mb-4"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="trophy" size={28} /></div><div><p className="text-[10px] uppercase font-black text-[#FF007F] leading-none">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div></div>
-                                <div className="grid grid-cols-2 gap-3 text-center text-white">
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} Uhr</span></div>
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-xs font-black truncate block px-1">{nextEvent.location || 'Halle'}</span></div>
-                                </div>
-                                <div className="mt-4 grid grid-cols-3 gap-2">
-                                    {['Dabei', 'Nein', 'Maybe'].map(opt => { const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id]; return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>; })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Birthday Box - Static icons and text */}
-                    {birthdayGirls.length > 0 && (
-                        <div className="w-full bg-gradient-to-br from-purple-800/90 to-[#FF007F]/90 border border-white/10 p-4 rounded-3xl shadow-xl animate-slide-up flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="text-3xl shrink-0">🎂</div>
-                                <div className="truncate">
-                                    <h3 className="rebel-font font-black italic uppercase text-sm text-white leading-none">REBEL BIRTHDAY!</h3>
-                                    <p className="text-xs font-bold text-white/90 mt-1.5 truncate">
-                                        Happy Day: {birthdayGirls.map((g, i) => <span key={g.id}>{i > 0 && " & "}{g.name}</span>)}
-                                    </p>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => {
-                                    birthdayGirls.forEach(g => onPostShout(`Happy Birthday, ${g.name}! 🎉🎈 Let's celebrate!`, false));
-                                    triggerBalloons();
-                                }} 
-                                className="bg-white text-black px-5 py-2.5 rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform shrink-0"
-                            >
-                                GRATULIEREN
-                            </button>
-                        </div>
-                    )}
-
-                    {carpoolList.length > 0 && (
-                        <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-3 animate-slide-up">
-                            <div className="flex items-center gap-2"><RebelIcon name="car" className="text-green-500" size={24} /><h4 className="text-xs font-black uppercase text-green-500 tracking-widest">Rebel Taxi</h4></div>
-                            <div className="space-y-2">{carpoolList.map((cp, idx) => <div key={idx} className="bg-black/20 p-3 rounded-xl flex justify-between items-center border border-green-500/10 text-white"><span className="text-sm font-black">{cp.name}</span><span className="text-[10px] font-bold text-green-500 uppercase italic">ab {cp.location}</span></div>)}</div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Rebel Team Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1">{Object.values(goals).reduce((a, b) => a + b, 0)}</p></div>
-                        <div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white leading-none">
-                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2">Top Scorers 👑</p>
-                            {Object.entries(goals).map(([id, g]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', g })).sort((a, b) => b.g - a.g).slice(0, 3).map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5"><span className="truncate">{i+1}. {s.name}</span><span className="text-[#FF007F]">{s.g}</span></div>)}
-                        </div>
-                    </div>
-
-                    <section className="space-y-4">
-                        <div className="flex justify-between items-end px-2"><h3 className={`rebel-font font-black italic uppercase text-xl ${theme==='light'?'text-black':'text-white'}`}>Digital Cabin Wall</h3></div>
-                        <div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl">
-                            <div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3">
-                                <div className="flex gap-3 text-white dark:text-white light:text-black">
-                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (onPostShout(newShout, isAnon), setNewShout(''))} />
-                                    <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
-                                </div>
-                                <div className="flex items-center gap-2 px-1"><label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label><span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span></div>
-                            </div>
-                            <div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar">
-                                {shoutbox.map(shout => (
-                                    <div key={shout.id} className="animate-slide-up group">
-                                        <div className="flex justify-between items-center mb-1 px-1"><div className="flex items-center gap-2"><span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'}`}>{shout.userName}</span>{isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover:opacity-100 text-red-500 p-1"><RebelIcon name="trash-2" size={12} /></button>}</div><span className="text-[7px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span></div>
-                                        <div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 text-sm dark:text-white light:text-black leading-relaxed">{shout.text}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
+                    {announcement && (<div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start"><RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} /><div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div></div>)}
+                    {matchDayEvent && (<div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5"><div className="flex justify-between items-center"><span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic">MATCH DAY</span><div className="text-right text-white font-black text-xs uppercase">Anpfiff in: {countdown}</div></div><h2 className="rebel-font font-black italic text-3xl uppercase text-white leading-none">{matchDayEvent.label}</h2><div className="grid grid-cols-2 gap-3 text-white text-center"><div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Treff</span><span className="text-xl font-black">{matchDayEvent.meetingTime || '?'} Uhr</span></div><div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Anpfiff</span><span className="text-xl font-black">{matchDayEvent.time} Uhr</span></div></div><div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4 text-white"><div><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Ort</span><span className="text-lg font-black uppercase truncate block">{matchDayEvent.location || 'Halle'}</span></div><div className="flex justify-between items-end gap-4"><div className="flex-1"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] block">{matchDayEvent.meetingLocation || 'Halle'}</span></div><div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Jersey</span><span className="text-lg font-black uppercase bg-[#FF007F] px-4 py-1 rounded-lg inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div></div></div></div>)}
+                    {nextEvent && (<div className="space-y-4"><div className="glass-card p-6 rounded-3xl border border-white/5 shadow-xl animate-slide-up"><div className="flex items-center gap-4 mb-4"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="trophy" size={28} /></div><div><p className="text-[10px] uppercase font-black text-[#FF007F] leading-none">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div></div><div className="grid grid-cols-2 gap-3 text-center text-white"><div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} Uhr</span></div><div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-xs font-black truncate block px-1">{nextEvent.location || 'Halle'}</span></div></div><div className="mt-4 grid grid-cols-3 gap-2">{['Dabei', 'Nein', 'Maybe'].map(opt => { const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id]; return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>; })}</div></div></div>)}
+                    {birthdayGirls.length > 0 && (<div className="w-full bg-gradient-to-br from-purple-800/90 to-[#FF007F]/90 border border-white/10 p-4 rounded-3xl shadow-xl animate-slide-up flex items-center justify-between gap-4"><div className="flex items-center gap-3 overflow-hidden"><div className="text-3xl shrink-0">🎂</div><div className="truncate"><h3 className="rebel-font font-black italic uppercase text-sm text-white leading-none">REBEL BIRTHDAY!</h3><p className="text-xs font-bold text-white/90 mt-1.5 truncate">Happy Day: {birthdayGirls.map((g, i) => <span key={g.id}>{i > 0 && " & "}{g.name}</span>)}</p></div></div><button onClick={() => { birthdayGirls.forEach(g => onPostShout(`Happy Birthday, ${g.name}! 🎉🎈 Let's celebrate!`, false)); triggerBalloons(); }} className="bg-white text-black px-5 py-2.5 rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform shrink-0">GRATULIEREN</button></div>)}
+                    {carpoolList.length > 0 && (<div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-3 animate-slide-up"><div className="flex items-center gap-2"><RebelIcon name="car" className="text-green-500" size={24} /><h4 className="text-xs font-black uppercase text-green-500 tracking-widest">Rebel Taxi</h4></div><div className="space-y-2">{carpoolList.map((cp, idx) => <div key={idx} className="bg-black/20 p-3 rounded-xl flex justify-between items-center border border-green-500/10 text-white"><span className="text-sm font-black">{cp.name}</span><span className="text-[10px] font-bold text-green-500 uppercase italic">ab {cp.location}</span></div>)}</div></div>)}
+                    <div className="grid grid-cols-2 gap-4"><div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Rebel Team Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1">{Object.values(goals).reduce((a, b) => a + b, 0)}</p></div><div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white leading-none"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2">Top Scorers 👑</p>{Object.entries(goals).map(([id, g]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', g })).sort((a, b) => b.g - a.g).slice(0, 3).map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5"><span className="truncate">{i+1}. {s.name}</span><span className="text-[#FF007F]">{s.g}</span></div>)}</div></div>
+                    <section className="space-y-4"><div className="flex justify-between items-end px-2"><h3 className={`rebel-font font-black italic uppercase text-xl ${theme==='light'?'text-black':'text-white'}`}>Digital Cabin Wall</h3></div><div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl"><div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3"><div className="flex gap-3 text-white dark:text-white light:text-black"><input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (onPostShout(newShout, isAnon), setNewShout(''))} /><button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button></div><div className="flex items-center gap-2 px-1"><label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label><span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span></div></div><div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar">{shoutbox.map(shout => (<div key={shout.id} className="animate-slide-up group"><div className="flex justify-between items-center mb-1 px-1"><div className="flex items-center gap-2"><span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'}`}>{shout.userName}</span>{isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover:opacity-100 text-red-500 p-1"><RebelIcon name="trash-2" size={12} /></button>}</div><span className="text-[7px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span></div><div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 text-sm dark:text-white light:text-black leading-relaxed">{shout.text}</div></div>))}</div></div></section>
                 </div>
             );
         };
@@ -551,90 +371,76 @@
             );
         };
 
-        const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme }) => {
-            const sizePoll = votesData['warmup_shirt_size'] || {};
+        const BaseView = ({ theme }) => {
+            const [activeHall, setActiveHall] = useState(0);
+            const halls = [
+                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
+                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
+                { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }
+            ];
             return (
-                <div className="space-y-8 animate-slide-up pb-10">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Bestimme mit.</p></header>
-                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
-                        <div className="flex items-center gap-4 mb-6 text-white"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 border-white/5 text-white'}`}>{size}</button>)}
+                <div className="space-y-6 animate-slide-up pb-10 text-white">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2></header>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/20 text-zinc-500 border-white/5'} text-white`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
+                    <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl text-white">
+                        <div className="flex items-center gap-4 text-white text-white">
+                            <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl text-white"><RebelIcon name="map-pin" size={32} /></div>
+                            <div className="text-white"><h3 className="font-black italic text-xl uppercase text-white">{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 text-white">{halls[activeHall].addr}</p></div>
                         </div>
-                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest text-center">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 text-sm font-bold"><span>{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-[#FF007F]">{val}</span></div>))}</div></div>}
+                        <div className="grid grid-cols-2 gap-4 text-white">
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"><RebelIcon name="map" className="text-[#FF007F] text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white">Google Maps</span></a>
+                            <a href={`https://maps.apple.com/?q=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"><RebelIcon name="navigation" className="text-[#FF007F] text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white">Apple Maps</span></a>
+                        </div>
+                        <div className="w-full h-64 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 text-white"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map} className="text-white"></iframe></div>
                     </div>
                 </div>
             );
         };
 
-        const SquadView = ({ myId, profiles, health, goals, theme }) => {
-            return (
-                <div className="space-y-12 pb-20">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>The Squad</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Cards & Health Status</p></header>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                        {SQUAD_DATA.map(m => {
-                            const prof = profiles[m.id] || {};
-                            return (
-                                <div key={m.id} className="relative">
-                                    <RebelCard member={{...m, ...prof}} goals={goals[m.id] || 0} isMe={m.id === myId} />
-                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`}>{health[m.id] || 'Fit'}</div>
-                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2">
-                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F]">{prof.attendance || 0}% ATT</div>
-                                        {prof.emoji && <div className="text-2xl drop-shadow-lg">{prof.emoji}</div>}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
-        const RebelCard = ({ member, goals = 0, isMe }) => {
-            const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
-            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
-            return (
-                <div className="relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white">
-                    <div className={`absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500 ${isMe ? 'opacity-40' : ''}`}></div>
-                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow">
-                        <div className="p-5 flex justify-between items-start z-20">
-                            <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
-                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><RebelIcon name={member.icon} size={20}/></div>
-                        </div>
-                        <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none">{rating}</div><RebelIcon name={member.icon} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500"/></div>
-                        <div className="mt-auto relative z-20">
-                            <div className="px-5 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic uppercase leading-none truncate">{member.name}</h3><div className="flex items-center justify-center gap-2 my-2"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div><p className="text-[9px] text-[#FF007F] font-black uppercase italic mb-1">"{member.motto || 'UNITED WE REBEL'}"</p><p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">#{member.number || '??'}</p></div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]">
-                                {['Grip', 'Vibe', 'Power', 'Soul'].map(l => (
-                                    <div key={l} className="flex flex-col gap-1">
-                                        <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest"><span>{l}</span><span>{stats[l.toLowerCase()]}%</span></div>
-                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_currentColor]" style={{width: `${stats[l.toLowerCase()]}%`}}></div></div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement }) => {
+        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement, squadGoals, voteHistory }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
             const [newsInput, setNewsInput] = useState(announcement);
+            const [adminSelectedPlayer, setAdminSelectedPlayer] = useState('');
+            const [adminCardValues, setAdminCardValues] = useState({ grip: 85, vibe: 99, power: 88, soul: 95, motto: '', icon: 'zap' });
             const isAdmin = me.id === 'hc' || me.id === 'tm';
 
-            const handleSaveProfile = async () => {
-                await onSave(local, me.id);
-            };
+            useEffect(() => {
+                if (profile && Object.keys(profile).length > 0) {
+                    setLocal(prev => ({ ...prev, ...profile, name: profile.name || prev.name, number: profile.number || prev.number }));
+                }
+            }, [profile]);
 
+            useEffect(() => {
+                if (adminSelectedPlayer && profiles[adminSelectedPlayer]) {
+                    const p = profiles[adminSelectedPlayer];
+                    setAdminCardValues({ grip: p.grip || 85, vibe: p.vibe || 99, power: p.power || 88, soul: p.soul || 95, motto: p.motto || '', icon: p.icon || 'zap' });
+                }
+            }, [adminSelectedPlayer, profiles]);
+
+            const handleSaveProfile = async () => { await onSave(local, me.id); };
+            const handleAdminSaveCard = async () => { if (!adminSelectedPlayer) return; await onSave(adminCardValues, adminSelectedPlayer); alert(`Karte aktualisiert!`); };
             const handleAddEvent = async () => {
                 const { collection, addDoc } = window.FB;
                 if (!db) return;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
                 setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+            };
+            
+            const handleEmergencySeed = async () => {
+                if(!db || !confirm("ACHTUNG: Dies lädt die Standard-Daten in die Cloud. Nur machen, wenn die App leer ist!")) return;
+                const { doc, setDoc } = window.FB;
+                for(const player of SQUAD_DATA) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', player.id), {
+                        name: player.name,
+                        number: player.number,
+                        icon: player.icon,
+                        grip: 85, vibe: 90, power: 85, soul: 95
+                    }, { merge: true });
+                }
+                alert("Datenbank initialisiert! Bitte Seite neu laden.");
             };
 
             return (
@@ -656,25 +462,88 @@
                         </div>
                         <button onClick={handleSaveProfile} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">Speichern</button>
                     </section>
+                    
+                    {/* --- REBEL ACTIVITY LOG --- */}
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
+                        <h3 className="rebel-font font-black italic uppercase text-lg mb-4 text-white">Rebel Activity Log</h3>
+                        <div className="max-h-60 overflow-y-auto no-scrollbar space-y-2">
+                            {voteHistory && voteHistory.length === 0 ? (
+                                <p className="text-zinc-500 text-xs italic text-center">Noch keine Aktivitäten.</p>
+                            ) : (
+                                (voteHistory || []).map(entry => (
+                                    <div key={entry.id} className="bg-white/5 p-3 rounded-xl border border-white/5 text-xs text-white">
+                                        <div className="flex justify-between">
+                                            <span className="font-bold text-[#FF007F] uppercase">{entry.userName}</span>
+                                            <span className="text-zinc-500">{entry.timestamp ? new Date(entry.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span>
+                                        </div>
+                                        <div className="flex justify-between mt-1">
+                                            <span className="italic">{entry.eventLabel}</span>
+                                            <span className={`font-bold ${entry.voteValue === 'Dabei' ? 'text-green-500' : entry.voteValue === 'Nein' ? 'text-red-500' : 'text-yellow-500'}`}>{entry.voteValue}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </section>
 
                     <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
                         <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 ${theme==='light'?'text-black':'text-white'}`}>Health Status</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(s => (
-                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === s.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
-                                    <RebelIcon name={s.icon} className={s.color} size={24}/><span className="text-[8px] font-black uppercase text-white mt-1">{s.id}</span>
-                                </button>
+                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === s.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><RebelIcon name={s.icon} className={s.color} size={24}/><span className="text-[8px] font-black uppercase text-white mt-1">{s.id}</span></button>
                             ))}
                         </div>
                     </section>
 
                     {isAdmin && (
                         <div className="space-y-8">
+                            <section className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-gradient-to-b from-[#111] to-black">
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-lg mb-6 tracking-widest text-center">Rebel Card Anpassung</h3>
+                                <div className="space-y-6">
+                                    <select className="w-full bg-black border border-white/20 rounded-xl p-4 text-white outline-none appearance-none font-bold uppercase" value={adminSelectedPlayer} onChange={(e) => setAdminSelectedPlayer(e.target.value)}><option value="" disabled>Spielerin wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                                    {adminSelectedPlayer && (
+                                        <div className="space-y-6 animate-slide-up">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {['Grip', 'Vibe', 'Power', 'Soul'].map(stat => (
+                                                    <div key={stat} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                                        <div className="flex justify-between mb-2"><label className="text-[10px] font-black uppercase text-zinc-400">{stat}</label><span className="text-sm font-black text-[#FF007F]">{adminCardValues[stat.toLowerCase()]}</span></div>
+                                                        <input type="range" min="0" max="99" value={adminCardValues[stat.toLowerCase()]} onChange={(e) => setAdminCardValues({...adminCardValues, [stat.toLowerCase()]: parseInt(e.target.value)})} className="w-full accent-[#FF007F]" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="space-y-4">
+                                                <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-white" value={adminCardValues.motto} onChange={e => setAdminCardValues({...adminCardValues, motto: e.target.value})} />
+                                                <div className="grid grid-cols-2 gap-4 text-white">
+                                                    <input type="text" placeholder="Icon Name" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-white" value={adminCardValues.icon} onChange={e => setAdminCardValues({...adminCardValues, icon: e.target.value})} />
+                                                    <div className="flex items-center justify-center bg-white/10 rounded-xl border border-white/5 text-[#FF007F]"><RebelIcon name={adminCardValues.icon} size={24} /></div>
+                                                </div>
+                                            </div>
+                                            <button onClick={handleAdminSaveCard} className="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform">Karte aktualisieren</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800">
+                                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-4">Saison Statistik</h3>
+                                <div className="overflow-x-auto no-scrollbar">
+                                    <table className="w-full text-left border-separate border-spacing-y-2">
+                                        <thead><tr className="text-[8px] text-zinc-500 uppercase tracking-widest"><th className="px-2">Name</th><th className="px-2 text-center">Tore</th><th className="px-2 text-center">Spiele</th></tr></thead>
+                                        <tbody className="text-sm font-bold text-white">
+                                            {SQUAD_DATA.map(p => {
+                                                const goals = squadGoals[p.id] || 0;
+                                                const games = schedule.filter(e => e.type === 'game' && e.stats?.players?.[p.id]?.g).length;
+                                                return (<tr key={p.id} className="bg-white/5"><td className="p-3 rounded-l-xl border-y border-l border-white/5">{p.name}</td><td className="p-3 border-y border-white/5 text-center text-[#FF007F]">{goals}</td><td className="p-3 rounded-r-xl border-y border-r border-white/5 text-center">{games}</td></tr>);
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
                                     <div className="space-y-1 text-white"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
-                                    
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
                                         <div className="grid grid-cols-2 gap-2 text-white">
@@ -683,13 +552,11 @@
                                         </div>
                                         <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                         <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
-                                        
                                         <div className="grid grid-cols-3 gap-2 text-white text-white text-white">
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
                                         </div>
-
                                         {newEvent.type === 'game' && (
                                             <div className="space-y-3 bg-white/5 p-3 rounded-xl border border-white/5 animate-slide-up">
                                                 <div className="grid grid-cols-2 gap-2 text-white text-white">
@@ -698,15 +565,22 @@
                                                 </div>
                                                 <div className="flex gap-2 items-center text-white">
                                                     <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
-                                                    <button onClick={() => setNewEvent({...newEvent, isHome: !newEvent.isHome})} className={`px-4 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>
-                                                        {newEvent.isHome ? 'Heim' : 'Auswärts'}
-                                                    </button>
+                                                    <button onClick={() => setNewEvent({...newEvent, isHome: !newEvent.isHome})} className={`px-4 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>{newEvent.isHome ? 'Heim' : 'Auswärts'}</button>
                                                 </div>
                                             </div>
                                         )}
                                         <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform">Event speichern</button>
                                     </div>
                                 </div>
+                            </section>
+                            
+                            <section className="glass-card p-6 rounded-3xl border border-red-500/30">
+                                <h3 className="text-[10px] font-black uppercase text-red-500 tracking-widest mb-4">Notfall Zone</h3>
+                                <button onClick={handleEmergencySeed} className="w-full bg-red-900/50 border border-red-500 text-red-200 py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                                    <RebelIcon name="database" size={16} />
+                                    ⚠️ Squad Daten Initialisieren
+                                </button>
+                                <p className="text-[8px] text-zinc-600 mt-2 text-center uppercase">Nur drücken, wenn die App leer ist (z.B. nach neuem Deployment).</p>
                             </section>
 
                             <section className="space-y-4 text-white">
@@ -745,9 +619,7 @@
                                             </div>
                                             <div className="flex gap-2 items-center text-white text-white">
                                                 <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.jerseyColor} onChange={e => setEditingEvent({...editingEvent, jerseyColor: e.target.value})} />
-                                                <button onClick={() => setEditingEvent({...editingEvent, isHome: !editingEvent.isHome})} className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${editingEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>
-                                                    {editingEvent.isHome ? 'Heim' : 'Auswärts'}
-                                                </button>
+                                                <button onClick={() => setEditingEvent({...editingEvent, isHome: !editingEvent.isHome})} className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${editingEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>{editingEvent.isHome ? 'Heim' : 'Auswärts'}</button>
                                             </div>
                                         </div>
                                     )}
@@ -769,63 +641,134 @@
             );
         };
 
-        const BaseView = ({ theme }) => {
-            const [activeHall, setActiveHall] = useState(0);
-            const halls = [
-                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
-                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
-                { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }
-            ];
-            
+        const App = () => {
+            const [user, setUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loginData, setLoginData] = useState({ id: '', pw: '' });
+            const [loginError, setLoginError] = useState('');
+            const [votesData, setVotesData] = useState({});
+            const [shoutbox, setShoutbox] = useState([]);
+            const [profiles, setProfiles] = useState({});
+            const [schedule, setSchedule] = useState([]);
+            const [health, setHealth] = useState({});
+            const [voteHistory, setVoteHistory] = useState([]);
+            const [announcement, setAnnouncement] = useState("");
+            const [theme, setTheme] = useState('dark');
+            const [db, setDb] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [cloudStatus, setCloudStatus] = useState('connecting');
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [showDebugInfo, setShowDebugInfo] = useState(false);
+
+            useEffect(() => {
+                const startApp = async () => {
+                    let attempts = 0;
+                    while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
+                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
+                    try {
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore } = window.FB;
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
+                        setDb(firestore);
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); }
+                        const unsubscribe = onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setCloudStatus('connected');
+                                const savedId = localStorage.getItem('rebel_hub_user_id');
+                                if (savedId) { const found = SQUAD_DATA.find(m => m.id === savedId); if (found) setUser(found); }
+                            }
+                            setLoading(false);
+                        });
+                        return () => unsubscribe();
+                    } catch (e) { console.error("Firebase Init Failed:", e); setLoading(false); setCloudStatus('error'); }
+                };
+                startApp();
+            }, []);
+
+            useEffect(() => {
+                if (!db || !user || !window.FB) return;
+                const { collection, onSnapshot, doc } = window.FB;
+                
+                const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), (snap) => { const data = {}; snap.forEach(doc => data[doc.id] = doc.data()); setVotesData(data); }, (e) => { console.error("Votes Sync Error:", e); setCloudStatus('error'); });
+                const unsubShout = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), (snap) => { const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() })); msgs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setShoutbox(msgs.slice(0, 50)); });
+                const unsubProfiles = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snap) => { const data = {}; snap.forEach(doc => data[doc.id] = doc.data()); setProfiles(data); });
+                const unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), (snap) => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a, b) => new Date(a.date) - new Date(b.date)); setSchedule(list); });
+                const unsubHealth = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'health'), (snap) => { const data = {}; snap.forEach(doc => data[doc.id] = doc.data()); setHealth(data); });
+                const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), (snap) => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setVoteHistory(list.slice(0, 50)); });
+                const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), (snap) => { if (snap.exists()) setAnnouncement(snap.data().text || ""); });
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubHistory(); unsubNews(); };
+            }, [db, user]);
+
+            const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
+            const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
+            const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
+            const handleVote = async (id, val) => { if (!db || !user) return; const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const event = schedule.find(ev => ev.id === id); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: event?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); };
+            const squadGoals = useMemo(() => { const map = {}; schedule.forEach(ev => { if (ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid, s]) => map[pid] = (map[pid] || 0) + (parseInt(s.g) || 0)); }); return map; }, [schedule]);
+            const addToCart = (product, size) => { setCart([...cart, { ...product, cartId: Date.now(), selectedSize: size }]); triggerHype(); };
+            const removeFromCart = (cartId) => { setCart(cart.filter(item => item.cartId !== cartId)); };
+            const handleCheckout = () => { const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('%0A'); const total = cart.reduce((sum, i) => sum + i.price, 0); const msg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:%0A%0A${itemsList}%0A%0AGesamt: ${total}€%0A%0ABitte bestätigen!`; window.open(`https://wa.me/4917600000000?text=${msg}`, '_blank'); setCart([]); setIsCartOpen(false); };
+            const toggleDebug = () => setShowDebugInfo(!showDebugInfo);
+
+            if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /><p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">Systems Operational</p></div> );
+            if (!user) return ( <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]"><div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center"><div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" status={cloudStatus} /></div><h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1><form onSubmit={handleLogin} className="space-y-6"><select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select><input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>{loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}<button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl">Anmelden</button></form></div></div> );
+
             return (
-                <div className="space-y-6 animate-slide-up pb-10 text-white">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2></header>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/20 text-zinc-500 border-white/5'} text-white`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
-                    
-                    <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl text-white">
-                        <div className="flex items-center gap-4 text-white text-white">
-                            <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl text-white">
-                                <RebelIcon name="map-pin" size={32} />
+                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
+                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
+                        <div className="flex items-center gap-3"><RebelLogo className="w-9 h-9" status={cloudStatus} onClick={toggleDebug} /><h2 className={`rebel-font font-black italic text-lg leading-none uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2></div>
+                        <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
+                    </header>
+                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { if (!db || !user) return; const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { if (!db) return; const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
+                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { if (!db) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
+                        {activeTab === 'shop' && <FanShopView theme={theme} products={SHOP_PRODUCTS} onAddToCart={addToCart} cartCount={cart.length} onOpenCart={() => setIsCartOpen(true)} />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} />}
+                        {activeTab === 'base' && <BaseView theme={theme} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { if (!db || !user) return; try { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); } catch (e) { console.error("Save Error:", e); alert('Fehler beim Speichern! Bitte Internet prüfen.'); } }} onHealthUpdate={async (s) => { if (!db || !user) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { if (!db) return; const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async (id) => { if (!db) return; const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id, d) => { if (!db) return; const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id, s) => { if (!db) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { if (!db) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
+                    </main>
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-[100] flex justify-end">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="relative w-full max-w-sm bg-[#111] h-full shadow-2xl p-6 flex flex-col animate-slide-up border-l border-white/10">
+                                <div className="flex justify-between items-center mb-6"><h2 className="rebel-font font-black italic uppercase text-2xl text-white">Dein Korb</h2><button onClick={() => setIsCartOpen(false)} className="text-zinc-500"><RebelIcon name="x" size={24}/></button></div>
+                                <div className="flex-grow overflow-y-auto no-scrollbar space-y-4">
+                                    {cart.length === 0 ? (<div className="text-center text-zinc-600 mt-20"><RebelIcon name="shopping-bag" size={48} className="mx-auto mb-4 opacity-30" /><p className="text-sm font-bold uppercase">Nix drin.</p></div>) : (cart.map(item => (<div key={item.cartId} className="bg-white/5 p-4 rounded-2xl flex gap-4 items-center"><img src={item.img} alt={item.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-grow"><h4 className="font-bold text-white text-sm uppercase italic">{item.name}</h4><p className="text-xs text-zinc-500 font-bold">Größe: {item.selectedSize}</p><p className="text-[#FF007F] font-black text-sm">{item.price} €</p></div><button onClick={() => removeFromCart(item.cartId)} className="text-zinc-600 hover:text-red-500"><RebelIcon name="trash-2" size={18} /></button></div>)))}
+                                </div>
+                                {cart.length > 0 && (<div className="pt-6 border-t border-white/10 space-y-4"><div className="flex justify-between text-white font-black uppercase text-xl"><span>Gesamt</span><span className="text-[#FF007F]">{cart.reduce((sum, i) => sum + i.price, 0)} €</span></div><button onClick={handleCheckout} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)]"><RebelIcon name="message-circle" size={20} />Bestellen</button><p className="text-[9px] text-zinc-500 text-center uppercase">Bestellung wird per WhatsApp an Kai gesendet.</p></div>)}
                             </div>
-                            <div className="text-white">
-                                <h3 className="font-black italic text-xl uppercase text-white">{halls[activeHall].name}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 text-white">{halls[activeHall].addr}</p>
+                        </div>
+                    )}
+                    {showDebugInfo && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDebugInfo(false)}>
+                            <div className="bg-[#111] border border-[#FF007F] p-6 rounded-3xl w-full max-w-sm shadow-[0_0_30px_rgba(255,0,127,0.3)] animate-slide-up" onClick={e => e.stopPropagation()}>
+                                <h3 className="rebel-font font-black italic text-2xl text-white mb-4">SYSTEM STATUS</h3>
+                                <div className="space-y-3 text-sm font-mono text-zinc-400">
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Cloud Status</span><span className={cloudStatus === 'connected' ? "text-green-500 font-bold" : "text-red-500 font-bold"}>{cloudStatus.toUpperCase()}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Profiles Loaded</span><span className="text-white">{Object.keys(profiles).length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Events Loaded</span><span className="text-white">{schedule.length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Votes Loaded</span><span className="text-white">{Object.keys(votesData).length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Shoutbox Msgs</span><span className="text-white">{shoutbox.length}</span></div>
+                                    <div className="flex justify-between pb-2"><span>App ID</span><span className="text-[10px]">{appId}</span></div>
+                                </div>
+                                <button onClick={() => setShowDebugInfo(false)} className="w-full mt-6 bg-[#FF007F] text-white font-black uppercase py-3 rounded-xl">Close Terminal</button>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-white">
-                            <a 
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].addr)}`} 
-                                target="_blank" 
-                                className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"
-                            >
-                                <RebelIcon name="map" className="text-[#FF007F] text-white" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">Google Maps</span>
-                            </a>
-                            <a 
-                                href={`https://maps.apple.com/?q=${encodeURIComponent(halls[activeHall].addr)}`} 
-                                target="_blank" 
-                                className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"
-                            >
-                                <RebelIcon name="navigation" className="text-[#FF007F] text-white" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">Apple Maps</span>
-                            </a>
-                        </div>
-
-                        <div className="w-full h-64 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 text-white">
-                            <iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map} className="text-white"></iframe>
-                        </div>
-                    </div>
+                    )}
+                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
+                        <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
+                        <NavButton icon="shopping-bag" label="Shop" active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
+                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
+                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
+                        <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
+                    </nav>
                 </div>
             );
         };
-
-        const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                <RebelIcon name={icon} size={22} />
-                <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
-            </button>
-        );
         
         const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
