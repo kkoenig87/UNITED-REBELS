@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Rebels x Swiss Life - Sponsoring 2026</title>
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,700;0,900;1,900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --rebel-pink: #FF007F;
+        }
+        body {
+            background-color: #050505;
+            color: #f4f4f5;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .rebel-font { font-weight: 900; font-style: italic; text-transform: uppercase; }
+        .glass { 
+            background: rgba(20, 20, 20, 0.6); 
+            backdrop-filter: blur(15px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+        .text-glow {
+            text-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+        }
+        .bg-gradient-rebel {
+            background: radial-gradient(circle at top right, rgba(255, 0, 127, 0.15), transparent);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--rebel-pink); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Icon Komponente für sofortiges Rendering
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const iconRef = useRef(null);
+            
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    window.lucide.createIcons({
+                        elements: [iconRef.current]
+                    });
+                }
+            }, [name]);
+
+            return <i ref={iconRef} data-lucide={name} style={{width: size, height: size}} className={className}></i>;
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('vision');
+
+            const packages = [
+                {
+                    id: 'gold',
+                    name: 'GOLD REBEL',
+                    subtitle: 'Jersey & Hero',
+                    icon: 'trophy',
+                    color: 'border-yellow-400/50',
+                    textColor: 'text-yellow-400',
+                    features: [
+                        'Hauptlogo auf der Trikotbrust',
+                        'Premium Banner im Rebel Hub Startbildschirm',
+                        'Exklusive "Match Day" Präsentation auf Instagram',
+                        'Individuelles Partner-Event nach Absprache',
+                        'Top-Platzierung auf allen Printmedien'
+                    ]
+                },
+                {
+                    id: 'silver',
+                    name: 'SILVER REBEL',
+                    subtitle: 'Equipment & Tech',
+                    icon: 'star',
+                    color: 'border-zinc-300/50',
+                    textColor: 'text-zinc-300',
+                    features: [
+                        'Logo auf Aufwärmshirts & Trainingsanzügen',
+                        'Partner-Profil im digitalen Rebel Hub',
+                        'Präsenz in den monatlichen Highlights-Reels',
+                        'Bandenwerbung in der Sporthalle Bauschheim',
+                        'Einladung zu exklusiven Team-Events'
+                    ]
+                },
+                {
+                    id: 'bronze',
+                    name: 'BRONZE REBEL',
+                    subtitle: 'Support & Community',
+                    icon: 'zap',
+                    color: 'border-amber-600/50',
+                    textColor: 'text-amber-600',
+                    features: [
+                        'Logo auf der Sponsorenwand im Rebel Hub',
+                        'Nennung auf der offiziellen Website',
+                        'Social Media Shoutouts während der Saison',
+                        'Dauerkarte für alle Saisonspiele',
+                        'Aufnahme in das Rebel Business Netzwerk'
+                    ]
+                }
+            ];
+
+            return (
+                <div className="min-h-screen bg-[#050505] selection:bg-pink-600">
+                    {/* Hero Section */}
+                    <header className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-white/5">
+                        <div className="absolute inset-0 bg-gradient-rebel"></div>
+                        <div className="relative z-10 text-center px-6 max-w-4xl animate-fade text-white">
+                            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-5 py-2 rounded-full mb-8 backdrop-blur-md">
+                                <Icon name="zap" size={16} className="text-pink-600" />
+                                <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Partner-Konzept 2026</span>
+                            </div>
+                            <h1 className="text-6xl md:text-8xl rebel-font leading-none tracking-tighter mb-6">
+                                United Rebels <br />
+                                <span className="text-pink-600 text-glow">x Swiss Life</span>
+                            </h1>
+                            <p className="text-zinc-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
+                                Finanzielle Zuversicht trifft auf sportliche Rebellion. Gemeinsam setzen wir neue Maßstäbe im Rüsselsheimer Handball.
+                            </p>
+                        </div>
+                    </header>
+
+                    {/* Navigation */}
+                    <nav className="sticky top-0 z-50 glass border-b border-white/10 px-2">
+                        <div className="max-w-5xl mx-auto flex justify-around md:justify-center md:gap-16">
+                            {[
+                                { id: 'vision', label: 'Vision', icon: 'target' },
+                                { id: 'match', label: 'Der Match', icon: 'shield-check' },
+                                { id: 'hub', label: 'Innovation', icon: 'smartphone' },
+                                { id: 'packages', label: 'Pakete', icon: 'layout' }
+                            ].map(tab => (
+                                <button 
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 px-4 py-6 transition-all border-b-2 relative ${activeTab === tab.id ? 'border-pink-600 text-pink-600' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    <Icon name={tab.icon} size={14}/>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    {/* Main Content */}
+                    <main className="max-w-6xl mx-auto p-6 py-24 text-white">
+                        
+                        {activeTab === 'vision' && (
+                            <div className="grid md:grid-cols-2 gap-20 items-center animate-fade">
+                                <div className="space-y-10">
+                                    <div className="space-y-4">
+                                        <h2 className="text-5xl rebel-font text-white leading-tight">Wir sind das <br/><span className="text-pink-600">Sport-Start-up</span></h2>
+                                        <p className="text-zinc-400 text-lg leading-relaxed">
+                                            Vergessen Sie verstaubte Vereinsstrukturen. Die <strong>United Rebels</strong> denken Sport neu: Agil, digital und mit einer Community, die für einander einsteht.
+                                        </p>
+                                    </div>
+                                    <div className="grid gap-6">
+                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 hover:border-pink-600/20 transition-all group text-white">
+                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0 group-hover:scale-110 transition-transform">
+                                                <Icon name="check-circle-2" size={32} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Gründer-DNA</h4>
+                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed">Werden Sie Teil der DNA eines Teams, das gerade Geschichte schreibt.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 hover:border-pink-600/20 transition-all group text-white">
+                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0 group-hover:scale-110 transition-transform">
+                                                <Icon name="users" size={32} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Community First</h4>
+                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed text-white">Wir verbinden Menschen in Rüsselsheim durch Leidenschaft und Innovation.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <div className="absolute -inset-10 bg-pink-600/10 rounded-full blur-[100px] animate-pulse"></div>
+                                    <div className="relative glass aspect-square rounded-[4rem] flex flex-col items-center justify-center border-white/10 shadow-3xl">
+                                        <Icon name="zap" size={130} className="text-pink-600 mb-8 drop-shadow-[0_0_25px_rgba(255,0,127,0.6)]" />
+                                        <p className="rebel-font text-4xl tracking-tighter text-white">United we rebel.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'match' && (
+                            <div className="space-y-20 animate-fade">
+                                <div className="text-center max-w-3xl mx-auto">
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Warum <span className="text-pink-600 text-glow">Swiss Life?</span></h2>
+                                    <p className="text-zinc-400 text-lg">Zukunft braucht Sicherheit. Erfolg braucht Mut. Unsere Partnerschaft vereint das Beste aus beiden Welten.</p>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    {[
+                                        { title: 'Regionale Power', desc: 'Wir sind die neue sportliche Heimat für Talente in und um Rüsselsheim.', icon: 'map-pin' },
+                                        { title: 'Zuversicht', desc: 'Ihr sichert die finanzielle Zukunft, wir sichern den Teamgeist der Region.', icon: 'shield-check' },
+                                        { title: 'High Performance', desc: 'Wir bringen die Professionalität der Wirtschaft auf das Handballfeld.', icon: 'trending-up' }
+                                    ].map((item, i) => (
+                                        <div key={i} className="p-10 glass rounded-[3rem] hover:border-pink-600/30 transition-all group">
+                                            <Icon name={item.icon} size={40} className="text-pink-600 mb-8 transition-transform group-hover:scale-110" />
+                                            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-4">{item.title}</h3>
+                                            <p className="text-zinc-500 leading-relaxed text-sm">{item.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'hub' && (
+                            <div className="grid md:grid-cols-2 gap-24 items-center animate-fade text-white">
+                                <div className="relative order-2 md:order-1 text-white">
+                                    <div className="bg-[#111] w-72 h-[550px] mx-auto rounded-[3.8rem] border-[12px] border-zinc-900 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
+                                        <div className="bg-pink-600 h-16 w-full p-4 flex justify-between items-center text-white">
+                                            <Icon name="zap" size={20} className="text-white" />
+                                            <Icon name="menu" size={20} className="text-white" />
+                                        </div>
+                                        <div className="p-6 space-y-6 text-white">
+                                            <div className="bg-white p-5 rounded-2xl shadow-2xl transform -rotate-1">
+                                                <p className="text-[7px] font-black uppercase text-zinc-400 mb-1 tracking-widest text-black">Premium Partner</p>
+                                                <p className="text-sm font-black text-black leading-none text-black">Swiss Life Rüsselsheim</p>
+                                            </div>
+                                            <div className="h-44 w-full bg-white/5 rounded-2xl border border-white/5 flex items-center justify-center">
+                                                <Icon name="bar-chart-3" size={32} className="opacity-10" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
+                                                <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute top-1/4 -right-10 glass p-6 rounded-3xl shadow-3xl max-w-[180px] animate-bounce duration-[3s]">
+                                        <Icon name="smartphone" size={20} className="text-pink-600 mb-2" />
+                                        <p className="text-xs font-bold text-white leading-tight">Ihre Marke in jeder Hosentasche.</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-10 order-1 md:order-2">
+                                    <h2 className="text-5xl rebel-font text-white leading-tight">Digitaler <span className="text-pink-600">Vorsprung</span></h2>
+                                    <p className="text-zinc-400 text-lg leading-relaxed">
+                                        Der <strong>Rebel Hub Ultimate Plus</strong> ist unser Herzstück. Eine eigene Team-Management-App, die uns digital von jedem anderen Verein abhebt.
+                                    </p>
+                                    <ul className="space-y-6 text-white">
+                                        {[
+                                            'Premium Banner-Platzierung im App-Feed',
+                                            'Direkte Verlinkung zu Ihren Angeboten',
+                                            'Präsenz in Spielerprofilen & Live-Stats',
+                                            'Partner-Branding bei Matchday-Updates'
+                                        ].map((text, i) => (
+                                            <li key={i} className="flex gap-4 items-center">
+                                                <div className="bg-pink-600/20 p-2 rounded-full">
+                                                    <Icon name="check" size={18} className="text-pink-600" />
+                                                </div>
+                                                <span className="font-bold text-zinc-200">{text}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'packages' && (
+                            <div className="space-y-20 animate-fade text-white">
+                                <div className="text-center max-w-3xl mx-auto">
+                                    <h2 className="text-5xl rebel-font text-white mb-6 text-white">Partner <span className="text-pink-600 text-glow">Ebenen</span></h2>
+                                    <p className="text-zinc-400 text-lg text-white">Für jedes Level der Unterstützung bieten wir die maximale Sichtbarkeit.</p>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-8 text-white">
+                                    {packages.map((pkg) => (
+                                        <div key={pkg.id} className={`flex flex-col p-10 glass rounded-[3.5rem] border-2 ${pkg.color} transition-all hover:scale-[1.03] duration-500 shadow-xl`}>
+                                            <div className={`${pkg.textColor} mb-8 flex justify-center text-white`}>
+                                                <Icon name={pkg.icon} size={56} />
+                                            </div>
+                                            <h3 className="text-2xl font-black italic uppercase mb-2 text-white text-center">{pkg.name}</h3>
+                                            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-center">{pkg.subtitle}</p>
+                                            <ul className="space-y-6 mb-12 flex-grow text-white">
+                                                {pkg.features.map((f, i) => (
+                                                    <li key={i} className="text-sm text-zinc-300 flex gap-3 leading-tight font-medium text-white">
+                                                        <Icon name="chevron-right" size={14} className="text-pink-600 shrink-0 mt-0.5" />
+                                                        {f}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <button className="w-full bg-white text-black py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-600 hover:text-white transition-all shadow-2xl">
+                                                Anfragen
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-white/5 border-t border-white/5 py-32 px-6">
+                        <div className="max-w-4xl mx-auto text-center text-white">
+                            <h2 className="text-5xl md:text-7xl rebel-font text-white mb-8 leading-none">Bereit für den <br/><span className="text-pink-600 text-glow">Start?</span></h2>
+                            <p className="text-zinc-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Wir laden Sie herzlich ein, die Zukunft der United Rebels aktiv mitzugestalten. Lassen Sie uns über Ihre Ziele sprechen.</p>
+                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white">
+                                <a href="mailto:kai@united-rebels.de" className="w-full sm:w-auto bg-pink-600 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_40px_rgba(255,0,127,0.5)] transition-all transform hover:-translate-y-1 text-white">
+                                    <Icon name="mail" size={20} /> E-Mail senden
+                                </a>
+                                <button className="w-full sm:w-auto bg-white/10 border border-white/10 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/20 transition-all text-white">
+                                    Termin buchen <Icon name="calendar" size={20} />
+                                </button>
+                            </div>
+                            <div className="mt-32 opacity-10 flex justify-center gap-12 items-center flex-wrap">
+                                <div className="rebel-font text-4xl text-white">#REBELS</div>
+                                <div className="rebel-font text-4xl text-white">UNITED</div>
+                                <div className="rebel-font text-4xl text-white">POWER</div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const rootContainer = document.getElementById('root');
+        if (rootContainer) {
+            const root = ReactDOM.createRoot(rootContainer);
+            root.render(<App />);
+        }
+    </script>
+</body>
+</html>
