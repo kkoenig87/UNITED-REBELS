@@ -124,14 +124,14 @@
 
             return (
                 <div className="min-h-screen bg-[#050505] selection:bg-pink-600">
-                    {/* Header mit Uplink zum Hub */}
-                    <div className="fixed top-0 left-0 w-full z-[100] px-6 py-4 flex justify-end">
+                    {/* Uplink zum Hub */}
+                    <div className="fixed top-4 left-4 z-[100] md:left-auto md:right-6">
                         <a 
                             href="https://kkoenig87.github.io/UNITED-REBELS/rebelhub" 
-                            className="glass px-5 py-2 rounded-full flex items-center gap-2 border border-pink-600/30 hover:bg-pink-600/20 transition-all text-white"
+                            className="glass px-6 py-3 rounded-2xl flex items-center gap-3 border border-pink-600/30 hover:border-pink-600 hover:bg-pink-600/10 transition-all text-white shadow-2xl"
                         >
-                            <Icon name="arrow-left" size={14} className="text-pink-600" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Zurück zum Hub</span>
+                            <Icon name="layout-dashboard" size={16} className="text-pink-600" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Rebel Hub</span>
                         </a>
                     </div>
 
@@ -180,10 +180,10 @@
                     <main className="max-w-6xl mx-auto p-6 py-24 text-white">
                         
                         {activeTab === 'vision' && (
-                            <div className="grid md:grid-cols-2 gap-20 items-center animate-fade">
+                            <div className="grid md:grid-cols-2 gap-20 items-center animate-fade text-white">
                                 <div className="space-y-10">
                                     <div className="space-y-4">
-                                        <h2 className="text-5xl rebel-font text-white leading-tight">Das <span className="text-pink-600">Rebel-Ökosystem</span></h2>
+                                        <h2 className="text-5xl rebel-font text-white leading-tight">Das <span className="text-pink-600 text-white">Rebel-Ökosystem</span></h2>
                                         <p className="text-zinc-400 text-lg leading-relaxed">
                                             Wir denken Sport neu: Agil, digital und mit einer Community, die füreinander einsteht. Entdecken Sie ein Team, das keine Grenzen kennt.
                                         </p>
@@ -222,21 +222,21 @@
                         {activeTab === 'youth' && (
                             <div className="space-y-16 animate-fade">
                                 <div className="text-center max-w-3xl mx-auto">
-                                    <h2 className="text-5xl rebel-font text-white mb-6">Nachhaltige <span className="text-pink-600 text-glow">Jugendarbeit</span></h2>
-                                    <p className="text-zinc-400 text-lg leading-relaxed">
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Nachhaltige <span className="text-pink-600 text-glow text-white">Jugendarbeit</span></h2>
+                                    <p className="text-zinc-400 text-lg leading-relaxed text-white">
                                         Die United Rebels sind die neue sportliche Heimat für die weibliche Jugend in Rüsselsheim. Mit unserer <strong>A-Jugend</strong> und weiteren Teams schaffen wir eine Perspektive für junge Talente.
                                     </p>
                                 </div>
-                                <div className="grid md:grid-cols-2 gap-8">
+                                <div className="grid md:grid-cols-2 gap-8 text-white">
                                     <div className="p-10 glass rounded-[3rem] border-pink-600/20 text-white">
                                         <Icon name="award" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Talent-Pipeline</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Wir formen die Rebels von morgen. Durch einheitliches Coaching und digitale Unterstützung bereiten wir unsere A-Jugend gezielt auf den Aktivenbereich vor.</p>
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white">Talent-Pipeline</h3>
+                                        <p className="text-zinc-500 leading-relaxed text-white">Wir formen die Rebels von morgen. Durch einheitliches Coaching und digitale Unterstützung bereiten wir unsere A-Jugend gezielt auf den Aktivenbereich vor.</p>
                                     </div>
                                     <div className="p-10 glass rounded-[3rem] border-white/5 text-white">
                                         <Icon name="smile" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Persönlichkeit</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Über den Sport hinaus vermitteln wir Werte wie Teamgeist, Disziplin und Selbstvertrauen – die Basis für eine zuversichtliche Zukunft.</p>
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white">Persönlichkeit</h3>
+                                        <p className="text-zinc-500 leading-relaxed text-white text-white">Über den Sport hinaus vermitteln wir Werte wie Teamgeist, Disziplin und Selbstvertrauen – die Basis für eine zuversichtliche Zukunft.</p>
                                     </div>
                                 </div>
                             </div>
@@ -244,25 +244,25 @@
 
                         {activeTab === 'active' && (
                             <div className="space-y-16 animate-fade">
-                                <div className="text-center max-w-3xl mx-auto">
+                                <div className="text-center max-w-3xl mx-auto text-white">
                                     <h2 className="text-5xl rebel-font text-white mb-6">Das Herzstück: <span className="text-pink-600 text-glow">Unsere Damen</span></h2>
                                     <p className="text-zinc-400 text-lg leading-relaxed text-white">
                                         Unsere Damen-Mannschaft ist das Flaggschiff der United Rebels. Hier trifft jahrelange Erfahrung auf unbändigen Siegeswillen und maximale Präsenz in der Region.
                                     </p>
                                 </div>
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    <div className="p-10 glass rounded-[3rem] border-white/5">
+                                <div className="grid md:grid-cols-2 gap-8 text-white">
+                                    <div className="p-10 glass rounded-[3rem] border-white/5 text-white">
                                         <Icon name="zap" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Maximale Reichweite</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Die Mannschaft ist das Gesicht der Marke UNITED REBELS. Sie generiert die höchste Aufmerksamkeit bei Heimspielen, in der Lokalpresse und auf unseren Social-Media-Kanälen.</p>
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white text-white">Maximale Reichweite</h3>
+                                        <p className="text-zinc-500 leading-relaxed text-white">Die Mannschaft ist das Gesicht der Marke UNITED REBELS. Sie generiert die höchste Aufmerksamkeit bei Heimspielen, in der Lokalpresse und auf unseren Social-Media-Kanälen.</p>
                                     </div>
-                                    <div className="p-10 glass rounded-[3rem] border-pink-600/20">
-                                        <Icon name="award" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Vorbildfunktion</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Unsere Spielerinnen sind die Idole unserer Jugend. Diese enge Bindung zwischen den Generationen schafft eine einzigartige, loyale Community am Standort Rüsselsheim.</p>
+                                    <div className="p-10 glass rounded-[3rem] border-pink-600/20 text-white">
+                                        <Icon name="award" size={40} className="text-pink-600 mb-8 text-white" />
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white">Vorbildfunktion</h3>
+                                        <p className="text-zinc-500 leading-relaxed text-white">Unsere Spielerinnen sind die Idole unserer Jugend. Diese enge Bindung zwischen den Generationen schafft eine einzigartige, loyale Community am Standort Rüsselsheim.</p>
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-r from-pink-600/20 to-transparent p-12 rounded-[4rem] border border-pink-600/30">
+                                <div className="bg-gradient-to-r from-pink-600/20 to-transparent p-12 rounded-[4rem] border border-pink-600/30 text-white">
                                     <div className="grid md:grid-cols-3 gap-10 text-center">
                                         <div><p className="text-4xl font-black text-white mb-2">100%</p><p className="text-[10px] uppercase font-bold text-zinc-500 tracking-[0.2em]">Leidenschaft</p></div>
                                         <div><p className="text-4xl font-black text-white mb-2">Top</p><p className="text-[10px] uppercase font-bold text-zinc-500 tracking-[0.2em]">Wahrnehmung</p></div>
@@ -274,17 +274,17 @@
 
                         {activeTab === 'match' && (
                             <div className="space-y-20 animate-fade">
-                                <div className="text-center max-w-3xl mx-auto">
-                                    <h2 className="text-5xl rebel-font text-white mb-6">Warum <span className="text-pink-600 text-glow">Swiss Life?</span></h2>
+                                <div className="text-center max-w-3xl mx-auto text-white">
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Warum <span className="text-pink-600 text-glow text-white">Swiss Life?</span></h2>
                                     <p className="text-zinc-400 text-lg">Finanzielle Zuversicht trifft auf sportlichen Ehrgeiz. Wir teilen die Werte von Planung, Stärke und Erfolg.</p>
                                 </div>
-                                <div className="grid md:grid-cols-3 gap-8">
+                                <div className="grid md:grid-cols-3 gap-8 text-white text-white text-white">
                                     {[
                                         { title: 'Regionale Power', desc: 'Wir erreichen Familien in Rüsselsheim – vom Nachwuchs bis zu den Aktiven.', icon: 'map-pin' },
                                         { title: 'Zuversicht', desc: 'Ihr sichert die finanzielle Zukunft, wir sichern den Teamgeist der Region.', icon: 'shield-check' },
                                         { title: 'High Performance', desc: 'Exzellenz ist euer Standard. Wir bringen diese Professionalität auf das Feld.', icon: 'trending-up' }
                                     ].map((item, i) => (
-                                        <div key={i} className="p-10 glass rounded-[3rem] hover:border-pink-600/30 transition-all group">
+                                        <div key={i} className="p-10 glass rounded-[3rem] hover:border-pink-600/30 transition-all group text-white">
                                             <Icon name={item.icon} size={40} className="text-pink-600 mb-8 transition-transform group-hover:scale-110" />
                                             <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-4">{item.title}</h3>
                                             <p className="text-zinc-500 leading-relaxed text-sm">{item.desc}</p>
@@ -295,34 +295,34 @@
                         )}
 
                         {activeTab === 'hub' && (
-                            <div className="grid md:grid-cols-2 gap-24 items-center animate-fade">
-                                <div className="relative order-2 md:order-1">
-                                    <div className="bg-[#111] w-72 h-[550px] mx-auto rounded-[3.8rem] border-[12px] border-zinc-900 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
-                                        <div className="bg-pink-600 h-16 w-full p-4 flex justify-between items-center text-white text-white">
+                            <div className="grid md:grid-cols-2 gap-24 items-center animate-fade text-white">
+                                <div className="relative order-2 md:order-1 text-white">
+                                    <div className="bg-[#111] w-72 h-[550px] mx-auto rounded-[3.8rem] border-[12px] border-zinc-900 shadow-2xl relative overflow-hidden ring-1 ring-white/10 text-white text-white">
+                                        <div className="bg-pink-600 h-16 w-full p-4 flex justify-between items-center text-white">
                                             <Icon name="zap" size={20} className="text-white" />
                                             <Icon name="menu" size={20} className="text-white" />
                                         </div>
-                                        <div className="p-6 space-y-6 text-white text-white">
+                                        <div className="p-6 space-y-6 text-white">
                                             <div className="bg-white p-5 rounded-2xl shadow-2xl transform -rotate-1 text-black">
                                                 <p className="text-[7px] font-black uppercase text-zinc-400 mb-1 tracking-widest text-black">Exklusiv-Partner</p>
                                                 <p className="text-sm font-black text-black leading-none text-black">Swiss Life Rüsselsheim</p>
                                             </div>
-                                            <div className="h-44 w-full bg-white/5 rounded-2xl border border-white/5 flex items-center justify-center">
+                                            <div className="h-44 w-full bg-white/5 rounded-2xl border border-white/5 flex items-center justify-center text-white text-white text-white text-white text-white text-white">
                                                 <Icon name="bar-chart-3" size={32} className="opacity-10 text-white" />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3 text-white text-white">
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
                                                 <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="absolute top-1/4 -right-10 glass p-6 rounded-3xl shadow-3xl max-w-[180px] animate-bounce duration-[3s] text-white text-white">
+                                    <div className="absolute top-1/4 -right-10 glass p-6 rounded-3xl shadow-3xl max-w-[180px] animate-bounce duration-[3s] text-white">
                                         <Icon name="smartphone" size={20} className="text-pink-600 mb-2" />
                                         <p className="text-xs font-bold text-white leading-tight">Ihre Marke in jeder Hosentasche.</p>
                                     </div>
                                 </div>
-                                <div className="space-y-10 order-1 md:order-2">
-                                    <h2 className="text-5xl rebel-font text-white leading-tight">Digitaler <span className="text-pink-600">Vorsprung</span></h2>
+                                <div className="space-y-10 order-1 md:order-2 text-white text-white text-white text-white">
+                                    <h2 className="text-5xl rebel-font text-white leading-tight text-white">Digitaler <span className="text-pink-600 text-white">Vorsprung</span></h2>
                                     <p className="text-zinc-400 text-lg leading-relaxed text-white">
                                         Der <strong>Rebel Hub</strong> ist unser Herzstück. Eine eigene Plattform für Team-Management, die uns technologisch von jedem anderen Verein abhebt.
                                     </p>
@@ -333,8 +333,8 @@
                                             'Präsenz in Spielerprofilen & Live-Stats',
                                             'Partner-Branding bei Matchday-Updates'
                                         ].map((text, i) => (
-                                            <li key={i} className="flex gap-4 items-center">
-                                                <div className="bg-pink-600/20 p-2 rounded-full text-white">
+                                            <li key={i} className="flex gap-4 items-center text-white">
+                                                <div className="bg-pink-600/20 p-2 rounded-full">
                                                     <Icon name="check" size={18} className="text-pink-600" />
                                                 </div>
                                                 <span className="font-bold text-zinc-200">{text}</span>
@@ -347,27 +347,27 @@
 
                         {activeTab === 'packages' && (
                             <div className="space-y-20 animate-fade">
-                                <div className="text-center max-w-3xl mx-auto">
+                                <div className="text-center max-w-3xl mx-auto text-white">
                                     <h2 className="text-5xl rebel-font text-white mb-6">Rebel <span className="text-pink-600 text-glow">Ebenen</span></h2>
-                                    <p className="text-zinc-400 text-lg text-white text-white">Wählen Sie das Paket, das am besten zu Ihren Marketingzielen passt.</p>
+                                    <p className="text-zinc-400 text-lg">Wählen Sie das Paket, das am besten zu Ihren Marketingzielen passt.</p>
                                 </div>
-                                <div className="grid md:grid-cols-3 gap-8 text-white text-white text-white">
+                                <div className="grid md:grid-cols-3 gap-8 text-white">
                                     {packages.map((pkg) => (
-                                        <div key={pkg.id} className={`flex flex-col p-10 glass rounded-[3.5rem] border-2 ${pkg.color} transition-all hover:scale-[1.03] duration-500 shadow-xl`}>
-                                            <div className={`${pkg.textColor} mb-8 flex justify-center`}>
+                                        <div key={pkg.id} className={`flex flex-col p-10 glass rounded-[3.5rem] border-2 ${pkg.color} transition-all hover:scale-[1.03] duration-500 shadow-xl text-white`}>
+                                            <div className={`${pkg.textColor} mb-8 flex justify-center text-white`}>
                                                 <Icon name={pkg.icon} size={56} />
                                             </div>
-                                            <h3 className="text-2xl font-black italic uppercase mb-2 text-white text-center text-white text-white">{pkg.name}</h3>
+                                            <h3 className="text-2xl font-black italic uppercase mb-2 text-white text-center text-white">{pkg.name}</h3>
                                             <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-center">{pkg.subtitle}</p>
-                                            <ul className="space-y-6 mb-12 flex-grow text-white text-white text-white">
+                                            <ul className="space-y-6 mb-12 flex-grow text-white text-white text-white text-white">
                                                 {pkg.features.map((f, i) => (
-                                                    <li key={i} className="text-sm text-zinc-300 flex gap-3 leading-tight font-medium text-white text-white">
+                                                    <li key={i} className="text-sm text-zinc-300 flex gap-3 leading-tight font-medium text-white">
                                                         <Icon name="chevron-right" size={14} className="text-pink-600 shrink-0 mt-0.5" />
                                                         {f}
                                                     </li>
                                                 ))}
                                             </ul>
-                                            <button className="w-full bg-white text-black py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-600 hover:text-white transition-all shadow-2xl">
+                                            <button className="w-full bg-white text-black py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-600 hover:text-white transition-all shadow-2xl text-black">
                                                 Anfragen
                                             </button>
                                         </div>
@@ -380,21 +380,21 @@
 
                     {/* Footer */}
                     <footer className="bg-white/5 border-t border-white/5 py-32 px-6">
-                        <div className="max-w-4xl mx-auto text-center text-white">
-                            <h2 className="text-5xl md:text-7xl rebel-font text-white mb-8 leading-none">Bereit für den <br/><span className="text-pink-600 text-glow italic text-white text-white">Anpfiff?</span></h2>
+                        <div className="max-w-4xl mx-auto text-center text-white text-white text-white">
+                            <h2 className="text-5xl md:text-7xl rebel-font text-white mb-8 leading-none">Bereit für den <br/><span className="text-pink-600 text-glow italic">Anpfiff?</span></h2>
                             <p className="text-zinc-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Wir freuen uns darauf, die Zukunft der United Rebels gemeinsam mit Swiss Life zu gestalten.</p>
-                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white">
+                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
                                 <a href="mailto:kai@united-rebels.de" className="w-full sm:w-auto bg-pink-600 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_40px_rgba(255,0,127,0.5)] transition-all transform hover:-translate-y-1 text-white">
                                     <Icon name="mail" size={20} /> E-Mail senden
                                 </a>
-                                <button className="w-full sm:w-auto bg-white/10 border border-white/10 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/20 transition-all text-white">
+                                <button className="w-full sm:w-auto bg-white/10 border border-white/10 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/20 transition-all text-white text-white">
                                     Termin buchen <Icon name="calendar" size={20} />
                                 </button>
                             </div>
                             <div className="mt-32 opacity-10 flex justify-center gap-12 items-center flex-wrap">
                                 <div className="rebel-font text-4xl">#REBELS</div>
-                                <div className="rebel-font text-4xl">UNITED</div>
-                                <div className="rebel-font text-4xl">JUGEND</div>
+                                <div className="rebel-font text-4xl text-white text-white text-white text-white">UNITED</div>
+                                <div className="rebel-font text-4xl text-white text-white text-white text-white">JUGEND</div>
                             </div>
                         </div>
                     </footer>
