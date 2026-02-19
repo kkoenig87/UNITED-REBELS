@@ -83,10 +83,10 @@
                     color: 'border-yellow-400/50',
                     textColor: 'text-yellow-400',
                     features: [
-                        'Hauptlogo auf der Trikotbrust (Aktive & A-Jugend)',
+                        'Hauptlogo auf der Trikotbrust (Damen & A-Jugend)',
                         'Premium Banner im Rebel Hub Startbildschirm',
                         'Exklusive "Match Day" Präsentation aller Teams',
-                        'Individuelles Partner-Event für den Nachwuchs',
+                        'Individuelles Partner-Event für alle Rebellen',
                         'Top-Platzierung auf allen Printmedien'
                     ]
                 },
@@ -115,8 +115,8 @@
                     features: [
                         'Logo auf der Sponsorenwand im Rebel Hub',
                         'Nennung auf der offiziellen Website',
-                        'Social Media Shoutouts für die Jugendteams',
-                        'Dauerkarten-Paket für Mitarbeiter',
+                        'Social Media Shoutouts während der Saison',
+                        'Dauerkarten-Paket für Swiss Life Mitarbeiter',
                         'Aufnahme in das Rebel Business Netzwerk'
                     ]
                 }
@@ -132,22 +132,23 @@
                                 <Icon name="zap" size={16} className="text-pink-600" />
                                 <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Partner-Konzept 2026</span>
                             </div>
-                            <h1 className="text-6xl md:text-8xl rebel-font leading-none tracking-tighter mb-6">
+                            <h1 className="text-6xl md:text-8xl rebel-font leading-none tracking-tighter mb-6 text-white">
                                 United Rebels <br />
                                 <span className="text-pink-600 text-glow">x Swiss Life</span>
                             </h1>
                             <p className="text-zinc-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                                Von der Jugend bis zur ersten Mannschaft: Eine starke Marke für den Rüsselsheimer Handball.
+                                Leistung, Leidenschaft und digitale Exzellenz. Entdecken Sie die Synergien unserer Partnerschaft.
                             </p>
                         </div>
                     </header>
 
                     {/* Navigation */}
                     <nav className="sticky top-0 z-50 glass border-b border-white/10 px-2">
-                        <div className="max-w-6xl mx-auto flex justify-around md:justify-center md:gap-12">
+                        <div className="max-w-7xl mx-auto flex justify-around md:justify-center md:gap-8">
                             {[
                                 { id: 'vision', label: 'Vision', icon: 'target' },
                                 { id: 'youth', label: 'Nachwuchs', icon: 'heart' },
+                                { id: 'active', label: 'Aktive', icon: 'award' },
                                 { id: 'match', label: 'Der Match', icon: 'shield-check' },
                                 { id: 'hub', label: 'Innovation', icon: 'smartphone' },
                                 { id: 'packages', label: 'Pakete', icon: 'layout' }
@@ -173,26 +174,26 @@
                                     <div className="space-y-4">
                                         <h2 className="text-5xl rebel-font text-white leading-tight">Das <span className="text-pink-600">Rebel-Ökosystem</span></h2>
                                         <p className="text-zinc-400 text-lg leading-relaxed">
-                                            Unter der Marke <strong>UNITED REBELS</strong> bauen wir eine durchgängige Struktur auf. Wir bieten Handballerinnen in Rüsselsheim eine Perspektive – von den Junior-Rebels bis zu den Aktiven.
+                                            Wir denken Sport neu: Agil, digital und mit einer Community, die füreinander einsteht. Entdecken Sie ein Team, das keine Grenzen kennt.
                                         </p>
                                     </div>
                                     <div className="grid gap-6">
-                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 group">
-                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0">
+                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 group text-white">
+                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0 group-hover:scale-110 transition-transform">
                                                 <Icon name="check-circle-2" size={32} />
                                             </div>
                                             <div>
-                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Einheitliche Brand</h4>
-                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed">Egal ob A-Jugend oder erste Mannschaft: Die Power der Rebels bleibt identisch.</p>
+                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Agilität</h4>
+                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed">Schnelle Entscheidungen, moderne Kommunikation und stetiges Wachstum.</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 group">
-                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0">
+                                        <div className="flex gap-6 p-6 glass rounded-[2rem] border-white/5 group text-white">
+                                            <div className="w-16 h-16 rounded-2xl bg-pink-600/10 flex items-center justify-center text-pink-600 shrink-0 group-hover:scale-110 transition-transform">
                                                 <Icon name="users" size={32} />
                                             </div>
                                             <div>
-                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Ganzheitliche Förderung</h4>
-                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed">Wir investieren in Talente, um langfristig sportlichen Erfolg in der Region zu sichern.</p>
+                                                <h4 className="font-black text-white uppercase text-sm tracking-[0.15em]">Einzigartigkeit</h4>
+                                                <p className="text-sm text-zinc-500 mt-2 leading-relaxed text-white">Ein Markenauftritt, der sich deutlich vom klassischen Vereinssport abhebt.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -210,43 +211,69 @@
                         {activeTab === 'youth' && (
                             <div className="space-y-16 animate-fade">
                                 <div className="text-center max-w-3xl mx-auto">
-                                    <h2 className="text-5xl rebel-font text-white mb-6 text-white text-white">Zukunft <span className="text-pink-600 text-glow">weibliche Jugend</span></h2>
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Nachhaltige <span className="text-pink-600 text-glow">Jugendarbeit</span></h2>
                                     <p className="text-zinc-400 text-lg leading-relaxed">
-                                        Die United Rebels sind mehr als nur ein Team – wir sind die Zukunft des weiblichen Handballs in Rüsselsheim. Mit unserer <strong>A-Jugend</strong> und dem Ausbau weiterer Jugendmannschaften schaffen wir ein stabiles Fundament.
+                                        Die United Rebels sind die neue sportliche Heimat für die weibliche Jugend in Rüsselsheim. Mit unserer <strong>A-Jugend</strong> und weiteren Teams schaffen wir eine Perspektive für junge Talente.
                                     </p>
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-8">
-                                    <div className="p-10 glass rounded-[3rem] border-pink-600/20">
+                                    <div className="p-10 glass rounded-[3rem] border-pink-600/20 text-white">
                                         <Icon name="award" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white text-white text-white">A-Jugend Fokus</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Die A-Jugend ist unser direktes Sprungbrett zu den Aktiven. Hier werden die Rebels von morgen geformt – mit dem gleichen digitalen Support und dem gleichen Spirit wie das Hauptteam.</p>
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Talent-Pipeline</h3>
+                                        <p className="text-zinc-500 leading-relaxed">Wir formen die Rebels von morgen. Durch einheitliches Coaching und digitale Unterstützung bereiten wir unsere A-Jugend gezielt auf den Aktivenbereich vor.</p>
                                     </div>
-                                    <div className="p-10 glass rounded-[3rem] border-white/5">
+                                    <div className="p-10 glass rounded-[3rem] border-white/5 text-white">
                                         <Icon name="smile" size={40} className="text-pink-600 mb-8" />
-                                        <h3 className="text-2xl font-black text-white uppercase mb-4 text-white text-white text-white">Wertevermittlung</h3>
-                                        <p className="text-zinc-500 leading-relaxed">Wir lehren Disziplin, Teamgeist und Mut. Werte, die Swiss Life als Partner für finanzielle Zuversicht perfekt ergänzt.</p>
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Persönlichkeit</h3>
+                                        <p className="text-zinc-500 leading-relaxed">Über den Sport hinaus vermitteln wir Werte wie Teamgeist, Disziplin und Selbstvertrauen – die Basis für eine zuversichtliche Zukunft.</p>
                                     </div>
                                 </div>
-                                <div className="bg-pink-600/5 p-12 rounded-[4rem] border border-pink-600/20 text-center">
-                                    <h4 className="rebel-font text-2xl mb-4 text-white">Ein Partner für jede Generation</h4>
-                                    <p className="text-zinc-400 max-w-2xl mx-auto">Begleiten Sie unsere jungen Talente von ihren ersten Erfolgen bis zum Profi-Niveau. Ihre Brand wird Teil ihrer sportlichen Vita.</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'active' && (
+                            <div className="space-y-16 animate-fade">
+                                <div className="text-center max-w-3xl mx-auto">
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Das Herzstück: <span className="text-pink-600 text-glow">Unsere Damen</span></h2>
+                                    <p className="text-zinc-400 text-lg leading-relaxed text-white">
+                                        Unsere Damen-Mannschaft ist das Flaggschiff der United Rebels. Hier trifft jahrelange Erfahrung auf unbändigen Siegeswillen und maximale Präsenz in der Region.
+                                    </p>
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    <div className="p-10 glass rounded-[3rem] border-white/5">
+                                        <Icon name="zap" size={40} className="text-pink-600 mb-8" />
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Maximale Reichweite</h3>
+                                        <p className="text-zinc-500 leading-relaxed">Die Mannschaft ist das Gesicht der Marke UNITED REBELS. Sie generiert die höchste Aufmerksamkeit bei Heimspielen, in der Lokalpresse und auf unseren Social-Media-Kanälen.</p>
+                                    </div>
+                                    <div className="p-10 glass rounded-[3rem] border-pink-600/20">
+                                        <Icon name="award" size={40} className="text-pink-600 mb-8" />
+                                        <h3 className="text-2xl font-black text-white uppercase mb-4">Vorbildfunktion</h3>
+                                        <p className="text-zinc-500 leading-relaxed">Unsere Spielerinnen sind die Idole unserer Jugend. Diese enge Bindung zwischen den Generationen schafft eine einzigartige, loyale Community am Standort Rüsselsheim.</p>
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-r from-pink-600/20 to-transparent p-12 rounded-[4rem] border border-pink-600/30">
+                                    <div className="grid md:grid-cols-3 gap-10 text-center">
+                                        <div><p className="text-4xl font-black text-white mb-2">100%</p><p className="text-[10px] uppercase font-bold text-zinc-500 tracking-[0.2em]">Leidenschaft</p></div>
+                                        <div><p className="text-4xl font-black text-white mb-2">Top</p><p className="text-[10px] uppercase font-bold text-zinc-500 tracking-[0.2em]">Wahrnehmung</p></div>
+                                        <div><p className="text-4xl font-black text-white mb-2">Stark</p><p className="text-[10px] uppercase font-bold text-zinc-500 tracking-[0.2em]">Vernetzt</p></div>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'match' && (
-                            <div className="space-y-20 animate-fade text-white text-white text-white">
+                            <div className="space-y-20 animate-fade">
                                 <div className="text-center max-w-3xl mx-auto">
                                     <h2 className="text-5xl rebel-font text-white mb-6">Warum <span className="text-pink-600 text-glow">Swiss Life?</span></h2>
-                                    <p className="text-zinc-400 text-lg">Finanzielle Zuversicht braucht ein stabiles Fundament – genau wie ein Handballteam.</p>
+                                    <p className="text-zinc-400 text-lg">Finanzielle Zuversicht trifft auf sportlichen Ehrgeiz. Wir teilen die Werte von Planung, Stärke und Erfolg.</p>
                                 </div>
                                 <div className="grid md:grid-cols-3 gap-8">
                                     {[
-                                        { title: 'Regionale Power', desc: 'Wir erreichen Familien in Rüsselsheim – von der Tochter in der A-Jugend bis zur aktiven Spielerin.', icon: 'map-pin' },
-                                        { title: 'Nachhaltigkeit', desc: 'Sponsoring, das ankommt: Sie unterstützen die Entwicklung junger Menschen in ihrer Freizeit.', icon: 'shield-check' },
-                                        { title: 'Innovation', desc: 'Ihr Standard ist Exzellenz. Wir bringen diese Professionalität digital in den Vereinssport.', icon: 'trending-up' }
+                                        { title: 'Regionale Power', desc: 'Wir erreichen Familien in Rüsselsheim – vom Nachwuchs bis zu den Aktiven.', icon: 'map-pin' },
+                                        { title: 'Zuversicht', desc: 'Ihr sichert die finanzielle Zukunft, wir sichern den Teamgeist der Region.', icon: 'shield-check' },
+                                        { title: 'High Performance', desc: 'Exzellenz ist euer Standard. Wir bringen diese Professionalität auf das Feld.', icon: 'trending-up' }
                                     ].map((item, i) => (
-                                        <div key={i} className="p-10 glass rounded-[3rem] hover:border-pink-600/30 transition-all group text-white text-white">
+                                        <div key={i} className="p-10 glass rounded-[3rem] hover:border-pink-600/30 transition-all group">
                                             <Icon name={item.icon} size={40} className="text-pink-600 mb-8 transition-transform group-hover:scale-110" />
                                             <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-4">{item.title}</h3>
                                             <p className="text-zinc-500 leading-relaxed text-sm">{item.desc}</p>
@@ -257,22 +284,22 @@
                         )}
 
                         {activeTab === 'hub' && (
-                            <div className="grid md:grid-cols-2 gap-24 items-center animate-fade text-white">
-                                <div className="relative order-2 md:order-1 text-white">
+                            <div className="grid md:grid-cols-2 gap-24 items-center animate-fade">
+                                <div className="relative order-2 md:order-1">
                                     <div className="bg-[#111] w-72 h-[550px] mx-auto rounded-[3.8rem] border-[12px] border-zinc-900 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
                                         <div className="bg-pink-600 h-16 w-full p-4 flex justify-between items-center text-white">
                                             <Icon name="zap" size={20} className="text-white" />
                                             <Icon name="menu" size={20} className="text-white" />
                                         </div>
-                                        <div className="p-6 space-y-6 text-white text-white">
-                                            <div className="bg-white p-5 rounded-2xl shadow-2xl transform -rotate-1">
+                                        <div className="p-6 space-y-6 text-white text-white text-white">
+                                            <div className="bg-white p-5 rounded-2xl shadow-2xl transform -rotate-1 text-black">
                                                 <p className="text-[7px] font-black uppercase text-zinc-400 mb-1 tracking-widest text-black">Exklusiv-Partner</p>
-                                                <p className="text-sm font-black text-black leading-none text-black text-black">Swiss Life Rüsselsheim</p>
+                                                <p className="text-sm font-black text-black leading-none">Swiss Life Rüsselsheim</p>
                                             </div>
                                             <div className="h-44 w-full bg-white/5 rounded-2xl border border-white/5 flex items-center justify-center">
-                                                <Icon name="bar-chart-3" size={32} className="opacity-10" />
+                                                <Icon name="bar-chart-3" size={32} className="opacity-10 text-white" />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-3 text-white">
                                                 <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
                                                 <div className="h-16 bg-white/5 rounded-xl border border-white/5"></div>
                                             </div>
@@ -280,23 +307,23 @@
                                     </div>
                                     <div className="absolute top-1/4 -right-10 glass p-6 rounded-3xl shadow-3xl max-w-[180px] animate-bounce duration-[3s] text-white">
                                         <Icon name="smartphone" size={20} className="text-pink-600 mb-2" />
-                                        <p className="text-xs font-bold text-white leading-tight">Rebel Hub – Die Bühne für Ihre Brand.</p>
+                                        <p className="text-xs font-bold text-white leading-tight">Ihre Marke in jeder Hosentasche.</p>
                                     </div>
                                 </div>
                                 <div className="space-y-10 order-1 md:order-2">
-                                    <h2 className="text-5xl rebel-font text-white leading-tight">Innovation als <span className="text-pink-600 text-glow">Brand-Faktor</span></h2>
+                                    <h2 className="text-5xl rebel-font text-white leading-tight text-white">Digitaler <span className="text-pink-600 text-glow">Vorsprung</span></h2>
                                     <p className="text-zinc-400 text-lg leading-relaxed text-white">
-                                        Der <strong>Rebel Hub</strong> ist unser digitaler Heimvorteil. Auch unsere Jugendteams nutzen die App für Planung und Kommunikation – Ihre Marke ist somit präsent bei Spielerinnen, Eltern und Fans.
+                                        Der <strong>Rebel Hub</strong> ist unser Herzstück. Eine eigene Plattform für Team-Management, die uns technologisch von jedem anderen Verein abhebt.
                                     </p>
-                                    <ul className="space-y-6 text-white">
+                                    <ul className="space-y-6 text-white text-white">
                                         {[
                                             'Premium Banner im Jugend- & Aktiven-Feed',
-                                            'Präsenz in den digitalen Match-Stats',
-                                            'Branding in der Team-Organisation',
-                                            'Direkte Links zu Ihren Finanz-Checks'
+                                            'Verlinkung zu Ihren Beratungsangeboten',
+                                            'Präsenz in Spielerprofilen & Live-Stats',
+                                            'Partner-Branding bei Matchday-Updates'
                                         ].map((text, i) => (
-                                            <li key={i} className="flex gap-4 items-center text-white">
-                                                <div className="bg-pink-600/20 p-2 rounded-full text-white">
+                                            <li key={i} className="flex gap-4 items-center">
+                                                <div className="bg-pink-600/20 p-2 rounded-full">
                                                     <Icon name="check" size={18} className="text-pink-600" />
                                                 </div>
                                                 <span className="font-bold text-zinc-200">{text}</span>
@@ -310,20 +337,20 @@
                         {activeTab === 'packages' && (
                             <div className="space-y-20 animate-fade">
                                 <div className="text-center max-w-3xl mx-auto">
-                                    <h2 className="text-5xl rebel-font text-white mb-6">Partner <span className="text-pink-600 text-glow">Ebenen</span></h2>
-                                    <p className="text-zinc-400 text-lg">Unterstützen Sie das Gesamtsystem oder setzen Sie den Fokus auf den Nachwuchs.</p>
+                                    <h2 className="text-5xl rebel-font text-white mb-6">Rebel <span className="text-pink-600 text-glow">Ebenen</span></h2>
+                                    <p className="text-zinc-400 text-lg text-white">Wählen Sie das Paket, das am besten zu Ihren Marketingzielen passt.</p>
                                 </div>
-                                <div className="grid md:grid-cols-3 gap-8 text-white">
+                                <div className="grid md:grid-cols-3 gap-8 text-white text-white">
                                     {packages.map((pkg) => (
-                                        <div key={pkg.id} className={`flex flex-col p-10 glass rounded-[3.5rem] border-2 ${pkg.color} transition-all hover:scale-[1.03] duration-500 shadow-xl text-white text-white`}>
+                                        <div key={pkg.id} className={`flex flex-col p-10 glass rounded-[3.5rem] border-2 ${pkg.color} transition-all hover:scale-[1.03] duration-500 shadow-xl`}>
                                             <div className={`${pkg.textColor} mb-8 flex justify-center text-white`}>
                                                 <Icon name={pkg.icon} size={56} />
                                             </div>
-                                            <h3 className="text-2xl font-black italic uppercase mb-2 text-white text-center text-white text-white text-white">{pkg.name}</h3>
-                                            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-center text-white">{pkg.subtitle}</p>
-                                            <ul className="space-y-6 mb-12 flex-grow text-white">
+                                            <h3 className="text-2xl font-black italic uppercase mb-2 text-white text-center text-white">{pkg.name}</h3>
+                                            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-12 text-center">{pkg.subtitle}</p>
+                                            <ul className="space-y-6 mb-12 flex-grow text-white text-white text-white">
                                                 {pkg.features.map((f, i) => (
-                                                    <li key={i} className="text-sm text-zinc-300 flex gap-3 leading-tight font-medium text-white text-white">
+                                                    <li key={i} className="text-sm text-zinc-300 flex gap-3 leading-tight font-medium">
                                                         <Icon name="chevron-right" size={14} className="text-pink-600 shrink-0 mt-0.5" />
                                                         {f}
                                                     </li>
@@ -343,9 +370,9 @@
                     {/* Footer */}
                     <footer className="bg-white/5 border-t border-white/5 py-32 px-6">
                         <div className="max-w-4xl mx-auto text-center text-white">
-                            <h2 className="text-5xl md:text-7xl rebel-font text-white mb-8 leading-none">Gemeinsam <br/><span className="text-pink-600 text-glow">wachsen?</span></h2>
-                            <p className="text-zinc-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Lassen Sie uns gemeinsam die Sportwelt in Rüsselsheim für alle Generationen revolutionieren. Wir freuen uns auf Sie.</p>
-                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white text-white">
+                            <h2 className="text-5xl md:text-7xl rebel-font text-white mb-8 leading-none">Bereit für den <br/><span className="text-pink-600 text-glow italic">Anpfiff?</span></h2>
+                            <p className="text-zinc-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">Wir freuen uns darauf, die Zukunft der United Rebels gemeinsam mit Swiss Life zu gestalten.</p>
+                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white">
                                 <a href="mailto:kai@united-rebels.de" className="w-full sm:w-auto bg-pink-600 px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_40px_rgba(255,0,127,0.5)] transition-all transform hover:-translate-y-1 text-white">
                                     <Icon name="mail" size={20} /> E-Mail senden
                                 </a>
@@ -353,10 +380,10 @@
                                     Termin buchen <Icon name="calendar" size={20} />
                                 </button>
                             </div>
-                            <div className="mt-32 opacity-10 flex justify-center gap-12 items-center flex-wrap text-white">
+                            <div className="mt-32 opacity-10 flex justify-center gap-12 items-center flex-wrap">
                                 <div className="rebel-font text-4xl">#REBELS</div>
                                 <div className="rebel-font text-4xl">UNITED</div>
-                                <div className="rebel-font text-4xl text-white text-white text-white">JUGEND</div>
+                                <div className="rebel-font text-4xl">JUGEND</div>
                             </div>
                         </div>
                     </footer>
