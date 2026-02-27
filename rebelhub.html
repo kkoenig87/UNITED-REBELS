@@ -4,20 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- PWA / iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="REBEL HUB">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#050505" id="theme-meta">
     
-    <!-- App Icons -->
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" href="apple-touch-icon.png">
     
     <title>UNITED REBELS - Rebel Hub Ultimate</title>
     
-    <!-- Libraries -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -113,7 +110,8 @@
             { id: 'p11', name: "Franzi", pw: "8080", icon: "flame", number: '4' },
             { id: 'p12', name: "Carina", pw: "PINK#3", icon: "layers", number: '3' },
             { id: 'p13', name: "Ayleen", pw: "Jackson", icon: "zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "v3rr@t1cHd1rnIch7", icon: "award", number: '28' }
+            { id: 'p14', name: "Sandra", pw: "v3rr@t1cHd1rnIch7", icon: "award", number: '28' },
+            { id: 'p15', name: "Tini", pw: "26072011", icon: "flame", number: '33' }
         ];
 
         const SHOP_PRODUCTS = [
@@ -163,7 +161,7 @@
             </button>
         );
 
-        // --- VIEW COMPONENTS ---
+        // --- CORE VIEWS (Correctly Ordered) ---
 
         const RebelCard = ({ member, goals = 0, isMe }) => {
             const cardRef = useRef(null);
@@ -729,18 +727,6 @@
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { if (!db || !user) return; try { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); } catch (e) { console.error("Save Error:", e); alert('Fehler beim Speichern! Bitte Internet prüfen.'); } }} onHealthUpdate={async (s) => { if (!db || !user) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { if (!db) return; const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async (id) => { if (!db) return; const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id, d) => { if (!db) return; const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id, s) => { if (!db) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { if (!db) return; const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
                     </main>
-                    {isCartOpen && (
-                        <div className="fixed inset-0 z-[100] flex justify-end">
-                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
-                            <div className="relative w-full max-w-sm bg-[#111] h-full shadow-2xl p-6 flex flex-col animate-slide-up border-l border-white/10">
-                                <div className="flex justify-between items-center mb-6"><h2 className="rebel-font font-black italic uppercase text-2xl text-white">Dein Korb</h2><button onClick={() => setIsCartOpen(false)} className="text-zinc-500"><RebelIcon name="x" size={24}/></button></div>
-                                <div className="flex-grow overflow-y-auto no-scrollbar space-y-4">
-                                    {cart.length === 0 ? (<div className="text-center text-zinc-600 mt-20"><RebelIcon name="shopping-bag" size={48} className="mx-auto mb-4 opacity-30" /><p className="text-sm font-bold uppercase">Nix drin.</p></div>) : (cart.map(item => (<div key={item.cartId} className="bg-white/5 p-4 rounded-2xl flex gap-4 items-center"><img src={item.img} alt={item.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-grow"><h4 className="font-bold text-white text-sm uppercase italic">{item.name}</h4><p className="text-xs text-zinc-500 font-bold">Größe: {item.selectedSize}</p><p className="text-[#FF007F] font-black text-sm">{item.price} €</p></div><button onClick={() => removeFromCart(item.cartId)} className="text-zinc-600 hover:text-red-500"><RebelIcon name="trash-2" size={18} /></button></div>)))}
-                                </div>
-                                {cart.length > 0 && (<div className="pt-6 border-t border-white/10 space-y-4"><div className="flex justify-between text-white font-black uppercase text-xl"><span>Gesamt</span><span className="text-[#FF007F]">{cart.reduce((sum, i) => sum + i.price, 0)} €</span></div><button onClick={handleCheckout} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)]"><RebelIcon name="message-circle" size={20} />Bestellen</button><p className="text-[9px] text-zinc-500 text-center uppercase">Bestellung wird per WhatsApp an Kai gesendet.</p></div>)}
-                            </div>
-                        </div>
-                    )}
                     {showDebugInfo && (
                         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDebugInfo(false)}>
                             <div className="bg-[#111] border border-[#FF007F] p-6 rounded-3xl w-full max-w-sm shadow-[0_0_30px_rgba(255,0,127,0.3)] animate-slide-up" onClick={e => e.stopPropagation()}>
@@ -754,6 +740,18 @@
                                     <div className="flex justify-between pb-2"><span>App ID</span><span className="text-[10px]">{appId}</span></div>
                                 </div>
                                 <button onClick={() => setShowDebugInfo(false)} className="w-full mt-6 bg-[#FF007F] text-white font-black uppercase py-3 rounded-xl">Close Terminal</button>
+                            </div>
+                        </div>
+                    )}
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-[100] flex justify-end">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="relative w-full max-w-sm bg-[#111] h-full shadow-2xl p-6 flex flex-col animate-slide-up border-l border-white/10">
+                                <div className="flex justify-between items-center mb-6"><h2 className="rebel-font font-black italic uppercase text-2xl text-white">Dein Korb</h2><button onClick={() => setIsCartOpen(false)} className="text-zinc-500"><RebelIcon name="x" size={24}/></button></div>
+                                <div className="flex-grow overflow-y-auto no-scrollbar space-y-4">
+                                    {cart.length === 0 ? (<div className="text-center text-zinc-600 mt-20"><RebelIcon name="shopping-bag" size={48} className="mx-auto mb-4 opacity-30" /><p className="text-sm font-bold uppercase">Nix drin.</p></div>) : (cart.map(item => (<div key={item.cartId} className="bg-white/5 p-4 rounded-2xl flex gap-4 items-center"><img src={item.img} alt={item.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-grow"><h4 className="font-bold text-white text-sm uppercase italic">{item.name}</h4><p className="text-xs text-zinc-500 font-bold">Größe: {item.selectedSize}</p><p className="text-[#FF007F] font-black text-sm">{item.price} €</p></div><button onClick={() => removeFromCart(item.cartId)} className="text-zinc-600 hover:text-red-500"><RebelIcon name="trash-2" size={18} /></button></div>)))}
+                                </div>
+                                {cart.length > 0 && (<div className="pt-6 border-t border-white/10 space-y-4"><div className="flex justify-between text-white font-black uppercase text-xl"><span>Gesamt</span><span className="text-[#FF007F]">{cart.reduce((sum, i) => sum + i.price, 0)} €</span></div><button onClick={handleCheckout} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)]"><RebelIcon name="message-circle" size={20} />Bestellen</button><p className="text-[9px] text-zinc-500 text-center uppercase">Bestellung wird per WhatsApp an Kai gesendet.</p></div>)}
                             </div>
                         </div>
                     )}
