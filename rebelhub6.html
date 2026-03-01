@@ -167,7 +167,7 @@
         };
 
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] shrink-0 ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
                 <RebelIcon name={icon} size={22} />
                 <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
             </button>
@@ -301,78 +301,146 @@
             );
         };
 
+        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, myId }) => {
+            const [activeSubTab, setActiveSubTab] = useState('status'); // 'status' or 'log'
+            const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
+
+            const paidFinesTotal = useMemo(() => fines.filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
+            const otherIncomeTotal = useMemo(() => transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
+            const expensesTotal = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
+            
+            const currentBalance = (paidFinesTotal + otherIncomeTotal) - expensesTotal;
+            const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+
+            return (
+                <div className="space-y-6 animate-slide-up pb-20">
+                    <header>
+                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Kasse</h2>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Finanz-Zentrale</p>
+                    </header>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="glass-card p-8 rounded-[2.5rem] border-[#FF007F]/30 shadow-[0_0_40px_rgba(255,0,127,0.1)] text-center relative overflow-hidden">
+                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FF007F] to-transparent opacity-50"></div>
+                             <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-[0.2em] mb-2">Verfügbares Budget</p>
+                             <p className="text-6xl font-black italic text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{currentBalance.toFixed(2)} €</p>
+                             <div className="flex justify-center gap-6 mt-6 border-t border-white/5 pt-6">
+                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Eingenommen</p><p className="text-sm font-black text-green-500">{(paidFinesTotal + otherIncomeTotal).toFixed(2)} €</p></div>
+                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Ausgegeben</p><p className="text-sm font-black text-red-500">{expensesTotal.toFixed(2)} €</p></div>
+                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Noch offen</p><p className="text-sm font-black text-yellow-500">{openDebtTotal.toFixed(2)} €</p></div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
+                        <button onClick={() => setActiveSubTab('status')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='status'?'bg-white text-black':'text-zinc-500'}`}>Übersicht</button>
+                        <button onClick={() => setActiveSubTab('log')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='log'?'bg-white text-black':'text-zinc-500'}`}>Buchungen</button>
+                    </div>
+
+                    {activeSubTab === 'status' && (
+                        <div className="space-y-6">
+                            {isAdmin && (
+                                <section className="glass-card p-6 rounded-3xl border-white/10 bg-black/20 space-y-4">
+                                    <h3 className="rebel-font font-black italic text-xs text-white uppercase">Neue Buchung</h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input type="text" placeholder="Zweck (z.B. Pizza)" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} />
+                                        <input type="number" placeholder="Betrag €" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.amount} onChange={e => setNewTrans({...newTrans, amount: e.target.value})} />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setNewTrans({...newTrans, type: 'income'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='income'?'bg-green-500/20 border-green-500 text-green-500':'bg-black text-zinc-600 border-white/5'}`}>Einnahme</button>
+                                        <button onClick={() => setNewTrans({...newTrans, type: 'expense'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='expense'?'bg-red-500/20 border-red-500 text-red-500':'bg-black text-zinc-600 border-white/5'}`}>Ausgabe</button>
+                                    </div>
+                                    <button onClick={() => {
+                                        if(!newTrans.label || !newTrans.amount) return;
+                                        onAddTransaction(newTrans);
+                                        setNewTrans({ label: '', amount: '', type: 'income' });
+                                    }} className="w-full bg-white text-black py-3 rounded-xl font-black uppercase text-[10px]">Buchen</button>
+                                </section>
+                            )}
+
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Top Schuldner (Rebel Schulden)</h3>
+                                {SQUAD_DATA.map(s => {
+                                    const debt = fines.filter(f => f.playerId === s.id && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+                                    if(debt === 0) return null;
+                                    return (
+                                        <div key={s.id} className="bg-black/40 p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                                            <span className="text-xs font-black text-white italic">{s.name}</span>
+                                            <span className="text-sm font-black text-[#FF007F]">{debt} €</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSubTab === 'log' && (
+                        <div className="space-y-3">
+                            {[...transactions, ...fines.filter(f => f.paid).map(f => ({ ...f, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` }))]
+                                .sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
+                                .map((t, i) => (
+                                    <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                                        <div>
+                                            <p className="text-xs font-black text-white">{t.label || t.reason}</p>
+                                            <p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p>
+                                        </div>
+                                        <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
+                                            {t.type==='income'?'+':'-'} {t.amount} €
+                                        </span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         const FinesView = ({ theme, fines, myId, isAdmin, onAddFine, onPayFine }) => {
             const [selectedPlayer, setSelectedPlayer] = useState('');
             const [selectedReason, setSelectedReason] = useState(FINE_CATALOG[0].id);
-
-            const totalDebt = useMemo(() => fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
             const myDebt = useMemo(() => fines.filter(f => f.playerId === myId && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines, myId]);
             
-            // Hall of Shame (Top Schulden)
-            const leaderboard = useMemo(() => {
-                const map = {};
-                fines.filter(f => !f.paid).forEach(f => map[f.playerId] = (map[f.playerId] || 0) + f.amount);
-                return Object.entries(map).map(([id, sum]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', sum })).sort((a,b) => b.sum - a.sum);
-            }, [fines]);
-
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
                     <header>
                         <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2>
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Teamkasse: {totalDebt} € offen</p>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p>
                     </header>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 shadow-xl bg-gradient-to-br from-[#FF007F]/10 to-transparent">
-                            <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine Schulden</p>
-                            <p className="text-4xl font-black italic text-white">{myDebt} €</p>
-                            <p className="text-[9px] text-zinc-500 uppercase mt-2 font-bold tracking-widest">Bitte bei Kai oder Heiko begleichen.</p>
-                        </div>
-                        
-                        <div className="glass-card p-6 rounded-3xl border-white/5 shadow-xl">
-                            <p className="text-[10px] font-black uppercase text-zinc-500 mb-3">Hall of Shame 👑</p>
-                            <div className="space-y-2">
-                                {leaderboard.slice(0,3).map((l, i) => (
-                                    <div key={i} className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
-                                        <span className="text-xs font-black italic text-white">{i+1}. {l.name}</span>
-                                        <span className="text-xs font-black text-[#FF007F]">{l.sum} €</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                    <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 bg-gradient-to-br from-[#FF007F]/10 to-transparent">
+                        <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine offenen Strafen</p>
+                        <p className="text-4xl font-black italic text-white">{myDebt} €</p>
                     </div>
 
                     {isAdmin && (
                         <section className="glass-card p-6 rounded-3xl border-[#FF007F]/30 bg-black/40 space-y-4">
                             <h3 className="rebel-font font-black italic text-sm text-[#FF007F] uppercase">Strafe verteilen</h3>
                             <div className="grid grid-cols-1 gap-3">
-                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
                                     <option value="">Spielerin wählen</option>
                                     {SQUAD_DATA.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
-                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={selectedReason} onChange={e => setSelectedReason(e.target.value)}>
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedReason} onChange={e => setSelectedReason(e.target.value)}>
                                     {FINE_CATALOG.map(f => <option key={f.id} value={f.id}>{f.label} ({f.price}€)</option>)}
                                 </select>
                                 <button onClick={() => {
                                     if(!selectedPlayer) return alert('Wähle eine Rebellin!');
                                     const item = FINE_CATALOG.find(f => f.id === selectedReason);
                                     onAddFine(selectedPlayer, item.label, item.price);
-                                }} className="bg-[#FF007F] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Strafe buchen</button>
+                                }} className="bg-[#FF007F] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Buchen</button>
                             </div>
                         </section>
                     )}
 
                     <section className="space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Offene Posten</h3>
+                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Aktuelle Sünden</h3>
                         <div className="space-y-2">
                             {fines.filter(f => !f.paid).map(f => (
                                 <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-[10px] font-black text-[#FF007F] italic">{SQUAD_DATA.find(s => s.id === f.playerId)?.name.charAt(0)}</div>
-                                        <div>
-                                            <p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p>
-                                            <p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p>
-                                        </div>
+                                    <div>
+                                        <p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className="text-sm font-black text-white">{f.amount} €</span>
@@ -523,20 +591,6 @@
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
                 setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
             };
-            
-            const handleEmergencySeed = async () => {
-                if(!db || !confirm("ACHTUNG: Dies lädt die Standard-Daten in die Cloud. Nur machen, wenn die App leer ist!")) return;
-                const { doc, setDoc } = window.FB;
-                for(const player of SQUAD_DATA) {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', player.id), {
-                        name: player.name,
-                        number: player.number,
-                        icon: player.icon,
-                        grip: 85, vibe: 90, power: 85, soul: 95
-                    }, { merge: true });
-                }
-                alert("Datenbank initialisiert! Bitte Seite neu laden.");
-            };
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10 text-white">
@@ -592,7 +646,7 @@
 
                     {isAdmin && (
                         <div className="space-y-8">
-                            <section className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-gradient-to-b from-[#111] to-black">
+                            <section className="glass-card p-6 rounded-3xl border-[#FF007F]/30 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-gradient-to-b from-[#111] to-black">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-lg mb-6 tracking-widest text-center">Rebel Card Anpassung</h3>
                                 <div className="space-y-6">
                                     <select className="w-full bg-black border border-white/20 rounded-xl p-4 text-white outline-none appearance-none font-bold uppercase" value={adminSelectedPlayer} onChange={(e) => setAdminSelectedPlayer(e.target.value)}><option value="" disabled>Spielerin wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
@@ -647,15 +701,80 @@
                                         </div>
                                         <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                         <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
-                                        <div className="grid grid-cols-3 gap-2 text-white">
+                                        <div className="grid grid-cols-3 gap-2 text-white text-white text-white">
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
                                         </div>
+                                        {newEvent.type === 'game' && (
+                                            <div className="space-y-3 bg-white/5 p-3 rounded-xl border border-white/5 animate-slide-up">
+                                                <div className="grid grid-cols-2 gap-2 text-white text-white">
+                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingTime} onChange={e => setNewEvent({...newEvent, meetingTime: e.target.value})} /></div>
+                                                    <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffort</label><input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.meetingLocation} onChange={e => setNewEvent({...newEvent, meetingLocation: e.target.value})} /></div>
+                                                </div>
+                                                <div className="flex gap-2 items-center text-white">
+                                                    <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.jerseyColor} onChange={e => setNewEvent({...newEvent, jerseyColor: e.target.value})} />
+                                                    <button onClick={() => setNewEvent({...newEvent, isHome: !newEvent.isHome})} className={`px-4 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${newEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>{newEvent.isHome ? 'Heim' : 'Auswärts'}</button>
+                                                </div>
+                                            </div>
+                                        )}
                                         <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform">Event speichern</button>
                                     </div>
                                 </div>
                             </section>
+
+                            <section className="space-y-4 text-white">
+                                <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2 tracking-widest">Event Verwaltung</h3>
+                                {schedule.map(ev => (
+                                    <div key={ev.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 text-white">
+                                        <div className="truncate pr-4 text-white"><p className="font-bold text-xs uppercase italic truncate text-white">{ev.label}</p><p className="text-[9px] text-zinc-600 truncate mt-1 text-white">{new Date(ev.date).toLocaleDateString('de-DE')} | {ev.time} Uhr</p></div>
+                                        <div className="flex gap-2 shrink-0">
+                                            <button onClick={() => setEditingEvent(ev)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5 text-white"><RebelIcon name="pencil" size={18}/></button>
+                                            {ev.type==='game' && <button onClick={() => setEditingStats(ev)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl text-white"><RebelIcon name="bar-chart-2" size={18}/></button>}
+                                            <button onClick={() => onDeleteEvent(ev.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl text-white"><RebelIcon name="trash-2" size={18}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </section>
+                        </div>
+                    )}
+
+                    {editingEvent && (
+                        <div className="fixed inset-0 bg-black/95 z-[110] p-6 pt-24 overflow-y-auto no-scrollbar text-white">
+                            <div className="max-w-xl mx-auto space-y-8 animate-slide-up">
+                                <div className="flex justify-between items-center text-white"><h2 className="rebel-font font-black italic uppercase text-xl text-white">Event bearbeiten</h2><button onClick={()=>setEditingEvent(null)} className="text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <div className="bg-[#111] p-6 rounded-3xl border border-white/10 space-y-4">
+                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
+                                    <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
+                                    <div className="grid grid-cols-3 gap-4 text-white text-white">
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
+                                        <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.endTime} onChange={e => setEditingEvent({...editingEvent, endTime: e.target.value})} /></div>
+                                    </div>
+                                    {editingEvent.type === 'game' && (
+                                        <div className="space-y-4 pt-4 border-t border-white/5">
+                                            <div className="grid grid-cols-2 gap-4 text-white text-white text-white">
+                                                <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Treffzeit</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.meetingTime} onChange={e => setEditingEvent({...editingEvent, meetingTime: e.target.value})} /></div>
+                                                <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Treffort</label><input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.meetingLocation} onChange={e => setEditingEvent({...editingEvent, meetingLocation: e.target.value})} /></div>
+                                            </div>
+                                            <div className="flex gap-2 items-center text-white text-white">
+                                                <input type="text" placeholder="Trikotfarbe" className="flex-grow bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.jerseyColor} onChange={e => setEditingEvent({...editingEvent, jerseyColor: e.target.value})} />
+                                                <button onClick={() => setEditingEvent({...editingEvent, isHome: !editingEvent.isHome})} className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase border transition-all ${editingEvent.isHome ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-orange-500/20 border-orange-500 text-orange-500'}`}>{editingEvent.isHome ? 'Heim' : 'Auswärts'}</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <button onClick={() => { onUpdateEvent(editingEvent.id, editingEvent); setEditingEvent(null); }} className="w-full bg-[#FF007F] text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl mt-4 active:scale-95 transition-transform">Änderungen speichern</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {editingStats && (
+                        <div className="fixed inset-0 bg-black/95 z-[110] p-6 pt-24 overflow-y-auto no-scrollbar text-white">
+                            <div className="max-w-xl mx-auto space-y-8 animate-slide-up">
+                                <div className="flex justify-between items-center text-white text-white"><h2 className="rebel-font font-black italic uppercase text-xl text-white">STATS: {editingStats.label}</h2><button onClick={()=>setEditingStats(null)} className="text-white"><RebelIcon name="x" size={32}/></button></div>
+                                <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.target); const s = { players: {} }; SQUAD_DATA.forEach(sq => { s.players[sq.id] = { g: fd.get(`g_${sq.id}`), p: fd.get(`p_${sq.id}`), y: fd.get(`y_${sq.id}`)==='on', r: fd.get(`r_${sq.id}`)==='on', b: fd.get(`b_${sq.id}`)==='on' }; }); await onSaveStats(editingStats.id, s); setEditingStats(null); }} className="space-y-6"><div className="space-y-3">{SQUAD_DATA.map(s => <div key={s.id} className="bg-white/5 p-4 rounded-[1.5rem] flex flex-wrap items-center gap-4 border border-white/5 text-white"><span className="text-white font-black italic text-xs w-24 truncate text-left text-white">{s.name}</span><input name={`g_${s.id}`} type="number" placeholder="G" defaultValue={editingStats.stats?.players?.[s.id]?.g} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><input name={`p_${s.id}`} type="number" placeholder="2M" defaultValue={editingStats.stats?.players?.[s.id]?.p} className="w-12 bg-black border border-white/10 rounded-xl p-3 text-center text-xs text-white" /><div className="flex gap-2"><label className="text-yellow-500 cursor-pointer text-white"><input name={`y_${s.id}`} type="checkbox" className="hidden peer text-white" defaultChecked={editingStats.stats?.players?.[s.id]?.y}/><span className="w-8 h-8 border border-yellow-500/30 rounded-lg flex items-center justify-center peer-checked:bg-yellow-500 peer-checked:text-black font-black text-[10px] text-white">Y</span></label><label className="text-red-500 cursor-pointer text-white"><input name={`r_${s.id}`} type="checkbox" className="hidden peer text-white" defaultChecked={editingStats.stats?.players?.[s.id]?.r}/><span className="w-8 h-8 border border-red-500/30 rounded-lg flex items-center justify-center peer-checked:bg-red-500 peer-checked:text-black font-black text-[10px] text-white">R</span></label></div></div>)}</div><button type="submit" className="w-full bg-[#FF007F] text-white py-5 rounded-3xl font-black uppercase shadow-2xl text-white">Stats Speichern</button></form>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -673,12 +792,13 @@
             const [schedule, setSchedule] = useState([]);
             const [health, setHealth] = useState({});
             const [fines, setFines] = useState([]);
-            const [voteHistory, setVoteHistory] = useState([]);
+            const [transactions, setTransactions] = useState([]);
             const [announcement, setAnnouncement] = useState("");
             const [theme, setTheme] = useState('dark');
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
             const [cloudStatus, setCloudStatus] = useState('connecting');
+            const [voteHistory, setVoteHistory] = useState([]);
             const [cart, setCart] = useState([]);
             const [isCartOpen, setIsCartOpen] = useState(false);
             const [showDebugInfo, setShowDebugInfo] = useState(false);
@@ -687,15 +807,15 @@
                 const startApp = async () => {
                     let attempts = 0;
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
-                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
+                    if (!window.FB) { setLoading(false); return; }
                     try {
-                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore } = window.FB;
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FB;
                         const app = initializeApp(firebaseConfig);
                         const auth = getAuth(app);
                         const firestore = getFirestore(app);
                         setDb(firestore);
                         await signInAnonymously(auth);
-                        const unsubscribe = onAuthStateChanged(auth, (u) => {
+                        onAuthStateChanged(auth, (u) => {
                             if (u) {
                                 setCloudStatus('connected');
                                 const savedId = localStorage.getItem('rebel_hub_user_id');
@@ -703,8 +823,7 @@
                             }
                             setLoading(false);
                         });
-                        return () => unsubscribe();
-                    } catch (e) { setLoading(false); setCloudStatus('error'); }
+                    } catch (e) { setLoading(false); }
                 };
                 startApp();
             }, []);
@@ -719,19 +838,19 @@
                 const unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => new Date(a.date) - new Date(b.date)); setSchedule(list); });
                 const unsubHealth = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'health'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setHealth(d); });
                 const unsubFines = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'fines'), snap => { const list = []; snap.forEach(d => list.push({ id: d.id, ...d.data() })); setFines(list); });
+                const unsubTrans = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'treasury'), snap => { const list = []; snap.forEach(d => list.push({ id: d.id, ...d.data() })); setTransactions(list); });
                 const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setVoteHistory(list.slice(0, 50)); });
                 const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), snap => { if(snap.exists()) setAnnouncement(snap.data().text || ""); });
-                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubHistory(); unsubNews(); };
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubNews(); };
             }, [db, user]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
-            const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
-            
+
             const handleAddFine = async (pId, reason, amount) => {
                 if(!db) return;
                 const { collection, addDoc, serverTimestamp } = window.FB;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'fines'), { playerId: pId, reason, amount, paid: false, timestamp: serverTimestamp() });
-                triggerHype();
+                if (window.confetti) window.confetti({ particleCount: 50, colors: ['#FF007F'] });
             };
 
             const handlePayFine = async (fId) => {
@@ -740,7 +859,19 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { paid: true });
             };
 
-            // Attendance calculation
+            const handleAddTransaction = async (t) => {
+                if(!db) return;
+                const { collection, addDoc, serverTimestamp } = window.FB;
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'treasury'), { ...t, timestamp: serverTimestamp() });
+            };
+
+            const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
+            const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
+            
+            const addToCart = (product, size) => { setCart([...cart, { ...product, cartId: Date.now(), selectedSize: size }]); triggerHype(); };
+            const removeFromCart = (cartId) => { setCart(cart.filter(item => item.cartId !== cartId)); };
+            const handleCheckout = () => { const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('%0A'); const total = cart.reduce((sum, i) => sum + i.price, 0); const msg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:%0A%0A${itemsList}%0A%0AGesamt: ${total}€%0A%0ABitte bestätigen!`; window.open(`https://wa.me/4917600000000?text=${msg}`, '_blank'); setCart([]); setIsCartOpen(false); };
+
             const attendanceData = useMemo(() => {
                 const map = {};
                 SQUAD_DATA.forEach(p => {
@@ -756,37 +887,76 @@
                 return map;
             }, [votesData]);
 
+            const squadGoals = useMemo(() => {
+                const map = {};
+                schedule.forEach(ev => {
+                    if (ev.stats?.players) {
+                        Object.entries(ev.stats.players).forEach(([pid, s]) => map[pid] = (map[pid] || 0) + (parseInt(s.g) || 0));
+                    }
+                });
+                return map;
+            }, [schedule]);
+
             if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /></div> );
             if (!user) return ( <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]"><div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center"><RebelLogo className="w-24 h-24 mx-auto mb-8" /><form onSubmit={handleLogin} className="space-y-6"><select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white" value={loginData.id} onChange={e => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select><input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={e => setLoginData({...loginData, pw: e.target.value})}/><button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest">Anmelden</button></form></div></div> );
 
             return (
-                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5]' : 'bg-[#050505]'}`}>
+                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
                     <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
                         <div className="flex items-center gap-3"><RebelLogo className="w-9 h-9" status={cloudStatus} onClick={() => setShowDebugInfo(!showDebugInfo)} /><h2 className={`rebel-font font-black italic text-lg uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2></div>
-                        <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
+                        <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
                     </header>
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onVote={(id,val) => {
-                            const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
-                            const ev = schedule.find(e => e.id === id);
-                            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() });
-                        }} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={Object.values(schedule).reduce((acc, ev) => { if(ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid,s]) => acc[pid] = (acc[pid]||0)+(parseInt(s.g)||0)); return acc; }, {})} theme={theme} announcement={announcement} onPostShout={async (t,a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? '🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); }} onDeleteShout={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => {
-                            const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
-                            const ev = schedule.find(e => e.id === id);
-                            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() });
-                        }} health={health['current'] || {}} profiles={profiles} theme={theme} />}
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} />}
+                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
+                        {activeTab === 'shop' && <FanShopView theme={theme} products={SHOP_PRODUCTS} onAddToCart={addToCart} cartCount={cart.length} onOpenCart={() => setIsCartOpen(true)} />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} />}
+                        {activeTab === 'base' && <BaseView theme={theme} />}
+                        {activeTab === 'treasury' && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={user.id==='hc'||user.id==='tm'} onAddTransaction={handleAddTransaction} myId={user.id} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={user.id==='hc'||user.id==='tm'} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
-                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={Object.values(schedule).reduce((acc, ev) => { if(ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid,s]) => acc[pid] = (acc[pid]||0)+(parseInt(s.g)||0)); return acc; }, {})} theme={theme} attendance={attendanceData} />}
-                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Check! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} announcement={announcement} squadGoals={{}} voteHistory={voteHistory} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
                     </main>
-                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
+
+                    {showDebugInfo && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDebugInfo(false)}>
+                            <div className="bg-[#111] border border-[#FF007F] p-6 rounded-3xl w-full max-w-sm shadow-[0_0_30px_rgba(255,0,127,0.3)] animate-slide-up" onClick={e => e.stopPropagation()}>
+                                <h3 className="rebel-font font-black italic text-2xl text-white mb-4">SYSTEM STATUS</h3>
+                                <div className="space-y-3 text-sm font-mono text-zinc-400">
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Cloud Status</span><span className={cloudStatus === 'connected' ? "text-green-500 font-bold" : "text-red-500 font-bold"}>{cloudStatus.toUpperCase()}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Profiles Loaded</span><span className="text-white">{Object.keys(profiles).length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Events Loaded</span><span className="text-white">{schedule.length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Votes Loaded</span><span className="text-white">{Object.keys(votesData).length}</span></div>
+                                    <div className="flex justify-between border-b border-white/10 pb-2"><span>Shoutbox Msgs</span><span className="text-white">{shoutbox.length}</span></div>
+                                    <div className="flex justify-between pb-2"><span>App ID</span><span className="text-[10px]">{appId}</span></div>
+                                </div>
+                                <button onClick={() => setShowDebugInfo(false)} className="w-full mt-6 bg-[#FF007F] text-white font-black uppercase py-3 rounded-xl">Close Terminal</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-[100] flex justify-end">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="relative w-full max-w-sm bg-[#111] h-full shadow-2xl p-6 flex flex-col animate-slide-up border-l border-white/10">
+                                <div className="flex justify-between items-center mb-6"><h2 className="rebel-font font-black italic uppercase text-2xl text-white">Dein Korb</h2><button onClick={() => setIsCartOpen(false)} className="text-zinc-500"><RebelIcon name="x" size={24}/></button></div>
+                                <div className="flex-grow overflow-y-auto no-scrollbar space-y-4">
+                                    {cart.length === 0 ? (<div className="text-center text-zinc-600 mt-20"><RebelIcon name="shopping-bag" size={48} className="mx-auto mb-4 opacity-30" /><p className="text-sm font-bold uppercase">Nix drin.</p></div>) : (cart.map(item => (<div key={item.cartId} className="bg-white/5 p-4 rounded-2xl flex gap-4 items-center"><img src={item.img} alt={item.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-grow"><h4 className="font-bold text-white text-sm uppercase italic">{item.name}</h4><p className="text-xs text-zinc-500 font-bold">Größe: {item.selectedSize}</p><p className="text-[#FF007F] font-black text-sm">{item.price} €</p></div><button onClick={() => removeFromCart(item.cartId)} className="text-zinc-600 hover:text-red-500"><RebelIcon name="trash-2" size={18} /></button></div>)))}
+                                </div>
+                                {cart.length > 0 && (<div className="pt-6 border-t border-white/10 space-y-4"><div className="flex justify-between text-white font-black uppercase text-xl"><span>Gesamt</span><span className="text-[#FF007F]">{cart.reduce((sum, i) => sum + i.price, 0)} €</span></div><button onClick={handleCheckout} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)]"><RebelIcon name="message-circle" size={20} />Bestellen</button><p className="text-[9px] text-zinc-500 text-center uppercase">Bestellung wird per WhatsApp an Kai gesendet.</p></div>)}
+                            </div>
+                        </div>
+                    )}
+
+                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl gap-4 justify-between ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
                         <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
-                        <NavButton icon="euro" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
+                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
+                        <NavButton icon="shopping-bag" label="Shop" active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
+                        <NavButton icon="clipboard-list" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
+                        <NavButton icon="euro" label="Kasse" active={activeTab === 'treasury'} onClick={() => setActiveTab('treasury')} />
                         <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
                     </nav>
                 </div>
