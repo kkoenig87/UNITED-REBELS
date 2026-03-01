@@ -4,19 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- PWA / iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="REBEL HUB">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#050505" id="theme-meta">
     
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-    <link rel="icon" type="image/png" href="./apple-touch-icon.png">
-
-    <title>UNITED REBELS - Squad Hub Ultimate</title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="apple-touch-icon.png">
     
-    <!-- Libraries -->
+    <title>UNITED REBELS - Rebel Hub Ultimate</title>
+    
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -29,7 +27,7 @@
     <style>
         :root { --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom); --rebel-pink: #FF007F; }
         
-        body { font-family: 'Lato', sans-serif; transition: background-color 0.3s, color 0.3s; margin: 0; padding: 0; }
+        body { font-family: 'Lato', sans-serif; transition: background-color 0.3s, color 0.3s; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         .dark { background-color: #050505; color: #d4d4d8; }
         .light { background-color: #f4f4f5; color: #18181b; }
 
@@ -66,6 +64,12 @@
 
         .stats-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-collapse: separate; border-spacing: 0 8px; }
+
+        .shop-card-hover:active { transform: scale(0.98); }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FF007F; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255,0,127,0.8); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
     </style>
 </head>
 <body class="dark no-scrollbar">
@@ -73,49 +77,70 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp };
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk",
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk", 
             authDomain: "hsg-rebelhub.firebaseapp.com",
             projectId: "hsg-rebelhub",
             storageBucket: "hsg-rebelhub.firebasestorage.app",
             messagingSenderId: "240623232398",
-            appId: "1:240623232398:web:012f79f0ebfa20cc3ff0df",
-            measurementId: "G-V873HR1PFY"
+            appId: "1:240623232398:web:012f79f0ebfa20cc3ff0df"
         };
 
         const SQUAD_DATA = [
             { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
-            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "zap", number: 'TM' }, 
+            { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "sparkles", number: 'TM' }, 
             { id: 'p1', name: "Leni", pw: "RebelLeni26", icon: "flame", number: '99' },
-            { id: 'p2', name: "Jana", pw: "RebelJana26", icon: "zap", number: '11' },
-            { id: 'p3', name: "Ricarda", pw: "RebelRicarda26", icon: "flame", number: '15' },
-            { id: 'p4', name: "Alicia", pw: "RebelAlicia26", icon: "target", number: '21' },
-            { id: 'p5', name: "Nina", pw: "RebelNina26", icon: "flame", number: '2' },
-            { id: 'p6', name: "Rebecca", pw: "RebelRebecca26", icon: "zap", number: '3' },
-            { id: 'p7', name: "Nora", pw: "RebelNora26", icon: "crosshair", number: '12' },
-            { id: 'p8', name: "Astrid", pw: "RebelAstrid26", icon: "users", number: '9' },
-            { id: 'p9', name: "Andrea", pw: "RebelAndrea26", icon: "zap", number: '15' },
-            { id: 'p10', name: "Lara", pw: "RebelLara26", icon: "sparkles", number: '24' },
-            { id: 'p11', name: "Franzi", pw: "RebelFranzi26", icon: "flame", number: '4' },
-            { id: 'p12', name: "Carina", pw: "RebelCarina26", icon: "layers", number: '3' },
-            { id: 'p13', name: "Ayleen", pw: "RebelAyleen26", icon: "zap", number: '28' },
-            { id: 'p14', name: "Sandra", pw: "RebelSandra26", icon: "award", number: '28' }
+            { id: 'p2', name: "Jana", pw: "November", icon: "zap", number: '11' },
+            { id: 'p3', name: "Ricarda", pw: "@DoRi019903", icon: "flame", number: '15' },
+            { id: 'p4', name: "Alicia", pw: "73N00S73", icon: "target", number: '21' },
+            { id: 'p5', name: "Nina", pw: "7295", icon: "flame", number: '2' },
+            { id: 'p6', name: "Rebecca", pw: "MamaspieltHandball", icon: "zap", number: '3' },
+            { id: 'p7', name: "Nora", pw: "Rebel12!", icon: "crosshair", number: '12' },
+            { id: 'p8', name: "Astrid", pw: "tirnag27!", icon: "users", number: '9' },
+            { id: 'p9', name: "Andrea", pw: "Hallo2684", icon: "zap", number: '15' },
+            { id: 'p10', name: "Lara", pw: "Weihnachten123!", icon: "sparkles", number: '24' },
+            { id: 'p11', name: "Franzi", pw: "8080", icon: "flame", number: '4' },
+            { id: 'p12', name: "Carina", pw: "PINK#3", icon: "layers", number: '3' },
+            { id: 'p13', name: "Ayleen", pw: "Jackson", icon: "zap", number: '28' },
+            { id: 'p14', name: "Sandra", pw: "v3rr@t1cHd1rnIch7", icon: "award", number: '28' },
+            { id: 'p15', name: "Tini", pw: "26072011", icon: "flame", number: '33' },
+            { id: 'p16', name: "Nessi", pw: "Blumenwiese2026!", icon: "zap", number: '??' }
         ];
 
-        const APP_ID = 'hsg-rebelhub';
+        const FINE_CATALOG = [
+            { id: 'f1', label: 'Zu spät (Training)', price: 2 },
+            { id: 'f2', label: 'Zu spät (Spiel)', price: 5 },
+            { id: 'f3', label: 'Handy in der Kabine', price: 1 },
+            { id: 'f4', label: 'Trikot vergessen', price: 3 },
+            { id: 'f5', label: 'Harz am Ball (falsch)', price: 2 },
+            { id: 'f6', label: 'Getränkekasten fehlt', price: 10 },
+            { id: 'f7', label: 'Bälle nicht aufgepumpt', price: 2 },
+            { id: 'f8', label: 'Sonstiges Rebel-Vergehen', price: 1 }
+        ];
 
-        // --- CORE COMPONENTS ---
+        const SHOP_PRODUCTS = [
+            { id: 's1', name: "Rebel Hoodie 'Classic'", price: 45, category: 'fashion', img: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=600', sizes: ['XS', 'S', 'M', 'L', 'XL'] },
+            { id: 's2', name: "Game Jersey 'Pink Edition'", price: 35, category: 'fashion', img: 'https://images.unsplash.com/photo-1577212017184-80cc0da11583?auto=format&fit=crop&q=80&w=600', sizes: ['S', 'M', 'L'] },
+            { id: 's3', name: "Rebel Cap 'Snapback'", price: 25, category: 'access', img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&q=80&w=600', sizes: ['One Size'] },
+            { id: 's4', name: "Training Socks (3-Pack)", price: 15, category: 'access', img: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&q=80&w=600', sizes: ['35-38', '39-42', '43-46'] },
+            { id: 's5', name: "Rebel Gym Bag", price: 30, category: 'access', img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600', sizes: ['One Size'] },
+            { id: 's6', name: "Water Bottle 'Stay Hydrated'", price: 12, category: 'access', img: 'https://images.unsplash.com/photo-1602143407151-01114195bc51?auto=format&fit=crop&q=80&w=600', sizes: ['0.7L'] }
+        ];
 
-        const RebelLogo = ({ className = "w-12 h-12", status = "connecting" }) => (
-            <div className={`relative ${className}`}>
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsg-rebelhub';
+
+        // --- HELPER COMPONENTS ---
+
+        const RebelLogo = ({ className = "w-12 h-12", status = "connecting", onClick }) => (
+            <div className={`relative ${className} cursor-pointer`} onClick={onClick}>
                 <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">
                     <path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" fill="none" stroke="#FF007F" strokeWidth="6" />
                     <text x="50" y="65" fontFamily="Poppins" fontSize="32" fontWeight="900" fill="#FF007F" textAnchor="middle" fontStyle="italic">UR</text>
@@ -130,7 +155,7 @@
                 if (window.lucide && containerRef.current) {
                     containerRef.current.innerHTML = '';
                     const i = document.createElement('i');
-                    const iconName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+                    const iconName = name ? name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() : 'zap';
                     i.setAttribute('data-lucide', iconName);
                     i.style.width = `${size}px`; i.style.height = `${size}px`;
                     i.className = className;
@@ -141,257 +166,227 @@
             return <span ref={containerRef} style={{ display: 'inline-flex', width: size, height: size }}></span>;
         };
 
-        const App = () => {
-            const [user, setUser] = useState(null); 
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [loginData, setLoginData] = useState({ id: '', pw: '' });
-            const [loginError, setLoginError] = useState('');
-            const [votesData, setVotesData] = useState({});
-            const [shoutbox, setShoutbox] = useState([]);
-            const [profiles, setProfiles] = useState({});
-            const [schedule, setSchedule] = useState([]);
-            const [health, setHealth] = useState({});
-            const [voteHistory, setVoteHistory] = useState([]);
-            const [announcement, setAnnouncement] = useState("");
-            const [theme, setTheme] = useState('dark');
-            const [db, setDb] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [cloudStatus, setCloudStatus] = useState('connecting');
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <RebelIcon name={icon} size={22} />
+                <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
+            </button>
+        );
 
-            const handleLogin = (e) => {
-                e.preventDefault();
-                const found = SQUAD_DATA.find(m => m.id === loginData.id);
-                if (found && found.pw === loginData.pw) {
-                    setUser(found);
-                    localStorage.setItem('rebel_hub_user_id', found.id);
-                } else {
-                    setLoginError('Passwort ungültig.');
-                }
+        // --- CORE VIEWS ---
+
+        const RebelCard = ({ member, goals = 0, isMe }) => {
+            const cardRef = useRef(null);
+            const [rotate, setRotate] = useState({ x: 0, y: 0 });
+            
+            const onMove = (e) => {
+                if (!cardRef.current) return;
+                const rect = cardRef.current.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                setRotate({ x: ((y - centerY) / centerY) * -10, y: ((x - centerX) / centerX) * 10 });
             };
 
-            const triggerHype = () => {
-                if (window.confetti) {
-                    window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] });
-                }
-            };
-
-            const triggerBalloons = () => {
-                if (!window.confetti) return;
-                const duration = 5 * 1000;
-                const animationEnd = Date.now() + duration;
-                const interval = setInterval(() => {
-                    const timeLeft = animationEnd - Date.now();
-                    if (timeLeft <= 0) return clearInterval(interval);
-                    const particleCount = 50 * (timeLeft / duration);
-                    window.confetti({ particleCount, origin: { x: Math.random() * 0.4, y: Math.random() - 0.2 }, colors: ['#FF007F', '#ffffff'] });
-                    window.confetti({ particleCount, origin: { x: Math.random() * 0.4 + 0.6, y: Math.random() - 0.2 }, colors: ['#FF007F', '#ffffff'] });
-                }, 250);
-            };
-
-            const postShout = async (t, a) => {
-                if (!db || !window.FB) return;
-                const { collection, addDoc, serverTimestamp } = window.FB;
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), { 
-                    userId: a ? 'anon' : user.id, 
-                    userName: a ? 'Rebel-Geheimagentin 🕵️‍♀️' : user.name, 
-                    text: t, 
-                    timestamp: serverTimestamp() 
-                });
-                if (t.toLowerCase().match(/sieg|hype|rebel|geil/)) triggerHype();
-            };
-
-            const handleVote = async (id, val) => {
-                if (!db || !window.FB) return;
-                const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
-                const event = schedule.find(ev => ev.id === id);
-                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), {
-                    userId: user.id, userName: user.name, eventLabel: event?.label || 'Abstimmung', voteValue: val, timestamp: serverTimestamp()
-                });
-            };
-
-            const squadGoals = useMemo(() => {
-                const goalsMap = {};
-                schedule.forEach(event => {
-                    if (event.stats && event.stats.players) {
-                        Object.entries(event.stats.players).forEach(([pid, stat]) => {
-                            goalsMap[pid] = (goalsMap[pid] || 0) + (parseInt(stat.g) || 0);
-                        });
-                    }
-                });
-                return goalsMap;
-            }, [schedule]);
-
-            useEffect(() => {
-                const init = async () => {
-                    let attempts = 0;
-                    while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
-                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
-                    try {
-                        const app = window.FB.initializeApp(FIREBASE_CONFIG);
-                        const firestore = window.FB.getFirestore(app);
-                        setDb(firestore);
-                        await window.FB.signInAnonymously(window.FB.getAuth(app));
-                        window.FB.onAuthStateChanged(window.FB.getAuth(app), (u) => {
-                            if (u) {
-                                setCloudStatus('connected');
-                                const savedId = localStorage.getItem('rebel_hub_user_id');
-                                if (savedId) {
-                                    const found = SQUAD_DATA.find(m => m.id === savedId);
-                                    if (found) setUser(found);
-                                }
-                            }
-                            setLoading(false);
-                        });
-                    } catch (e) { setLoading(false); setCloudStatus('error'); }
-                };
-                init();
-            }, []);
-
-            useEffect(() => {
-                if (!db || !window.FB) return;
-                const { collection, onSnapshot, doc } = window.FB;
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setVotesData(data);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox'), (snap) => {
-                    const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                    msgs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setShoutbox(msgs);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'profiles'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setProfiles(data);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), (snap) => {
-                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                    list.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    setSchedule(list);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'health'), (snap) => {
-                    const data = {}; snap.forEach(doc => data[doc.id] = doc.data());
-                    setHealth(data);
-                });
-                onSnapshot(collection(db, 'artifacts', APP_ID, 'public', 'data', 'vote_history'), (snap) => {
-                    const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                    list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setVoteHistory(list.slice(0, 100));
-                });
-                onSnapshot(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), (snap) => {
-                    if (snap.exists()) setAnnouncement(snap.data().text || "");
-                });
-            }, [db]);
-
-            if (loading) return (
-                <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
-                    <RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} />
-                    <p className="text-[10px] uppercase font-black tracking-[0.4em] text-zinc-500 mt-6">System Ready</p>
-                </div>
-            );
-
-            if (!user) return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
-                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
-                        <div className="flex justify-center mb-8"><RebelLogo className="w-24 h-24" status={cloudStatus} /></div>
-                        <h1 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-8 leading-none">Rebel Hub</h1>
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={(e) => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
-                            <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={(e) => setLoginData({...loginData, pw: e.target.value})}/>
-                            {loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}
-                            <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl">Anmelden</button>
-                        </form>
-                    </div>
-                </div>
-            );
+            const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
+            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
 
             return (
-                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
-                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
-                        <div className="flex items-center gap-3">
-                            <RebelLogo className="w-9 h-9" status={cloudStatus} />
-                            <h2 className={`rebel-font font-black italic text-lg leading-none uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button>
-                             <button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button>
-                             <button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button>
-                        </div>
-                    </header>
-
-                    {announcement && (
-                        <div className="px-6 py-4 mt-2">
-                            <div className="glass-card p-4 rounded-2xl border-l-4 border-[#FF007F] bg-[#FF007F]/5 animate-slide-up flex items-start gap-4">
-                                <RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-1" size={20} />
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#FF007F]">Rebel News</p>
-                                    <p className="text-sm font-bold leading-relaxed">{announcement}</p>
-                                </div>
+                <div ref={cardRef} onMouseMove={onMove} onMouseLeave={() => setRotate({x:0,y:0})} onTouchMove={onMove} onTouchEnd={() => setRotate({x:0,y:0})} className="relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white" style={{ perspective: '1000px' }}>
+                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow transition-transform duration-100 ease-linear will-change-transform" style={{ transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg) scale3d(1.02, 1.02, 1)`, transformStyle: 'preserve-3d' }}>
+                         <div className="absolute inset-0 pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(${115 + rotate.y * 2}deg, transparent 20%, rgba(255, 255, 255, 0.1) 40%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 60%, transparent 80%)` }} />
+                         <div className={`absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500 ${isMe ? 'opacity-40' : ''}`} style={{transform: 'translateZ(-50px)'}}></div>
+                         <div className="p-5 flex justify-between items-start z-20" style={{transform: 'translateZ(30px)'}}>
+                            <div className="flex flex-col items-center"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1">SQUAD MEMBER</span></div>
+                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,0,127,0.3)]"><RebelIcon name={member.icon} size={20}/></div>
+                         </div>
+                         <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden">
+                             <div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none" style={{transform: 'translateZ(10px)'}}>{rating}</div>
+                             <RebelIcon name={member.icon} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500" style={{transform: 'translateZ(20px)'}} />
+                         </div>
+                         <div className="mt-auto relative z-20" style={{transform: 'translateZ(30px)'}}>
+                            <div className="px-5 pb-2 text-center"><h3 className="text-2xl rebel-font font-black italic uppercase leading-none truncate">{member.name}</h3><div className="flex items-center justify-center gap-2 my-2"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div><p className="text-[9px] text-[#FF007F] font-black uppercase italic mb-1">"{member.motto || 'UNITED WE REBEL'}"</p><p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">#{member.number || '??'}</p></div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F]">
+                                {['Grip', 'Vibe', 'Power', 'Soul'].map(l => (
+                                    <div key={l} className="flex flex-col gap-1">
+                                        <div className="flex justify-between text-[7px] font-black uppercase text-zinc-500 tracking-widest"><span>{l}</span><span>{stats[l.toLowerCase()]}%</span></div>
+                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-[#FF007F] shadow-[0_0_5px_currentColor]" style={{width: `${stats[l.toLowerCase()]}%`}}></div></div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    )}
-
-                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={postShout} onDeleteShout={async (id) => {
-                            const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'shoutbox', id));
-                        }} triggerBalloons={triggerBalloons} onVote={handleVote} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} />}
-                        
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={handleVote} health={health['current'] || {}} profiles={profiles} theme={theme} />}
-                        
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => {
-                            if (!window.FB) return;
-                            const { doc, setDoc } = window.FB;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true });
-                        }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} />}
-                        
-                        {activeTab === 'base' && <BaseView theme={theme} />}
-                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} />}
-                        
-                        {activeTab === 'profil' && <ProfileManagement me={user} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => {
-                            if (!window.FB || !db) return;
-                            const { doc, setDoc } = window.FB;
-                            const id = targetId || user.id;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'profiles', id), d, { merge: true });
-                        }} onHealthUpdate={async (s) => {
-                            if (!window.FB || !db) return;
-                            const { doc, setDoc } = window.FB;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true });
-                        }} onVote={handleVote} onAddEvent={async (e) => {
-                            if (!window.FB || !db) return;
-                            const { collection, addDoc } = window.FB;
-                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'schedule'), e);
-                        }} onDeleteEvent={async (id) => {
-                            if (!window.FB || !db) return;
-                            const { doc, deleteDoc } = window.FB;
-                            await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id));
-                        }} onUpdateEvent={async (id, d) => {
-                            if (!window.FB || !db) return;
-                             const { doc, updateDoc } = window.FB;
-                             await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), d);
-                        }} onSaveStats={async (id, s) => {
-                            if (!window.FB || !db) return;
-                            const { doc, setDoc } = window.FB;
-                            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'schedule', id), { stats: s }, { merge: true });
-                        }} onUpdateNews={async (t) => {
-                             if (!window.FB || !db) return;
-                             const { doc, setDoc } = window.FB;
-                             await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'globals', 'news'), { text: t });
-                        }} announcement={announcement} />}
-                    </main>
-
-                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
-                        <NavButton icon="zap" label="Ich" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-                        <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
-                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
-                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
-                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
-                        <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
-                    </nav>
+                    </div>
                 </div>
             );
         };
 
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, onDeleteShout, profiles, triggerBalloons, onVote, votesData, isAdmin, goals, theme }) => {
+        const SquadView = ({ myId, profiles, health, goals, theme, attendance }) => {
+            return (
+                <div className="space-y-12 pb-20">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>The Squad</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Cards & Health Status</p></header>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                        {SQUAD_DATA.map(m => {
+                            const prof = profiles[m.id] || {};
+                            return (
+                                <div key={m.id} className="relative">
+                                    <RebelCard member={{...m, ...prof}} goals={goals[m.id] || 0} isMe={m.id === myId} />
+                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`} style={{transform: 'translateZ(40px)'}}>{health[m.id] || 'Fit'}</div>
+                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2" style={{transform: 'translateZ(40px)'}}>
+                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F]">{attendance[m.id] || 0}% ATT</div>
+                                        {prof.emoji && <div className="text-2xl drop-shadow-lg">{prof.emoji}</div>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme }) => {
+            const sizePoll = votesData['warmup_shirt_size'] || {};
+            return (
+                <div className="space-y-8 animate-slide-up pb-10">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Bestimme mit.</p></header>
+                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
+                        <div className="flex items-center gap-4 mb-6 text-white"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
+                        <div className="grid grid-cols-4 gap-2">
+                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 border-white/5 text-white'}`}>{size}</button>)}
+                        </div>
+                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest text-center">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 text-sm font-bold"><span>{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-[#FF007F]">{val}</span></div>))}</div></div>}
+                    </div>
+                </div>
+            );
+        };
+
+        const FanShopView = ({ theme, products, onAddToCart, cartCount, onOpenCart }) => {
+            const [filter, setFilter] = useState('all');
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [selectedSize, setSelectedSize] = useState('');
+            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+
+            return (
+                <div className="space-y-6 animate-slide-up pb-20">
+                    <header className="flex justify-between items-end">
+                        <div><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Store</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Look like a Pro.</p></div>
+                        <button onClick={onOpenCart} className="relative p-3 bg-[#FF007F]/10 text-[#FF007F] rounded-xl border border-[#FF007F]/20"><RebelIcon name="shopping-cart" size={24} />{cartCount > 0 && <span className="absolute -top-2 -right-2 bg-[#FF007F] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg">{cartCount}</span>}</button>
+                    </header>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                        {[{id:'all', l:'Alles'}, {id:'fashion', l:'Fashion'}, {id:'access', l:'Accessoires'}].map(f => (<button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap border transition-all ${filter === f.id ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-800'}`}>{f.l}</button>))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {filtered.map(p => (
+                            <div key={p.id} onClick={() => { setSelectedProduct(p); setSelectedSize(p.sizes[0]); }} className="group shop-card-hover bg-black/40 border border-white/5 rounded-2xl overflow-hidden relative cursor-pointer">
+                                <div className="aspect-[4/5] bg-zinc-900 relative"><img src={p.img} alt={p.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" /><div className="absolute top-2 right-2 bg-[#FF007F] text-white px-2 py-1 rounded-lg text-[10px] font-black shadow-lg">{p.price} €</div></div>
+                                <div className="p-3"><h3 className="text-white font-black italic uppercase text-xs truncate leading-tight">{p.name}</h3><p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">{p.category}</p></div>
+                            </div>
+                        ))}
+                    </div>
+                    {selectedProduct && (
+                        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedProduct(null)}></div>
+                            <div className="relative bg-[#111] w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] border-t sm:border border-white/10 p-6 animate-slide-up flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+                                <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-zinc-500 z-10 bg-black/50 p-2 rounded-full"><RebelIcon name="x" size={24} /></button>
+                                <div className="aspect-square rounded-2xl overflow-hidden relative shadow-2xl"><img src={selectedProduct.img} className="w-full h-full object-cover" /></div>
+                                <div><div className="flex justify-between items-start"><h2 className="rebel-font font-black italic uppercase text-2xl text-white leading-none">{selectedProduct.name}</h2><span className="text-2xl font-black text-[#FF007F]">{selectedProduct.price} €</span></div><p className="text-zinc-500 text-xs mt-2 font-bold uppercase">Offizielles Team Gear</p></div>
+                                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-zinc-500">Größe wählen</label><div className="flex flex-wrap gap-2">{selectedProduct.sizes.map(s => (<button key={s} onClick={() => setSelectedSize(s)} className={`px-4 py-3 rounded-xl text-xs font-black border transition-all ${selectedSize === s ? 'bg-white text-black border-white' : 'bg-black border-zinc-800 text-zinc-500'}`}>{s}</button>))}</div></div>
+                                <button onClick={() => { onAddToCart(selectedProduct, selectedSize); setSelectedProduct(null); }} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">In den Warenkorb</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const FinesView = ({ theme, fines, myId, isAdmin, onAddFine, onPayFine }) => {
+            const [selectedPlayer, setSelectedPlayer] = useState('');
+            const [selectedReason, setSelectedReason] = useState(FINE_CATALOG[0].id);
+
+            const totalDebt = useMemo(() => fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
+            const myDebt = useMemo(() => fines.filter(f => f.playerId === myId && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines, myId]);
+            
+            // Hall of Shame (Top Schulden)
+            const leaderboard = useMemo(() => {
+                const map = {};
+                fines.filter(f => !f.paid).forEach(f => map[f.playerId] = (map[f.playerId] || 0) + f.amount);
+                return Object.entries(map).map(([id, sum]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', sum })).sort((a,b) => b.sum - a.sum);
+            }, [fines]);
+
+            return (
+                <div className="space-y-8 animate-slide-up pb-20">
+                    <header>
+                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Teamkasse: {totalDebt} € offen</p>
+                    </header>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 shadow-xl bg-gradient-to-br from-[#FF007F]/10 to-transparent">
+                            <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine Schulden</p>
+                            <p className="text-4xl font-black italic text-white">{myDebt} €</p>
+                            <p className="text-[9px] text-zinc-500 uppercase mt-2 font-bold tracking-widest">Bitte bei Kai oder Heiko begleichen.</p>
+                        </div>
+                        
+                        <div className="glass-card p-6 rounded-3xl border-white/5 shadow-xl">
+                            <p className="text-[10px] font-black uppercase text-zinc-500 mb-3">Hall of Shame 👑</p>
+                            <div className="space-y-2">
+                                {leaderboard.slice(0,3).map((l, i) => (
+                                    <div key={i} className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                                        <span className="text-xs font-black italic text-white">{i+1}. {l.name}</span>
+                                        <span className="text-xs font-black text-[#FF007F]">{l.sum} €</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <section className="glass-card p-6 rounded-3xl border-[#FF007F]/30 bg-black/40 space-y-4">
+                            <h3 className="rebel-font font-black italic text-sm text-[#FF007F] uppercase">Strafe verteilen</h3>
+                            <div className="grid grid-cols-1 gap-3">
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
+                                    <option value="">Spielerin wählen</option>
+                                    {SQUAD_DATA.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={selectedReason} onChange={e => setSelectedReason(e.target.value)}>
+                                    {FINE_CATALOG.map(f => <option key={f.id} value={f.id}>{f.label} ({f.price}€)</option>)}
+                                </select>
+                                <button onClick={() => {
+                                    if(!selectedPlayer) return alert('Wähle eine Rebellin!');
+                                    const item = FINE_CATALOG.find(f => f.id === selectedReason);
+                                    onAddFine(selectedPlayer, item.label, item.price);
+                                }} className="bg-[#FF007F] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Strafe buchen</button>
+                            </div>
+                        </section>
+                    )}
+
+                    <section className="space-y-3">
+                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Offene Posten</h3>
+                        <div className="space-y-2">
+                            {fines.filter(f => !f.paid).map(f => (
+                                <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-[10px] font-black text-[#FF007F] italic">{SQUAD_DATA.find(s => s.id === f.playerId)?.name.charAt(0)}</div>
+                                        <div>
+                                            <p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p>
+                                            <p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm font-black text-white">{f.amount} €</span>
+                                        {isAdmin && <button onClick={() => onPayFine(f.id)} className="p-2 bg-green-500/20 text-green-500 rounded-lg"><RebelIcon name="check" size={16}/></button>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, onDeleteShout, profiles, onVote, triggerBalloons, votesData, isAdmin, goals, theme, announcement }) => {
             const [newShout, setNewShout] = useState('');
             const [isAnon, setIsAnon] = useState(false);
             const [countdown, setCountdown] = useState("");
@@ -405,135 +400,35 @@
             useEffect(() => {
                 if (!matchDayEvent) return;
                 const update = () => {
-                    const now = new Date();
                     const target = new Date(matchDayEvent.date + "T" + matchDayEvent.time);
-                    const diff = target - now;
+                    const diff = target - new Date();
                     if (diff <= 0) setCountdown("Anpfiff!");
-                    else {
-                        const h = Math.floor(diff / (1000 * 60 * 60));
-                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                        setCountdown(`${h}h ${m}m`);
-                    }
+                    else { const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); setCountdown(`${h}h ${m}m`); }
                 };
                 update();
                 const timer = setInterval(update, 60000);
                 return () => clearInterval(timer);
             }, [matchDayEvent]);
 
-            const nextEvent = !matchDayEvent ? (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0)) : null;
-            const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + '.';
-            const bdayGirls = Object.values(profiles || {}).filter(p => p.birthday && p.birthday.trim().startsWith(todayStr.slice(0, 5)));
-            
-            useEffect(() => { if (bdayGirls.length > 0) triggerBalloons(); }, [bdayGirls.length]);
+            const birthdayGirls = useMemo(() => {
+                const todayStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return Object.entries(profiles).filter(([uid, p]) => p.birthday && p.birthday.startsWith(todayStr)).map(([uid, p]) => ({ id: uid, name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin' }));
+            }, [profiles]);
 
-            const totalTeamGoals = Object.values(goals).reduce((a, b) => a + b, 0);
-            const topScorers = useMemo(() => {
-                return Object.entries(goals).map(([id, g]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', g })).sort((a, b) => b.g - a.g).slice(0, 3);
-            }, [goals]);
+            useEffect(() => { if (birthdayGirls.length > 0) triggerBalloons(); }, [birthdayGirls]);
+
+            const carpoolList = useMemo(() => Object.entries(profiles).filter(([uid, p]) => p.carpool).map(([uid, p]) => ({ name: SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebel', location: p.carpoolLocation || 'Halle' })), [profiles]);
+            const nextEvent = !matchDayEvent ? (schedule || []).find(e => new Date(e.date) >= new Date().setHours(0,0,0,0)) : null;
 
             return (
                 <div className="space-y-8 pb-10">
-                    {/* Carpool Hint */}
-                    {profiles[me.id]?.carpool && (
-                        <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-2xl flex items-center gap-3 animate-slide-up">
-                            <RebelIcon name="car" className="text-green-500" size={24} />
-                            <p className="text-xs font-bold text-green-500 uppercase tracking-widest leading-none">Mitfahrgelegenheit aktiv 🚗</p>
-                        </div>
-                    )}
-
-                    {matchDayEvent && (
-                        <div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5">
-                            <div className="flex justify-between items-center">
-                                <span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest animate-bounce italic leading-none">MATCH DAY</span>
-                                <div className="text-right text-white font-black text-xs uppercase">Anpfiff in: {countdown}</div>
-                            </div>
-                            <h2 className="rebel-font font-black italic text-3xl uppercase leading-none text-white">{matchDayEvent.label}</h2>
-                            <div className="grid grid-cols-2 gap-3 text-center text-white">
-                                <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
-                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white">Anpfiff</span>
-                                    <span className="text-xl font-black text-white">{matchDayEvent.time} Uhr</span>
-                                </div>
-                                <div className="bg-white/10 p-4 rounded-2xl border border-white/20 text-center">
-                                    <span className="block text-[8px] uppercase font-black opacity-60 mb-1 leading-none text-white">Treffpunkt</span>
-                                    <span className="text-xl font-black text-white">{matchDayEvent.meetingTime || '?'} Uhr</span>
-                                </div>
-                            </div>
-                            <div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4">
-                                <div><span className="block text-[10px] uppercase font-black opacity-60 mb-1 text-white">Austragungsort</span><span className="text-lg font-black uppercase leading-tight text-white">{matchDayEvent.location || 'Halle'}</span></div>
-                                <div className="flex justify-between items-end gap-4">
-                                    <div className="flex-1 text-left"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white font-black uppercase">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] leading-tight block">{matchDayEvent.meetingLocation || 'Halle'}</span></div>
-                                    <div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1 leading-none text-white">Jersey</span><span className="text-lg font-black uppercase text-white bg-[#FF007F] px-4 py-1 rounded-lg leading-none inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {nextEvent && (
-                        <div className="space-y-4">
-                            <div className={`glass-card p-6 rounded-3xl border border-white/5 shadow-xl`}>
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="trophy" size={28} /></div>
-                                    <div><p className="text-[10px] uppercase font-black text-[#FF007F]">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 text-center">
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} - {nextEvent.endTime || '?'} Uhr</span></div>
-                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5 text-white leading-none text-white"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1 px-1">{nextEvent.location || 'Halle'}</span></div>
-                                </div>
-                                {nextEvent.type === 'game' && (
-                                    <div className="mt-3 bg-black/50 p-2.5 rounded-xl border border-[#FF007F]/30 text-center text-white leading-none">
-                                        <p className="text-[10px] uppercase font-black leading-none">Treffpunkt: {nextEvent.meetingTime || '?'} Uhr @ {nextEvent.meetingLocation || 'Halle'}</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-xl text-center">
-                                <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'}`}>Schnellwahl: Bist du dabei?</h3>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['Dabei', 'Nein', 'Maybe'].map(opt => {
-                                        const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id];
-                                        return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>;
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 leading-none">Rebel Team Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1">{totalTeamGoals}</p><p className="text-[8px] uppercase font-bold text-zinc-600 mt-1 leading-none">Saison 2026</p></div>
-                        <div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white">
-                            <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2 leading-none text-white">Top Scorers 👑</p>
-                            {topScorers.map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5 leading-none py-0.5 text-white dark:text-white light:text-black"><span className="truncate">{i+1}. {s.name}</span><span className="text-[#FF007F]">{s.g}</span></div>)}
-                        </div>
-                    </div>
-
-                    <section className="space-y-4">
-                        <div className="flex justify-between items-end px-2"><h3 className={`rebel-font font-black italic uppercase text-xl leading-none ${theme==='light'?'text-black':'text-white'}`}>Digital Cabin Wall</h3></div>
-                        <div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl">
-                            <div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3">
-                                <div className="flex gap-3 text-white dark:text-white light:text-black leading-none">
-                                    <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} />
-                                    <button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
-                                </div>
-                                <div className="flex items-center gap-2 px-1">
-                                    <label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label>
-                                    <span className={`text-[10px] uppercase font-black text-zinc-500 tracking-widest leading-none`}>{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span>
-                                </div>
-                            </div>
-                            <div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar text-white">
-                                {(shoutbox || []).map(shout => (
-                                    <div key={shout.id} className="animate-slide-up relative group/shout">
-                                        <div className="flex justify-between items-center mb-1 px-1 text-white">
-                                            <div className="flex items-center gap-2 text-white">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'}`}>{shout.userName}</span>
-                                                {isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover/shout:opacity-100 transition-opacity text-red-500 p-1 leading-none"><RebelIcon name="trash-2" size={12} /></button>}
-                                            </div>
-                                            <span className="text-[7px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span>
-                                        </div>
-                                        <div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 shadow-sm text-white dark:text-white light:text-black leading-none"><p className="text-sm leading-relaxed">{shout.text}</p></div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
+                    {announcement && (<div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl shadow-lg animate-slide-up flex gap-3 items-start"><RebelIcon name="megaphone" className="text-[#FF007F] shrink-0 mt-0.5" size={20} /><div><p className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest leading-none">Rebel News</p><p className="text-sm font-bold dark:text-white light:text-black leading-tight mt-1">{announcement}</p></div></div>)}
+                    {matchDayEvent && (<div className="match-day-theme p-6 rounded-3xl animate-slide-up space-y-5"><div className="flex justify-between items-center"><span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic">MATCH DAY</span><div className="text-right text-white font-black text-xs uppercase">Anpfiff in: {countdown}</div></div><h2 className="rebel-font font-black italic text-3xl uppercase text-white leading-none">{matchDayEvent.label}</h2><div className="grid grid-cols-2 gap-3 text-white text-center"><div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Treff</span><span className="text-xl font-black">{matchDayEvent.meetingTime || '?'} Uhr</span></div><div className="bg-white/10 p-4 rounded-2xl border border-white/20"><span className="block text-[8px] uppercase font-black opacity-60 mb-1">Anpfiff</span><span className="text-xl font-black">{matchDayEvent.time} Uhr</span></div></div><div className="bg-white/10 p-5 rounded-2xl border border-white/20 space-y-4 text-white"><div><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Ort</span><span className="text-lg font-black uppercase truncate block">{matchDayEvent.location || 'Halle'}</span></div><div className="flex justify-between items-end gap-4"><div className="flex-1"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Treffort</span><span className="text-lg font-black uppercase text-[#FF007F] block">{matchDayEvent.meetingLocation || 'Halle'}</span></div><div className="text-right"><span className="block text-[10px] uppercase font-black opacity-60 mb-1">Jersey</span><span className="text-lg font-black uppercase bg-[#FF007F] px-4 py-1 rounded-lg inline-block">{matchDayEvent.jerseyColor || 'Schwarz'}</span></div></div></div></div>)}
+                    {nextEvent && (<div className="space-y-4"><div className="glass-card p-6 rounded-3xl border border-white/5 shadow-xl animate-slide-up"><div className="flex items-center gap-4 mb-4"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="trophy" size={28} /></div><div><p className="text-[10px] uppercase font-black text-[#FF007F] leading-none">NEXT REBELLION</p><h3 className={`rebel-font font-black italic text-xl uppercase leading-none mt-1 ${theme==='light'?'text-black':'text-white'}`}>{nextEvent.label}</h3></div></div><div className="grid grid-cols-2 gap-3 text-center text-white"><div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Zeit</span><span className="font-black text-sm">{nextEvent.time} Uhr</span></div><div className="bg-black/40 p-3 rounded-2xl border border-white/5"><span className="block text-[8px] uppercase text-zinc-500 font-black mb-1">Ort</span><span className="text-xs font-black truncate block px-1">{nextEvent.location || 'Halle'}</span></div></div><div className="mt-4 grid grid-cols-3 gap-2">{['Dabei', 'Nein', 'Maybe'].map(opt => { const myVote = (votesData[`event_${nextEvent.id}`] || {})[me.id]; return <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all ${myVote===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>; })}</div></div></div>)}
+                    {birthdayGirls.length > 0 && (<div className="w-full bg-gradient-to-br from-purple-800/90 to-[#FF007F]/90 border border-white/10 p-4 rounded-3xl shadow-xl animate-slide-up flex items-center justify-between gap-4"><div className="flex items-center gap-3 overflow-hidden"><div className="text-3xl shrink-0">🎂</div><div className="truncate"><h3 className="rebel-font font-black italic uppercase text-sm text-white leading-none">REBEL BIRTHDAY!</h3><p className="text-xs font-bold text-white/90 mt-1.5 truncate">Happy Day: {birthdayGirls.map((g, i) => <span key={g.id}>{i > 0 && " & "}{g.name}</span>)}</p></div></div><button onClick={() => { birthdayGirls.forEach(g => onPostShout(`Happy Birthday, ${g.name}! 🎉🎈 Let's celebrate!`, false)); triggerBalloons(); }} className="bg-white text-black px-5 py-2.5 rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform shrink-0">GRATULIEREN</button></div>)}
+                    {carpoolList.length > 0 && (<div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-3 animate-slide-up"><div className="flex items-center gap-2"><RebelIcon name="car" className="text-green-500" size={24} /><h4 className="text-xs font-black uppercase text-green-500 tracking-widest">Rebel Taxi</h4></div><div className="space-y-2">{carpoolList.map((cp, idx) => <div key={idx} className="bg-black/20 p-3 rounded-xl flex justify-between items-center border border-green-500/10 text-white"><span className="text-sm font-black">{cp.name}</span><span className="text-[10px] font-bold text-green-500 uppercase italic">ab {cp.location}</span></div>)}</div></div>)}
+                    <div className="grid grid-cols-2 gap-4"><div className="glass-card p-5 rounded-3xl text-center shadow-xl border-white/5"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1">Rebel Team Goals</p><p className="text-3xl font-black italic text-[#FF007F] leading-none mt-1">{Object.values(goals).reduce((a, b) => a + b, 0)}</p></div><div className="glass-card p-5 rounded-3xl text-left shadow-xl border-white/5 overflow-hidden text-white leading-none"><p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-2">Top Scorers 👑</p>{Object.entries(goals).map(([id, g]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', g })).sort((a, b) => b.g - a.g).slice(0, 3).map((s, i) => <div key={i} className="flex justify-between text-[11px] font-black italic mb-0.5"><span className="truncate">{i+1}. {s.name}</span><span className="text-[#FF007F]">{s.g}</span></div>)}</div></div>
+                    <section className="space-y-4"><div className="flex justify-between items-end px-2"><h3 className={`rebel-font font-black italic uppercase text-xl ${theme==='light'?'text-black':'text-white'}`}>Digital Cabin Wall</h3></div><div className="bg-[#111] dark:bg-[#111] light:bg-white rounded-3xl border border-zinc-800 light:border-zinc-200 overflow-hidden shadow-2xl"><div className="p-4 bg-zinc-900/50 light:bg-zinc-100 space-y-3"><div className="flex gap-3 text-white dark:text-white light:text-black"><input type="text" placeholder="Hype das Team..." className="flex-grow bg-black light:bg-white border border-white/10 light:border-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-[#FF007F] outline-none" value={newShout} onChange={(e) => setNewShout(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (onPostShout(newShout, isAnon), setNewShout(''))} /><button onClick={() => { onPostShout(newShout, isAnon); setNewShout(''); }} className="w-10 h-10 bg-[#FF007F] rounded-xl flex items-center justify-center text-white shadow-lg"><RebelIcon name="send" size={18}/></button></div><div className="flex items-center gap-2 px-1"><label className="switch"><input type="checkbox" checked={isAnon} onChange={e => setIsAnon(e.target.checked)} /><span className="slider"></span></label><span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">{isAnon ? 'Anonym 🕵️‍♀️' : 'Öffentlich'}</span></div></div><div className="max-h-[400px] overflow-y-auto p-4 space-y-4 no-scrollbar">{shoutbox.map(shout => (<div key={shout.id} className="animate-slide-up group"><div className="flex justify-between items-center mb-1 px-1"><div className="flex items-center gap-2"><span className={`text-[10px] font-black uppercase tracking-widest ${shout.userId === 'anon' ? 'text-zinc-500' : 'text-[#FF007F]'}`}>{shout.userName}</span>{isAdmin && <button onClick={() => onDeleteShout(shout.id)} className="opacity-0 group-hover:opacity-100 text-red-500 p-1"><RebelIcon name="trash-2" size={12} /></button>}</div><span className="text-[7px] font-bold text-zinc-700 italic">{shout.timestamp ? new Date(shout.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span></div><div className="bg-white/5 light:bg-black/5 p-4 rounded-2xl rounded-tl-none border border-white/5 light:border-black/5 text-sm dark:text-white light:text-black leading-relaxed">{shout.text}</div></div>))}</div></div></section>
                 </div>
             );
         };
@@ -541,45 +436,27 @@
         const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme }) => {
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
-                <div className="space-y-6 pb-10 text-white">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Planer</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none">Wer ist dabei?</p></header>
+                <div className="space-y-6 pb-10">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Planer</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Wer ist dabei?</p></header>
                     {upcoming.map(event => {
                         const eventVotes = votesData[`event_${event.id}`] || {};
                         const grouped = { 'Dabei': [], 'Nein': [], 'Maybe': [] };
-                        Object.entries(eventVotes).forEach(([uid, val]) => {
-                            const name = SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin';
-                            grouped[val]?.push({ name, h: health[uid] || 'Fit', car: profiles[uid]?.carpool });
-                        });
-
+                        Object.entries(eventVotes).forEach(([uid, val]) => { const name = SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin'; grouped[val]?.push({ name, h: health[uid] || 'Fit', car: profiles[uid]?.carpool }); });
                         return (
-                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col gap-5 shadow-xl text-white">
+                            <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 shadow-xl space-y-5 animate-slide-up">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex gap-4 items-center overflow-hidden">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div>
-                                        <div className="truncate text-white leading-none">
-                                            <h4 className={`font-black italic uppercase text-lg leading-none truncate ${theme==='light'?'text-black':'text-white'}`}>{event.label}</h4>
-                                            <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} | {event.location || 'Halle'}</p>
-                                        </div>
-                                    </div>
-                                    {event.type==='game' && <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border shrink-0 ${event.isHome ? 'border-[#FF007F] text-[#FF007F] bg-[#FF007F]/10' : 'border-zinc-700 text-zinc-400 bg-zinc-800'}`}>{event.isHome ? '🏠 HEIM' : '🚌 AUSW'}</span>}
+                                    <div className="flex gap-4 items-center"><div className={`w-12 h-12 rounded-xl flex items-center justify-center ${event.type==='game'?'bg-pink-500/20 text-pink-500':'bg-zinc-800 text-zinc-500'}`}><RebelIcon name={event.type==='game'?'trophy':'calendar-check'} size={24}/></div><div><h4 className={`font-black italic uppercase text-lg leading-none ${theme==='light'?'text-black':'text-white'}`}>{event.label}</h4><p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} - {event.endTime || '?'} Uhr | {event.location || 'Halle'}</p></div></div>
+                                    {event.type==='game' && <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${event.isHome ? 'border-[#FF007F] text-[#FF007F]' : 'border-zinc-700 text-zinc-400'}`}>{event.isHome ? '🏠 HEIM' : '🚌 AUSW'}</span>}
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
-                                    {['Dabei', 'Nein', 'Maybe'].map(opt => (
-                                        <button key={opt} onClick={() => onVote(event.id, opt)} className={`py-4 rounded-xl text-[12px] font-black uppercase border transition-all ${eventVotes[userId]===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5'}`}>{opt}</button>
-                                    ))}
+                                    {['Dabei', 'Nein', 'Maybe'].map(opt => <button key={opt} onClick={() => onVote(event.id, opt)} className={`py-4 rounded-xl text-[12px] font-black uppercase border transition-all ${eventVotes[userId]===opt?'bg-[#FF007F] text-white border-[#FF007F] shadow-lg':'bg-black/50 border-white/5 text-white'}`}>{opt}</button>)}
                                 </div>
-                                <div className="space-y-4 mt-2 pt-5 border-t border-white/5 text-white">
-                                    {Object.entries(grouped).map(([label, items]) => (
-                                        items.length > 0 && (
-                                            <div key={label} className="flex flex-col gap-2">
-                                                <span className={`text-[11px] font-black uppercase px-2 py-1 rounded self-start ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
-                                                <div className="flex flex-wrap gap-2 text-white text-white">
-                                                    {items.map((it, idx) => (
-                                                        <span key={idx} className="text-[13px] bg-white/5 light:bg-black/5 px-3 py-2 rounded-xl border border-white/5 light:border-black/5 flex items-center gap-2 font-black text-zinc-200 dark:text-white light:text-black"><span className={`w-2.5 h-2.5 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>{it.name} {it.car && <RebelIcon name="car" size={14} className="text-[#FF007F]" />}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
+                                <div className="space-y-4 pt-4 border-t border-white/5">
+                                    {Object.entries(grouped).map(([label, items]) => items.length > 0 && (
+                                        <div key={label} className="space-y-2">
+                                            <span className={`text-[11px] font-black uppercase px-2 py-1 rounded ${label==='Dabei'?'bg-green-500/20 text-green-400':label==='Nein'?'bg-red-500/20 text-red-400':'bg-yellow-500/20 text-yellow-400'}`}>{label} ({items.length})</span>
+                                            <div className="flex flex-wrap gap-2">{items.map((it, idx) => <span key={idx} className="text-[11px] bg-white/5 px-3 py-2 rounded-xl border border-white/5 flex items-center gap-2 font-black text-white"><span className={`w-2 h-2 rounded-full ${it.h==='Verletzt'?'bg-red-500':it.h==='Angeschlagen'?'bg-yellow-500':'bg-green-500'} shadow-[0_0_8px_currentColor]`}></span>{it.name}{it.car && <RebelIcon name="car" size={12} className="text-[#FF007F]" />}</span>)}</div>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -589,257 +466,333 @@
             );
         };
 
-        const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme }) => {
-            const sizePoll = votesData['warmup_shirt_size'] || {};
-            const spotifyPoll = votesData['playlist_wishes'] || {};
-            const [songInput, setSongInput] = useState("");
+        const BaseView = ({ theme }) => {
+            const [activeHall, setActiveHall] = useState(0);
+            const halls = [
+                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
+                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }, 
+                { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed' }
+            ];
             return (
-                <div className="space-y-8 animate-slide-up pb-10 text-white">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none">Bestimme mit.</p></header>
-                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
-                        <div className="flex items-center gap-4 mb-6 text-white leading-none"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F] leading-none"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold text-zinc-400 leading-none text-white leading-none">Bestellung neue Saison</p></div></div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg' : 'bg-black/50 border-white/5'}`}>{size}</button>)}
+                <div className="space-y-6 animate-slide-up pb-10 text-white">
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2></header>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/20 text-zinc-500 border-white/5'} text-white`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
+                    <div className="glass-card p-6 rounded-3xl border border-zinc-800 space-y-6 shadow-2xl text-white">
+                        <div className="flex items-center gap-4 text-white text-white">
+                            <div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl text-white"><RebelIcon name="map-pin" size={32} /></div>
+                            <div className="text-white"><h3 className="font-black italic text-xl uppercase text-white">{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 text-white">{halls[activeHall].addr}</p></div>
                         </div>
-                        {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 leading-none"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest leading-none">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2 leading-none text-white">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 leading-none text-white"><span className="text-sm font-bold text-white leading-none">{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-sm font-black text-[#FF007F] leading-none">{val}</span></div>))}</div></div>}
+                        <div className="grid grid-cols-2 gap-4 text-white">
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"><RebelIcon name="map" className="text-[#FF007F] text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white">Google Maps</span></a>
+                            <a href={`https://maps.apple.com/?q=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-[#FF007F]/50 transition-all text-white"><RebelIcon name="navigation" className="text-[#FF007F] text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white">Apple Maps</span></a>
+                        </div>
+                        <div className="w-full h-64 rounded-3xl overflow-hidden border border-zinc-800 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 text-white"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map} className="text-white"></iframe></div>
                     </div>
                 </div>
             );
         };
 
-        const SquadView = ({ myId, profiles, health, goals, theme }) => {
-            return (
-                <div className="space-y-12 pb-20 text-white">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>The Squad</h2><p className="text-sm text-zinc-500 mt-1 uppercase tracking-widest text-zinc-400 leading-none">Rebel Cards & Health Status</p></header>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 text-white text-white">
-                        {SQUAD_DATA.map(m => {
-                            const prof = profiles[m.id] || {};
-                            return (
-                                <div key={m.id} className="relative">
-                                    <RebelCard member={{...m, ...prof}} isMe={m.id === myId} goals={goals[m.id] || 0} />
-                                    <div className={`absolute top-4 right-4 z-30 px-3 py-1 rounded-full text-[8px] font-black uppercase border shadow-xl ${(health[m.id] || 'Fit')==='Verletzt'?'bg-red-500 border-red-400 text-white':(health[m.id] || 'Fit')==='Angeschlagen'?'bg-yellow-500 border-yellow-400 text-black':'bg-green-500 border-green-400 text-white'}`}>
-                                        {health[m.id] || 'Fit'}
-                                    </div>
-                                    <div className="absolute top-16 right-4 z-30 flex flex-col gap-2">
-                                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#FF007F]/20 text-[9px] font-black text-[#FF007F] leading-none">{prof.attendance || 0}% ATT</div>
-                                        {prof.emoji && <div className="text-2xl drop-shadow-lg leading-none">{prof.emoji}</div>}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
-        const RebelCard = ({ member, isMe, goals = 0 }) => {
-            const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
-            const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
-            return (
-                <div className={`relative group w-full max-w-[320px] mx-auto h-[440px] animate-slide-up text-white`}>
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-500"></div>
-                    <div className="relative h-full w-full bg-[#050505] rounded-[2.5rem] border border-[#FF007F]/20 overflow-hidden flex flex-col card-shadow group-hover:border-[#FF007F]/50 transition-all text-white leading-none text-white">
-                        <div className="p-5 flex justify-between items-start z-20 text-white leading-none text-white">
-                            <div className="flex flex-col items-center leading-none"><span className="text-4xl rebel-font font-black italic leading-none">{rating}</span><span className="text-[8px] font-bold text-[#FF007F] uppercase tracking-widest mt-1 text-center leading-none">SQUAD MEMBER</span></div>
-                            <div className="w-10 h-10 border border-[#FF007F]/40 rounded-lg flex items-center justify-center bg-black/40 text-[#FF007F] shadow-[0_0_10px_rgba(255,127,0,0.3)] leading-none"><RebelIcon name={member.icon || "zap"} size={20}/></div>
-                        </div>
-                        <div className="absolute top-0 left-0 w-full h-64 flex items-center justify-center pointer-events-none overflow-hidden"><div className="text-[#FF007F]/5 text-[180px] rebel-font font-black italic absolute -right-5 -bottom-5 select-none leading-none">{rating}</div><RebelIcon name={member.icon || 'zap'} size={120} className="text-[#FF007F] opacity-70 group-hover:scale-110 transition-transform duration-500 text-white"/></div>
-                        <div className="mt-auto relative z-20 text-white leading-none text-center">
-                            <div className="px-5 pb-2 text-center text-white leading-none"><h3 className="text-2xl rebel-font font-black italic uppercase tracking-tighter leading-none truncate text-white">{member.name}</h3>
-                                <div className="flex items-center justify-center gap-2 my-2 leading-none"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><span className="text-[10px] font-black text-[#FF007F] uppercase tracking-widest bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap leading-none text-white">{goals} Tore 🔥</span><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div>
-                                <p className="text-[9px] text-[#FF007F] font-black uppercase tracking-[0.3em] italic mb-1 leading-none">"{member.motto || 'UNITED WE REBEL'}"</p>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-1 text-white">{member.trait || 'REBEL SPIRIT'} • #{member.number || '??'}</p></div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-5 bg-black/80 backdrop-blur-md border-t border-[#FF007F]/10 border-b-8 border-[#FF007F] leading-none text-white text-white"><StatItem label="Grip" val={stats.grip}/><StatItem label="Vibe" val={stats.vibe}/><StatItem label="Power" val={stats.power}/><StatItem label="Soul" val={stats.soul}/></div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const ProfileManagement = ({ me, profile, profiles, health, onSave, onHealthUpdate, schedule, onAddEvent, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateNews, voteHistory, theme, announcement }) => {
-            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', trait: profile.trait || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false });
+        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement, squadGoals, voteHistory }) => {
+            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
-            const [showGlobalStats, setShowGlobalStats] = useState(false);
-            const [showCardEditor, setShowCardEditor] = useState(false);
-            const [showVoteHistory, setShowVoteHistory] = useState(false);
             const [newsInput, setNewsInput] = useState(announcement);
+            const [adminSelectedPlayer, setAdminSelectedPlayer] = useState('');
+            const [adminCardValues, setAdminCardValues] = useState({ grip: 85, vibe: 99, power: 88, soul: 95, motto: '', icon: 'zap' });
             const isAdmin = me.id === 'hc' || me.id === 'tm';
 
+            useEffect(() => {
+                if (profile && Object.keys(profile).length > 0) {
+                    setLocal(prev => ({ ...prev, ...profile, name: profile.name || prev.name, number: profile.number || prev.number }));
+                }
+            }, [profile]);
+
+            useEffect(() => {
+                if (adminSelectedPlayer && profiles[adminSelectedPlayer]) {
+                    const p = profiles[adminSelectedPlayer];
+                    setAdminCardValues({ grip: p.grip || 85, vibe: p.vibe || 99, power: p.power || 88, soul: p.soul || 95, motto: p.motto || '', icon: p.icon || 'zap' });
+                }
+            }, [adminSelectedPlayer, profiles]);
+
+            const handleSaveProfile = async () => { await onSave(local, me.id); };
+            const handleAdminSaveCard = async () => { if (!adminSelectedPlayer) return; await onSave(adminCardValues, adminSelectedPlayer); alert(`Karte aktualisiert!`); };
+            const handleAddEvent = async () => {
+                const { collection, addDoc } = window.FB;
+                if (!db) return;
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
+                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+            };
+            
+            const handleEmergencySeed = async () => {
+                if(!db || !confirm("ACHTUNG: Dies lädt die Standard-Daten in die Cloud. Nur machen, wenn die App leer ist!")) return;
+                const { doc, setDoc } = window.FB;
+                for(const player of SQUAD_DATA) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', player.id), {
+                        name: player.name,
+                        number: player.number,
+                        icon: player.icon,
+                        grip: 85, vibe: 90, power: 85, soul: 95
+                    }, { merge: true });
+                }
+                alert("Datenbank initialisiert! Bitte Seite neu laden.");
+            };
+
             return (
-                <div className="space-y-8 animate-slide-up pb-10 leading-none">
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl leading-none">
-                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-6 leading-none ${theme==='light'?'text-black':'text-white'}`}>Mein Profil</h3>
-                        <div className="space-y-4 leading-none text-white">
-                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white">
-                                <input type="text" placeholder="Name" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
-                                <input type="text" placeholder="Emoji" className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none text-center leading-none text-white" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
-                            </div>
-                            <input type="text" placeholder="Dein Motto..." className="w-full bg-black dark:text-white light:text-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
-                            <div className="grid grid-cols-2 gap-4 text-white dark:text-white light:text-black leading-none text-white">
-                                <input type="text" placeholder="Birthday (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
-                                <input type="text" placeholder="Trikot #" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none leading-none text-white text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
-                            </div>
-                            <div className="flex items-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5 leading-none">
-                                <label className="switch leading-none"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider leading-none"></span></label>
-                                <span className={`text-[10px] uppercase font-black ${theme==='light'?'text-black':'text-white'} leading-none`}>Biete Mitfahrgelegenheit</span>
-                            </div>
+                <div className="space-y-8 animate-slide-up pb-10 text-white">
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl space-y-4">
+                        <h3 className={`rebel-font font-black italic uppercase text-lg ${theme==='light'?'text-black':'text-white'}`}>Mein Profil</h3>
+                        <div className="grid grid-cols-2 gap-4 text-white">
+                            <input type="text" placeholder="Name" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
+                            <input type="text" placeholder="Emoji" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-center text-white" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
                         </div>
-                        <button onClick={() => onSave(local)} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest mt-6 shadow-lg active:scale-95 transition-all leading-none">Speichern</button>
+                        <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
+                        <div className="grid grid-cols-2 gap-4 text-white">
+                            <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
+                            <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
+                        </div>
+                        <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 text-white">
+                            <div className="flex items-center gap-3"><label className="switch"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider"></span></label><span className="text-[10px] font-black uppercase tracking-widest">Rebel Taxi (Mitfahrgelegenheit)</span></div>
+                            {local.carpool && <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />}
+                        </div>
+                        <button onClick={handleSaveProfile} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">Speichern</button>
+                    </section>
+                    
+                    {/* --- REBEL ACTIVITY LOG --- */}
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
+                        <h3 className="rebel-font font-black italic uppercase text-lg mb-4 text-white">Rebel Activity Log</h3>
+                        <div className="max-h-60 overflow-y-auto no-scrollbar space-y-2">
+                            {voteHistory && voteHistory.length === 0 ? (
+                                <p className="text-zinc-500 text-xs italic text-center">Noch keine Aktivitäten.</p>
+                            ) : (
+                                (voteHistory || []).map(entry => (
+                                    <div key={entry.id} className="bg-white/5 p-3 rounded-xl border border-white/5 text-xs text-white">
+                                        <div className="flex justify-between">
+                                            <span className="font-bold text-[#FF007F] uppercase">{entry.userName}</span>
+                                            <span className="text-zinc-500">{entry.timestamp ? new Date(entry.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) : '...'}</span>
+                                        </div>
+                                        <div className="flex justify-between mt-1">
+                                            <span className="italic">{entry.eventLabel}</span>
+                                            <span className={`font-bold ${entry.voteValue === 'Dabei' ? 'text-green-500' : entry.voteValue === 'Nein' ? 'text-red-500' : 'text-yellow-500'}`}>{entry.voteValue}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </section>
 
-                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center leading-none">
-                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 leading-none ${theme==='light'?'text-black':'text-white'}`}>Health Status</h3>
-                        <div className="grid grid-cols-3 gap-3 leading-none text-white">
-                            {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(status => (
-                                <button key={status.id} onClick={() => onHealthUpdate(status.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === status.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}>
-                                    <RebelIcon name={status.icon} className={status.color} size={24}/><span className={`text-[8px] font-black uppercase tracking-widest mt-1 leading-none ${theme==='light'?'text-black':'text-white'}`}>{status.id}</span>
-                                </button>
+                    <section className="glass-card p-6 rounded-3xl border border-white/5 text-center">
+                        <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 ${theme==='light'?'text-black':'text-white'}`}>Health Status</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(s => (
+                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === s.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><RebelIcon name={s.icon} className={s.color} size={24}/><span className="text-[8px] font-black uppercase text-white mt-1">{s.id}</span></button>
                             ))}
                         </div>
                     </section>
 
                     {isAdmin && (
-                        <div className="space-y-8 leading-none">
-                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 shadow-2xl text-white leading-none">
-                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 leading-none uppercase tracking-widest text-center">Admin Control</h3>
-                                <div className="space-y-3 leading-none">
-                                    <div className="space-y-1 mb-4 leading-none text-white">
-                                         <label className="text-[8px] font-black uppercase text-zinc-500 ml-2 leading-none">News Ticker Management</label>
-                                         <div className="flex gap-2 leading-none text-white"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs leading-none text-white outline-none" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => onUpdateNews(newsInput)} className="bg-[#FF007F] p-3 rounded-xl leading-none text-white"><RebelIcon name="check" size={16}/></button><button onClick={() => { onUpdateNews(""); setNewsInput(""); }} className="bg-red-500/20 p-3 rounded-xl leading-none text-red-500"><RebelIcon name="trash-2" size={16}/></button></div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 leading-none text-white">
-                                        <button onClick={() => setShowGlobalStats(true)} className="w-full bg-black/40 border border-[#FF007F] py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white dark:text-white light:text-black leading-none text-white"><RebelIcon name="bar-chart-2" size={14}/> Stats</button>
-                                        <button onClick={() => setShowCardEditor(true)} className="w-full bg-[#FF007F] text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none text-white"><RebelIcon name="refresh-cw" size={14}/> Cards</button>
-                                        <button onClick={() => setShowVoteHistory(true)} className="w-full bg-blue-500 text-white py-3 rounded-2xl font-black uppercase text-[8px] leading-none text-white leading-none text-white"><RebelIcon name="history" size={14}/> History</button>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-4 text-white leading-none">
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none`}>Training</button>
-                                        <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500 shadow-inner':'border-transparent bg-black/20 text-zinc-600'} leading-none`}>Spiel</button>
-                                    </div>
-                                    <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
-                                    <input type="text" placeholder="Ort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-2 leading-none text-white">
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
-                                        <input type="time" className="bg-black border border-white/5 rounded-lg p-3 text-xs leading-none text-white text-white" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} />
-                                    </div>
-                                    <input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white leading-none text-white" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
-                                    <button onClick={() => {onAddEvent(newEvent); setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true})}} className="w-full bg-white light:bg-black light:text-white text-black py-4 rounded-2xl font-black uppercase text-[10px] mt-4 shadow-xl leading-none">Event hinzufügen</button>
-                                </div>
-                            </section>
-
-                            <section className="space-y-4 leading-none text-white">
-                                <h3 className={`rebel-font font-black italic uppercase text-[10px] px-2 leading-none tracking-widest text-zinc-500`}>Events Verwalten</h3>
-                                {schedule.map(event => (
-                                    <div key={event.id} className="bg-[#111] light:bg-white p-4 rounded-2xl flex justify-between items-center border border-white/5 light:border-zinc-200 shadow-md leading-none text-white">
-                                        <div className="truncate pr-4 leading-tight leading-none text-white dark:text-white light:text-black"><p className={`font-bold text-xs uppercase italic truncate leading-none`}>{event.label}</p><p className="text-[9px] text-zinc-600 truncate mt-2 leading-none">{new Date(event.date).toLocaleDateString('de-DE')} | {event.location || 'Halle'}</p></div>
-                                        <div className="flex gap-2 shrink-0 leading-none">
-                                            <button onClick={() => setEditingEvent(event)} className="p-3 bg-white/5 text-zinc-400 rounded-xl border border-white/5 leading-none"><RebelIcon name="pencil" size={18}/></button>
-                                            {event.type==='game' && <button onClick={() => setEditingStats(event)} className="p-3 bg-pink-500/10 text-pink-500 rounded-xl leading-none"><RebelIcon name="bar-chart-2" size={18}/></button>}
-                                            <button onClick={() => onDeleteEvent(event.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl leading-none"><RebelIcon name="trash-2" size={18}/></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </section>
-                        </div>
-                    )}
-
-                    {showVoteHistory && (
-                         <div className="fixed inset-0 bg-black/90 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
-                            <div className={`max-w-xl mx-auto space-y-8 pb-20 p-8 rounded-3xl border border-white/10 shadow-2xl animate-slide-up ${theme === 'dark' ? 'bg-[#111]' : 'bg-white'}`}>
-                                <div className="flex justify-between items-center leading-none"><h2 className={`rebel-font font-black italic uppercase text-2xl leading-none ${theme==='light'?'text-black':'text-white'}`}>Vote History</h2><button onClick={()=>setShowVoteHistory(false)} className="text-zinc-500 p-2 leading-none"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-3 leading-none text-white">
-                                    {voteHistory.length > 0 ? voteHistory.map(entry => (
-                                        <div key={entry.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left text-white dark:text-white light:text-black leading-tight leading-none text-white">
-                                            <div className="flex justify-between items-start mb-1 leading-none text-white">
-                                                <span className="text-[10px] font-black uppercase text-[#FF007F] leading-none text-white">{entry.userName}</span>
-                                                <span className="text-[8px] font-bold text-zinc-600 italic leading-none text-white">{new Date(entry.timestamp?.seconds * 1000).toLocaleString('de-DE')}</span>
+                        <div className="space-y-8">
+                            <section className="glass-card p-6 rounded-3xl border border-[#FF007F]/30 shadow-[0_0_30px_rgba(255,0,127,0.15)] bg-gradient-to-b from-[#111] to-black">
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-lg mb-6 tracking-widest text-center">Rebel Card Anpassung</h3>
+                                <div className="space-y-6">
+                                    <select className="w-full bg-black border border-white/20 rounded-xl p-4 text-white outline-none appearance-none font-bold uppercase" value={adminSelectedPlayer} onChange={(e) => setAdminSelectedPlayer(e.target.value)}><option value="" disabled>Spielerin wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                                    {adminSelectedPlayer && (
+                                        <div className="space-y-6 animate-slide-up">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {['Grip', 'Vibe', 'Power', 'Soul'].map(stat => (
+                                                    <div key={stat} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                                        <div className="flex justify-between mb-2"><label className="text-[10px] font-black uppercase text-zinc-400">{stat}</label><span className="text-sm font-black text-[#FF007F]">{adminCardValues[stat.toLowerCase()]}</span></div>
+                                                        <input type="range" min="0" max="99" value={adminCardValues[stat.toLowerCase()]} onChange={(e) => setAdminCardValues({...adminCardValues, [stat.toLowerCase()]: parseInt(e.target.value)})} className="w-full accent-[#FF007F]" />
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <p className="text-xs leading-none text-white">{entry.eventLabel}: <span className="text-[#FF007F] font-black italic leading-none">{entry.voteValue}</span></p>
-                                        </div>
-                                    )) : <p className="text-zinc-500 text-center py-10 uppercase text-xs font-bold leading-none text-white">Keine Einträge</p>}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showCardEditor && (
-                        <div className="fixed inset-0 bg-black/90 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar">
-                            <div className={`max-w-2xl mx-auto space-y-8 pb-20 p-8 rounded-3xl border border-white/10 shadow-2xl animate-slide-up ${theme === 'dark' ? 'bg-[#111]' : 'bg-white'}`}>
-                                <div className="flex justify-between items-center leading-none text-white dark:text-white light:text-black leading-none text-white"><h2 className={`rebel-font font-black italic uppercase text-2xl`}>Squad Card Editor</h2><button onClick={()=>setShowCardEditor(false)} className="text-zinc-500 p-2 leading-none text-white text-white"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="space-y-4 leading-none text-white">
-                                    {SQUAD_DATA.map(s => {
-                                        const p = profiles[s.id] || { grip: 85, vibe: 99, power: 88, soul: 95, attendance: 0 };
-                                        return (
-                                            <div key={s.id} className="bg-black/20 p-5 rounded-3xl border border-white/5 flex flex-wrap items-center gap-4 text-white dark:text-white light:text-black leading-none text-white">
-                                                <span className={`font-black italic text-sm w-24 leading-none text-white`}>{s.name}</span>
-                                                <div className="grid grid-cols-5 gap-2 flex-grow leading-none text-white text-white">
-                                                    <input type="number" defaultValue={p.grip} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ grip: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.vibe} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ vibe: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.power} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ power: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.soul} className="bg-black/40 border border-white/10 rounded-lg p-2 text-center text-xs leading-none text-white outline-none" onBlur={(e) => onSave({ soul: parseInt(e.target.value) || 0 }, s.id)} />
-                                                    <input type="number" defaultValue={p.attendance} className="bg-[#FF007F]/20 border border-[#FF007F]/40 rounded-lg p-2 text-center text-xs text-[#FF007F] leading-none outline-none" onBlur={(e) => onSave({ attendance: parseInt(e.target.value) || 0 }, s.id)} />
+                                            <div className="space-y-4">
+                                                <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-white" value={adminCardValues.motto} onChange={e => setAdminCardValues({...adminCardValues, motto: e.target.value})} />
+                                                <div className="grid grid-cols-2 gap-4 text-white">
+                                                    <input type="text" placeholder="Icon Name" className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm text-white" value={adminCardValues.icon} onChange={e => setAdminCardValues({...adminCardValues, icon: e.target.value})} />
+                                                    <div className="flex items-center justify-center bg-white/10 rounded-xl border border-white/5 text-[#FF007F]"><RebelIcon name={adminCardValues.icon} size={24} /></div>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+                                            <button onClick={handleAdminSaveCard} className="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform">Karte aktualisieren</button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {showGlobalStats && (
-                         <div className="fixed inset-0 bg-black/98 z-[120] p-4 overflow-y-auto pt-24 no-scrollbar text-white">
-                            <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-slide-up text-center">
-                                <div className="flex justify-between items-center leading-none text-white"><h2 className="rebel-font font-black italic text-white uppercase text-2xl leading-none">Team-Statistik</h2><button onClick={()=>setShowGlobalStats(false)} className="text-zinc-500 p-2 leading-none text-white"><RebelIcon name="x" size={32}/></button></div>
-                                <div className="stats-scroll bg-[#111] rounded-3xl border border-white/10 p-4 shadow-2xl text-white leading-none">
-                                    <table className="w-full text-left text-xs leading-none text-white">
-                                        <thead><tr className="text-[10px] uppercase font-black text-[#FF007F] leading-none text-white"><th>Spielerin</th><th className="text-center">Tore</th><th className="text-center">2M</th><th className="text-center">Y</th><th className="text-center">R</th><th className="text-center">B</th></tr></thead>
-                                        <tbody>{SQUAD_DATA.map(s => {
-                                            const stats = { goals: 0, p2m: 0, y: 0, r: 0, b: 0 };
-                                            schedule.forEach(ev => { if (ev.stats?.players?.[s.id]) { stats.goals += parseInt(ev.stats.players[s.id].g) || 0; stats.p2m += parseInt(ev.stats.players[s.id].p) || 0; if (ev.stats.players[s.id].y) stats.y++; if (ev.stats.players[s.id].r) stats.r++; if (ev.stats.players[s.id].b) stats.b++; } });
-                                            return <tr key={s.id} className="bg-black/40 border-b border-white/5 leading-none text-white"><td className="leading-none text-white">{s.name}</td><td className="text-center text-lg font-black text-[#FF007F] leading-none text-white">{stats.goals}</td><td className="text-center font-bold text-zinc-400 leading-none text-white">{stats.p2m}</td><td className="text-center font-bold text-yellow-500 leading-none text-white">{stats.y}</td><td className="text-center font-bold text-red-500 leading-none text-white">{stats.r}</td><td className="text-center font-bold text-blue-500 leading-none text-white">{stats.b}</td></tr>;
-                                        })}</tbody>
+                            </section>
+
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800">
+                                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-4">Saison Statistik</h3>
+                                <div className="overflow-x-auto no-scrollbar">
+                                    <table className="w-full text-left border-separate border-spacing-y-2">
+                                        <thead><tr className="text-[8px] text-zinc-500 uppercase tracking-widest"><th className="px-2">Name</th><th className="px-2 text-center">Tore</th><th className="px-2 text-center">Spiele</th></tr></thead>
+                                        <tbody className="text-sm font-bold text-white">
+                                            {SQUAD_DATA.map(p => {
+                                                const goals = squadGoals[p.id] || 0;
+                                                const games = schedule.filter(e => e.type === 'game' && e.stats?.players?.[p.id]?.g).length;
+                                                return (<tr key={p.id} className="bg-white/5"><td className="p-3 rounded-l-xl border-y border-l border-white/5">{p.name}</td><td className="p-3 border-y border-white/5 text-center text-[#FF007F]">{goals}</td><td className="p-3 rounded-r-xl border-y border-r border-white/5 text-center">{games}</td></tr>);
+                                            })}
+                                        </tbody>
                                     </table>
                                 </div>
-                            </div>
+                            </section>
+
+                            <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
+                                <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
+                                <div className="space-y-4">
+                                    <div className="space-y-1 text-white"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
+                                    <div className="border-t border-white/5 pt-4 space-y-3">
+                                        <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
+                                        <div className="grid grid-cols-2 gap-2 text-white">
+                                            <button onClick={()=>setNewEvent({...newEvent, type:'training'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='training'?'bg-zinc-800 border-white/20 text-white':'bg-black/20 text-zinc-600'}`}>Training</button>
+                                            <button onClick={()=>setNewEvent({...newEvent, type:'game'})} className={`p-3 rounded-lg text-[10px] font-black uppercase border ${newEvent.type==='game'?'bg-pink-900/30 border-pink-500 text-pink-500':'bg-black/20 text-zinc-600'}`}>Spiel</button>
+                                        </div>
+                                        <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
+                                        <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                        <div className="grid grid-cols-3 gap-2 text-white">
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
+                                            <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ende</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.endTime} onChange={e => setNewEvent({...newEvent, endTime: e.target.value})} /></div>
+                                        </div>
+                                        <button onClick={handleAddEvent} className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform">Event speichern</button>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     )}
                 </div>
             );
         };
 
-        const BaseView = ({ theme }) => {
-            const [activeHall, setActiveHall] = useState(0);
-            const halls = [
-                { name: 'Hasengrundhalle', addr: 'Reinhard-Strecker-Straße 15, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Reinhard-Strecker-Stra%C3%9Fe%2015,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Hasengrundhalle Rüsselsheim' },
-                { name: 'Sporthalle Bauschheim', addr: 'Am Weinfaß 83, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Am%20Weinfa%C3%9F%2083,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Am Weinfaß 83 Rüsselsheim' },
-                { name: 'Gerhart-Hauptmann-Schule', addr: 'Im Reis 51, 65428 Rüsselsheim', map: 'https://maps.google.com/maps?q=Im%20Reis%2051,%2065428%20R%C3%BCsselsheim&t=&z=15&ie=UTF8&iwloc=&output=embed', search: 'Im Reis 51 Rüsselsheim' }
-            ];
+        const App = () => {
+            const [user, setUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loginData, setLoginData] = useState({ id: '', pw: '' });
+            const [loginError, setLoginError] = useState('');
+            const [votesData, setVotesData] = useState({});
+            const [shoutbox, setShoutbox] = useState([]);
+            const [profiles, setProfiles] = useState({});
+            const [schedule, setSchedule] = useState([]);
+            const [health, setHealth] = useState({});
+            const [fines, setFines] = useState([]);
+            const [voteHistory, setVoteHistory] = useState([]);
+            const [announcement, setAnnouncement] = useState("");
+            const [theme, setTheme] = useState('dark');
+            const [db, setDb] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [cloudStatus, setCloudStatus] = useState('connecting');
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [showDebugInfo, setShowDebugInfo] = useState(false);
+
+            useEffect(() => {
+                const startApp = async () => {
+                    let attempts = 0;
+                    while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
+                    if (!window.FB) { setLoading(false); setCloudStatus('error'); return; }
+                    try {
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore } = window.FB;
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
+                        setDb(firestore);
+                        await signInAnonymously(auth);
+                        const unsubscribe = onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setCloudStatus('connected');
+                                const savedId = localStorage.getItem('rebel_hub_user_id');
+                                if (savedId) { const found = SQUAD_DATA.find(m => m.id === savedId); if (found) setUser(found); }
+                            }
+                            setLoading(false);
+                        });
+                        return () => unsubscribe();
+                    } catch (e) { setLoading(false); setCloudStatus('error'); }
+                };
+                startApp();
+            }, []);
+
+            useEffect(() => {
+                if (!db || !user || !window.FB) return;
+                const { collection, onSnapshot, doc } = window.FB;
+                
+                const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setVotesData(d); });
+                const unsubShout = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), snap => { const msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() })); msgs.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setShoutbox(msgs.slice(0, 50)); });
+                const unsubProfiles = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setProfiles(d); });
+                const unsubSchedule = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => new Date(a.date) - new Date(b.date)); setSchedule(list); });
+                const unsubHealth = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'health'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setHealth(d); });
+                const unsubFines = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'fines'), snap => { const list = []; snap.forEach(d => list.push({ id: d.id, ...d.data() })); setFines(list); });
+                const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setVoteHistory(list.slice(0, 50)); });
+                const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), snap => { if(snap.exists()) setAnnouncement(snap.data().text || ""); });
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubHistory(); unsubNews(); };
+            }, [db, user]);
+
+            const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
+            const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
+            
+            const handleAddFine = async (pId, reason, amount) => {
+                if(!db) return;
+                const { collection, addDoc, serverTimestamp } = window.FB;
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'fines'), { playerId: pId, reason, amount, paid: false, timestamp: serverTimestamp() });
+                triggerHype();
+            };
+
+            const handlePayFine = async (fId) => {
+                if(!db) return;
+                const { doc, updateDoc } = window.FB;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { paid: true });
+            };
+
+            // Attendance calculation
+            const attendanceData = useMemo(() => {
+                const map = {};
+                SQUAD_DATA.forEach(p => {
+                    let totalVoted = 0, dabeiCount = 0;
+                    Object.keys(votesData).forEach(key => {
+                        if (key.startsWith('event_') && votesData[key][p.id]) {
+                            totalVoted++;
+                            if (votesData[key][p.id] === 'Dabei') dabeiCount++;
+                        }
+                    });
+                    map[p.id] = totalVoted === 0 ? 0 : Math.round((dabeiCount / totalVoted) * 100);
+                });
+                return map;
+            }, [votesData]);
+
+            if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /></div> );
+            if (!user) return ( <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]"><div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center"><RebelLogo className="w-24 h-24 mx-auto mb-8" /><form onSubmit={handleLogin} className="space-y-6"><select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white" value={loginData.id} onChange={e => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select><input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={e => setLoginData({...loginData, pw: e.target.value})}/><button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest">Anmelden</button></form></div></div> );
+
             return (
-                <div className="space-y-6 animate-slide-up pb-10 leading-none text-white">
-                    <header className="leading-none"><h2 className={`text-2xl rebel-font font-black italic uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Home Base</h2><p className="text-sm text-zinc-500 italic mt-1 uppercase tracking-widest leading-none text-zinc-400">Training Locations</p></header>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 text-white leading-none text-white">{halls.map((h, i) => <button key={i} onClick={() => setActiveHall(i)} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border leading-none ${activeHall === i ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-white/5 light:bg-black/5 text-zinc-500 border-white/5'}`}>{h.name.split(' ')[1] || h.name}</button>)}</div>
-                    <div className="glass-card p-6 rounded-3xl border border-zinc-800 light:border-zinc-200 space-y-6 shadow-2xl leading-none">
-                        <div className="flex items-center gap-4 leading-none"><div className="w-16 h-16 bg-[#FF007F]/10 rounded-2xl flex items-center justify-center text-[#FF007F] border border-[#FF007F]/20 shadow-xl leading-none text-white"><RebelIcon name="map-pin" size={32} /></div><div className="leading-none"><h3 className={`font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>{halls[activeHall].name}</h3><p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1 leading-tight text-white dark:text-white light:text-zinc-600 leading-none">{halls[activeHall].addr}</p></div></div>
-                        <div className="grid grid-cols-2 gap-4 leading-none text-white text-white">
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(halls[activeHall].search)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-white leading-none text-white"><RebelIcon name="map" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white">Google Maps</span></a>
-                            <a href={`https://maps.apple.com/?address=${encodeURIComponent(halls[activeHall].addr)}`} target="_blank" className="bg-black/40 light:bg-zinc-100 p-4 rounded-2xl border border-white/5 light:border-zinc-300 flex flex-col items-center gap-2 hover:border-[#FF007F]/40 transition-all text-[#FF007F] leading-none text-white"><RebelIcon name="navigation" className="text-[#FF007F]"/><span className="text-[10px] font-black uppercase tracking-widest dark:text-white light:text-black leading-none text-white">Apple Maps</span></a>
-                        </div>
-                        <div className="w-full h-56 rounded-3xl overflow-hidden border border-zinc-800 light:border-zinc-200 grayscale opacity-40 hover:grayscale-0 transition-all duration-700 shadow-2xl leading-none text-white"><iframe width="100%" height="100%" frameBorder="0" scrolling="no" src={halls[activeHall].map}></iframe></div>
-                    </div>
+                <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5]' : 'bg-[#050505]'}`}>
+                    <header className={`p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 ${theme === 'light' ? 'bg-white/80' : 'bg-black/50'}`}>
+                        <div className="flex items-center gap-3"><RebelLogo className="w-9 h-9" status={cloudStatus} onClick={() => setShowDebugInfo(!showDebugInfo)} /><h2 className={`rebel-font font-black italic text-lg uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Hub</h2></div>
+                        <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
+                    </header>
+                    <main className="p-6 max-w-4xl mx-auto animate-slide-up">
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onVote={(id,val) => {
+                            const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
+                            const ev = schedule.find(e => e.id === id);
+                            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() });
+                        }} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={Object.values(schedule).reduce((acc, ev) => { if(ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid,s]) => acc[pid] = (acc[pid]||0)+(parseInt(s.g)||0)); return acc; }, {})} theme={theme} announcement={announcement} onPostShout={async (t,a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? '🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); }} onDeleteShout={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => {
+                            const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB;
+                            const ev = schedule.find(e => e.id === id);
+                            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true });
+                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() });
+                        }} health={health['current'] || {}} profiles={profiles} theme={theme} />}
+                        {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={user.id==='hc'||user.id==='tm'} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
+                        {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={Object.values(schedule).reduce((acc, ev) => { if(ev.stats?.players) Object.entries(ev.stats.players).forEach(([pid,s]) => acc[pid] = (acc[pid]||0)+(parseInt(s.g)||0)); return acc; }, {})} theme={theme} attendance={attendanceData} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Check! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} announcement={announcement} squadGoals={{}} voteHistory={voteHistory} />}
+                    </main>
+                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
+                        <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
+                        <NavButton icon="euro" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
+                        <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
+                        <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
+                    </nav>
                 </div>
             );
         };
-
-        const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] focus:outline-none ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                <RebelIcon name={icon} size={22} />
-                <span className="text-[8px] font-black uppercase tracking-widest mt-1 leading-none">{label}</span>
-            </button>
-        );
-
+        
         const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
 </body>
