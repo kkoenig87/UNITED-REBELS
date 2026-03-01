@@ -167,7 +167,7 @@
         };
 
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[55px] shrink-0 ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
                 <RebelIcon name={icon} size={22} />
                 <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
             </button>
@@ -1042,7 +1042,7 @@
                         </div>
                     )}
 
-                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl gap-4 ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
+                    <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
                         <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
                         <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
