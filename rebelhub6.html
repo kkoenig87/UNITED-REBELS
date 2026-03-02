@@ -23,6 +23,15 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          emailjs.init({
+            publicKey: "DEIN_PUBLIC_KEY_HIER_EINTRAGEN", // <--- HIER DEINEN EMAILJS PUBLIC KEY EINTRAGEN
+          });
+       })();
+    </script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;0,900;1,100;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
@@ -189,6 +198,7 @@
                 setLoading(true);
                 try {
                     const { collection, addDoc, serverTimestamp } = window.FB;
+                    
                     const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), {
                         ...buyer,
                         used: false,
@@ -196,7 +206,30 @@
                         price: buyer.type === 'day' ? 5 : 40,
                         timestamp: serverTimestamp()
                     });
+                    
                     setTicketId(docRef.id);
+
+                    // EmailJS Versand
+                    if (window.emailjs) {
+                        try {
+                            await window.emailjs.send(
+                                "service_1clvlbc", // Deine Service ID
+                                "DEINE_TEMPLATE_ID_HIER_EINTRAGEN", // <--- HIER DEINE EMAILJS TEMPLATE ID EINTRAGEN
+                                {
+                                    to_name: buyer.name,
+                                    to_email: buyer.email, 
+                                    ticket_type: buyer.type === 'day' ? 'Tageskarte (5€)' : 'Dauerkarte (40€)',
+                                    ticket_id: docRef.id,
+                                    qr_link: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${docRef.id}`
+                                }
+                            );
+                            console.log("Email erfolgreich versendet!");
+                        } catch (mailError) {
+                            console.error("Fehler beim E-Mail-Versand:", mailError);
+                            alert("Ticket generiert, aber die E-Mail konnte nicht gesendet werden. Bitte mach einen Screenshot von diesem Screen!");
+                        }
+                    }
+
                     if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                 } catch(err) { alert('Fehler beim Kauf.'); }
                 setLoading(false);
@@ -213,7 +246,7 @@
                             </div>
                             <p className="font-bold text-lg">{buyer.name}</p>
                             <p className="text-[#FF007F] font-black mt-2">Zu zahlen an der Kasse: {buyer.type === 'day' ? '5 €' : '40 €'}</p>
-                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Bitte zeige diesen Code am Eingang vor.</p>
+                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Bitte zeige diesen Code am Eingang vor. Du hast auch eine E-Mail erhalten.</p>
                             <button onClick={onBack} className="mt-8 text-[#FF007F] font-black uppercase text-xs tracking-widest underline">Zurück zum Start</button>
                         </div>
                     </div>
