@@ -27,7 +27,7 @@
     <script type="text/javascript">
        (function(){
           emailjs.init({
-            publicKey: "DEIN_PUBLIC_KEY_HIER_EINTRAGEN", // <--- HIER DEINEN EMAILJS PUBLIC KEY EINTRAGEN
+            publicKey: "QCs4Bzx3QwbkHiA31", // <--- HIER DEINEN EMAILJS PUBLIC KEY EINTRAGEN
           });
        })();
     </script>
@@ -81,8 +81,9 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FF007F; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255,0,127,0.8); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-        #qr-reader { border-radius: 1rem; overflow: hidden; border: 2px solid #FF007F; }
-        #qr-reader__scan_region video { object-fit: cover; }
+        /* Neuer Scanner Style */
+        #reader { border-radius: 1rem; overflow: hidden; border: 2px solid #FF007F; }
+        #reader video { object-fit: cover; }
     </style>
 </head>
 <body class="dark no-scrollbar">
@@ -213,8 +214,8 @@
                     if (window.emailjs) {
                         try {
                             await window.emailjs.send(
-                                "service_1clvlbc", // Deine Service ID
-                                "DEINE_TEMPLATE_ID_HIER_EINTRAGEN", // <--- HIER DEINE EMAILJS TEMPLATE ID EINTRAGEN
+                                "service_1clvlbc", 
+                                "template_vrawvqs", // <--- HIER DEINE EMAILJS TEMPLATE ID EINTRAGEN
                                 {
                                     to_name: buyer.name,
                                     to_email: buyer.email, 
@@ -226,7 +227,7 @@
                             console.log("Email erfolgreich versendet!");
                         } catch (mailError) {
                             console.error("Fehler beim E-Mail-Versand:", mailError);
-                            alert("Ticket generiert, aber die E-Mail konnte nicht gesendet werden. Bitte mach einen Screenshot von diesem Screen!");
+                            // Alert entfernt, um den User nicht zu stören. Ticket ist ja generiert.
                         }
                     }
 
@@ -280,18 +281,53 @@
 
         const TicketScannerView = ({ db, theme }) => {
             const [scanResult, setScanResult] = useState(null);
-            const [scannerActive, setScannerActive] = useState(true);
+            const [scannerActive, setScannerActive] = useState(false);
+            const scannerRef = useRef(null);
 
             useEffect(() => {
-                if(!scannerActive || !window.Html5QrcodeScanner) return;
-                const scanner = new window.Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-                scanner.render(async (decodedText) => {
-                    scanner.clear();
-                    setScannerActive(false);
-                    verifyTicket(decodedText);
-                }, (err) => {});
-                return () => { scanner.clear().catch(e => {}); };
-            }, [scannerActive]);
+                return () => {
+                    if (scannerRef.current) {
+                        scannerRef.current.stop().catch(e => console.log("Scanner stop error", e));
+                    }
+                };
+            }, []);
+
+            const startScanner = () => {
+                setScanResult(null);
+                setScannerActive(true);
+                
+                setTimeout(() => {
+                    if(!window.Html5Qrcode) return alert("Scanner Modul noch nicht geladen.");
+                    
+                    const html5QrCode = new window.Html5Qrcode("reader");
+                    scannerRef.current = html5QrCode;
+
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        async (decodedText) => {
+                            html5QrCode.stop().then(() => {
+                                scannerRef.current = null;
+                                setScannerActive(false);
+                                verifyTicket(decodedText);
+                            }).catch(err => console.log(err));
+                        },
+                        (errorMessage) => {}
+                    ).catch(err => {
+                        alert("Kamera Fehler: Bitte erlaube den Kamerazugriff.");
+                        setScannerActive(false);
+                    });
+                }, 100);
+            };
+
+            const stopScanner = () => {
+                if (scannerRef.current) {
+                    scannerRef.current.stop().then(() => {
+                        scannerRef.current = null;
+                        setScannerActive(false);
+                    }).catch(e => console.log(e));
+                }
+            };
 
             const verifyTicket = async (id) => {
                 try {
@@ -337,22 +373,33 @@
                         <p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p>
                     </header>
                     
-                    {scannerActive ? (
-                        <div className="bg-black p-4 rounded-3xl border border-white/10 shadow-xl">
-                            <div id="qr-reader" className="w-full"></div>
-                            <p className="text-center text-[10px] text-zinc-500 uppercase mt-4 tracking-widest">Kamera auf QR-Code richten</p>
+                    {!scannerActive && !scanResult && (
+                        <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center">
+                            <RebelIcon name="camera" size={64} className="mx-auto mb-4 text-[#FF007F]" />
+                            <button onClick={startScanner} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">Kamera Starten</button>
                         </div>
-                    ) : (
-                        <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl ${scanResult?.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult?.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult?.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
-                            <RebelIcon name={scanResult?.status === 'valid' ? 'check-circle' : scanResult?.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
-                            <h3 className="font-black text-xl uppercase mb-2">{scanResult?.status === 'valid' ? 'Zutritt gewährt' : scanResult?.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
-                            <p className="text-sm font-bold opacity-80 mb-6">{scanResult?.msg}</p>
+                    )}
+
+                    {scannerActive && (
+                        <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)]">
+                            <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black"></div>
+                            <div className="mt-4 flex gap-2">
+                                <button onClick={stopScanner} className="flex-1 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {scanResult && (
+                        <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl animate-slide-up ${scanResult.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
+                            <RebelIcon name={scanResult.status === 'valid' ? 'check-circle' : scanResult.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
+                            <h3 className="font-black text-xl uppercase mb-2">{scanResult.status === 'valid' ? 'Zutritt gewährt' : scanResult.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
+                            <p className="text-sm font-bold opacity-80 mb-6">{scanResult.msg}</p>
                             
-                            {scanResult?.status === 'unpaid' && (
+                            {scanResult.status === 'unpaid' && (
                                 <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg">Geld erhalten & Entwerten</button>
                             )}
                             
-                            <button onClick={() => { setScanResult(null); setScannerActive(true); }} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full">Nächstes Ticket</button>
+                            <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl">Nächstes scannen</button>
                         </div>
                     )}
                 </div>
