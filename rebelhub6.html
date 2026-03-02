@@ -27,7 +27,7 @@
     <script type="text/javascript">
        (function(){
           emailjs.init({
-            publicKey: "QCs4Bzx3QwbkHiA31", // <--- HIER DEINEN EMAILJS PUBLIC KEY EINTRAGEN
+            publicKey: "QCs4Bzx3QwbkHiA31", // DEIN PUBLIC KEY
           });
        })();
     </script>
@@ -193,6 +193,25 @@
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
 
+            const handleDownloadQR = async () => {
+                const url = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${ticketId}`;
+                try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = `Rebel_Ticket_${buyer.name.replace(/\s+/g, '_')}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(blobUrl);
+                } catch (e) {
+                    // Fallback, falls das iPhone den Blob-Download blockiert
+                    window.open(url, '_blank'); 
+                }
+            };
+
             const handleBuy = async (e) => {
                 e.preventDefault();
                 if(!db || !buyer.name || !buyer.email) return;
@@ -215,10 +234,10 @@
                         try {
                             await window.emailjs.send(
                                 "service_1clvlbc", 
-                                "template_vrawvqs", // <--- HIER DEINE EMAILJS TEMPLATE ID EINTRAGEN
+                                "template_vrawvqs", // DEINE TEMPLATE ID
                                 {
                                     to_name: buyer.name,
-                                    to_email: buyer.email, 
+                                    reply_to: buyer.email, 
                                     ticket_type: buyer.type === 'day' ? 'Tageskarte (5€)' : 'Dauerkarte (40€)',
                                     ticket_id: docRef.id,
                                     qr_link: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${docRef.id}`
@@ -227,7 +246,6 @@
                             console.log("Email erfolgreich versendet!");
                         } catch (mailError) {
                             console.error("Fehler beim E-Mail-Versand:", mailError);
-                            // Alert entfernt, um den User nicht zu stören. Ticket ist ja generiert.
                         }
                     }
 
@@ -241,13 +259,19 @@
                     <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
                         <div className="bg-[#111] border border-[#FF007F]/30 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(255,0,127,0.2)] max-w-sm w-full text-center">
                             <h2 className="rebel-font font-black italic text-3xl uppercase mb-2">Dein Ticket</h2>
-                            <p className="text-zinc-400 text-xs mb-8 uppercase tracking-widest">{buyer.type === 'day' ? 'Tageskarte' : 'Dauerkarte'}</p>
-                            <div className="bg-white p-4 rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6">
+                            <p className="text-zinc-400 text-xs mb-6 uppercase tracking-widest">{buyer.type === 'day' ? 'Tageskarte' : 'Dauerkarte'}</p>
+                            
+                            <div className="bg-white p-4 rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6 shadow-xl">
                                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${ticketId}`} alt="QR Code" className="w-full h-full" />
                             </div>
+                            
                             <p className="font-bold text-lg">{buyer.name}</p>
-                            <p className="text-[#FF007F] font-black mt-2">Zu zahlen an der Kasse: {buyer.type === 'day' ? '5 €' : '40 €'}</p>
-                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Bitte zeige diesen Code am Eingang vor. Du hast auch eine E-Mail erhalten.</p>
+                            <p className="text-[#FF007F] font-black mt-2 text-xl">An Kasse zahlen: {buyer.type === 'day' ? '5 €' : '40 €'}</p>
+                            
+                            <button onClick={handleDownloadQR} className="w-full bg-white text-black font-black py-4 rounded-xl uppercase tracking-widest mt-6 flex items-center justify-center gap-2 shadow-lg">📸 QR-Code speichern</button>
+
+                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Screenshot machen oder Bild speichern. Du hast auch eine E-Mail erhalten.</p>
+                            
                             <button onClick={onBack} className="mt-8 text-[#FF007F] font-black uppercase text-xs tracking-widest underline">Zurück zum Start</button>
                         </div>
                     </div>
@@ -337,19 +361,44 @@
                     
                     if(docSnap.exists()) {
                         const data = docSnap.data();
-                        if (data.used) {
-                            setScanResult({ status: 'used', msg: `Achtung! Ticket wurde bereits entwertet. (${data.name})` });
-                            return;
-                        }
+                        const isSeason = data.type === 'season';
+
+                        // 1. Unbezahlt Check (Gilt für Tages- & Dauerkarte beim ERSTEN Scan)
                         if (!data.paid) {
                             setScanResult({ status: 'unpaid', id: id, data: data, msg: `Ticket unbezahlt! Bitte ${data.price} € kassieren.` });
                             return;
                         }
-                        
-                        await updateDoc(docRef, { used: true });
-                        setScanResult({ status: 'valid', msg: `Zutritt gewährt! Viel Spaß, ${data.name}!` });
-                        if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
-                        
+
+                        // 2. Tageskarte: Einmal scannen und entwerten
+                        if (!isSeason) {
+                            if (data.used) {
+                                setScanResult({ status: 'used', msg: `Achtung! Tageskarte wurde bereits entwertet. (${data.name})` });
+                                return;
+                            }
+                            await updateDoc(docRef, { used: true, lastScannedAt: Date.now() });
+                            setScanResult({ status: 'valid', msg: `Tageskarte gültig! Viel Spaß, ${data.name}!` });
+                            if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
+                            return;
+                        }
+
+                        // 3. Dauerkarte: 24h Cooldown Logic
+                        if (isSeason) {
+                            const now = Date.now();
+                            if (data.lastScannedAt) {
+                                const hoursPassed = (now - data.lastScannedAt) / (1000 * 60 * 60);
+                                if (hoursPassed < 24) {
+                                    const hoursLeft = Math.ceil(24 - hoursPassed);
+                                    setScanResult({ status: 'used', msg: `Achtung! Dauerkarte wurde in den letzten 24h schon gescannt. (${data.name}) - Sperre für weitere ${hoursLeft}h.` });
+                                    return;
+                                }
+                            }
+                            
+                            await updateDoc(docRef, { lastScannedAt: now });
+                            setScanResult({ status: 'valid', msg: `Dauerkarte gültig! Willkommen zurück, ${data.name}!` });
+                            if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
+                            return;
+                        }
+
                     } else {
                         setScanResult({ status: 'invalid', msg: 'Ticket in Datenbank nicht gefunden!' });
                     }
@@ -361,8 +410,17 @@
             const handleMarkAsPaid = async () => {
                 if(!scanResult?.id) return;
                 const { doc, updateDoc } = window.FB;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), { paid: true, used: true });
-                setScanResult({ status: 'valid', msg: `Bezahlt & Entwertet! Viel Spaß, ${scanResult.data.name}!` });
+                
+                const isSeason = scanResult.data.type === 'season';
+                const updateData = { paid: true, lastScannedAt: Date.now() };
+                
+                // Tageskarten sind nach dem Bezahlen direkt entwertet
+                if (!isSeason) {
+                    updateData.used = true;
+                }
+
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
+                setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!` });
                 if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
             };
 
