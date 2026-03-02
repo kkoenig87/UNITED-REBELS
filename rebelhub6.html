@@ -188,25 +188,25 @@
         );
 
         // --- PUBLIC TICKET SHOP ---
-        const PublicTicketShop = ({ db, onBack }) => {
-            const [buyer, setBuyer] = useState({ name: '', email: '', type: 'day' });
+        const PublicTicketShop = ({ db, schedule, onBack }) => {
+            const [buyer, setBuyer] = useState({ name: '', email: '', type: 'day', gameId: '', adults: 1, children: 0 });
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
 
-            // NEU: Snapshot des Ticket-Kartendesigns erstellen und herunterladen
+            // Zukünftige Spiele filtern
+            const upcomingGames = useMemo(() => {
+                return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= new Date().setHours(0,0,0,0));
+            }, [schedule]);
+
+            // Preisberechnung (5€ Erw, 2€ Kind - anpassbar)
+            const totalPrice = buyer.type === 'season' ? 40 : (buyer.adults * 5) + (buyer.children * 2);
+
             const handleDownloadQR = async () => {
                 setLoading(true);
                 try {
                     const element = document.getElementById('ticket-card-element');
                     if (!element) return;
-                    
-                    const canvas = await window.html2canvas(element, {
-                        backgroundColor: '#111111', 
-                        scale: 3, // Hohe Auflösung
-                        useCORS: true,
-                        allowTaint: true
-                    });
-                    
+                    const canvas = await window.html2canvas(element, { backgroundColor: '#111111', scale: 3, useCORS: true, allowTaint: true });
                     const image = canvas.toDataURL("image/png");
                     const link = document.createElement('a');
                     link.href = image;
@@ -214,48 +214,50 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } catch (err) {
-                    console.error("Fehler beim Speichern:", err);
-                    alert("Screenshot Fehler. Bitte mache manuell einen Screenshot vom Ticket.");
-                }
+                } catch (err) { alert("Screenshot Fehler. Bitte mache manuell einen Screenshot vom Ticket."); }
                 setLoading(false);
             };
 
             const handleBuy = async (e) => {
                 e.preventDefault();
                 if(!db || !buyer.name || !buyer.email) return;
+                if(buyer.type === 'day' && !buyer.gameId) return alert('Bitte wähle ein Spiel aus!');
+                if(buyer.type === 'day' && buyer.adults === 0 && buyer.children === 0) return alert('Bitte wähle mindestens eine Person aus!');
+                
                 setLoading(true);
                 try {
                     const { collection, addDoc, serverTimestamp } = window.FB;
+                    const selectedGame = upcomingGames.find(g => g.id === buyer.gameId);
                     
                     const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), {
                         ...buyer,
+                        gameLabel: selectedGame ? selectedGame.label : 'Alle Spiele (Saison)',
                         used: false,
                         paid: false,
-                        price: buyer.type === 'day' ? 5 : 40,
+                        price: totalPrice,
                         timestamp: serverTimestamp()
                     });
                     
                     setTicketId(docRef.id);
 
-                    // EmailJS Versand
                     if (window.emailjs) {
                         try {
+                            const ticketText = buyer.type === 'day' 
+                                ? `Tageskarte (${totalPrice}€) - ${buyer.adults} Erw., ${buyer.children} Kind(er)` 
+                                : 'Dauerkarte (40€)';
+                                
                             await window.emailjs.send(
                                 "service_1clvlbc", 
                                 "template_vrawvqs", 
                                 {
                                     to_name: buyer.name,
                                     reply_to: buyer.email, 
-                                    ticket_type: buyer.type === 'day' ? 'Tageskarte (5€)' : 'Dauerkarte (40€)',
+                                    ticket_type: ticketText,
                                     ticket_id: docRef.id,
                                     qr_link: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${docRef.id}`
                                 }
                             );
-                            console.log("Email erfolgreich versendet!");
-                        } catch (mailError) {
-                            console.error("Fehler beim E-Mail-Versand:", mailError);
-                        }
+                        } catch (mailError) { console.error("Email Fehler:", mailError); }
                     }
 
                     if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -264,53 +266,91 @@
             };
 
             if (ticketId) {
+                const selectedGame = upcomingGames.find(g => g.id === buyer.gameId);
                 return (
                     <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
-                        
-                        {/* DAS TICKET (Wird als Bild gespeichert) */}
                         <div id="ticket-card-element" className="bg-[#111] border border-[#FF007F]/50 p-8 rounded-[2rem] shadow-[0_0_40px_rgba(255,0,127,0.3)] max-w-sm w-full text-center relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-[#FF007F] to-purple-600"></div>
-                            
                             <h2 className="rebel-font font-black italic text-2xl uppercase mb-1 mt-2 text-white">UNITED REBELS</h2>
-                            <p className="text-[#FF007F] text-sm mb-6 uppercase tracking-widest font-black">{buyer.type === 'day' ? '🎟️ Tageskarte' : '👑 Dauerkarte'}</p>
+                            <p className="text-[#FF007F] text-sm mb-2 uppercase tracking-widest font-black">{buyer.type === 'day' ? '🎟️ Tageskarte' : '👑 Dauerkarte'}</p>
                             
+                            {buyer.type === 'day' && (
+                                <div className="mb-4 bg-white/5 p-2 rounded-xl border border-white/10">
+                                    <p className="text-xs font-bold text-white uppercase">{selectedGame?.label}</p>
+                                    <p className="text-[10px] text-zinc-400 mt-1">{buyer.adults} Erw. | {buyer.children} Kind(er)</p>
+                                </div>
+                            )}
+
                             <div className="bg-white p-4 rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6 shadow-xl">
                                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${ticketId}`} alt="QR Code" className="w-full h-full" crossOrigin="anonymous" />
                             </div>
                             
                             <p className="font-black text-2xl uppercase italic text-white leading-tight">{buyer.name}</p>
                             <p className="text-zinc-400 font-bold mt-2 text-xs uppercase tracking-widest border-t border-white/10 pt-4 mt-4">
-                                {buyer.type === 'day' ? '5 € (Zahlbar an der Kasse)' : '40 € (Zahlbar an der Kasse)'}
+                                {totalPrice} € (Zahlbar an der Kasse)
                             </p>
                         </div>
 
-                        {/* BUTTONS (Werden NICHT gespeichert) */}
                         <div className="mt-8 max-w-sm w-full space-y-4">
                             <button onClick={handleDownloadQR} disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">
                                 {loading ? 'Generiere Bild...' : '📸 Ticket-Bild speichern'}
                             </button>
-                            <p className="text-[10px] text-zinc-500 uppercase text-center mb-4">Ticket wird als Bild auf dem Handy gespeichert. Du hast auch eine E-Mail erhalten.</p>
+                            <p className="text-[10px] text-zinc-500 uppercase text-center mb-4">Ticket wird als Bild auf dem Handy gespeichert.</p>
                             <button onClick={onBack} className="mt-4 text-[#FF007F] font-black uppercase text-xs tracking-widest underline w-full text-center">Zurück zum Start</button>
                         </div>
-
                     </div>
                 );
             }
 
             return (
-                <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
-                    <button onClick={onBack} className="absolute top-6 left-6 text-zinc-500"><RebelIcon name="arrow-left" size={28}/></button>
-                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-white/5 shadow-2xl">
-                        <div className="flex justify-center mb-6"><RebelIcon name="ticket" size={48} className="text-[#FF007F]" /></div>
-                        <h1 className="text-2xl font-black italic text-center uppercase mb-8">Fan-Tickets</h1>
+                <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white overflow-y-auto">
+                    <button onClick={onBack} className="absolute top-6 left-6 text-zinc-500 bg-black/50 p-2 rounded-full"><RebelIcon name="arrow-left" size={24}/></button>
+                    <div className="w-full max-w-md bg-[#111] p-8 rounded-[3rem] border border-white/5 shadow-2xl mt-12 mb-12">
+                        <div className="flex justify-center mb-4"><RebelIcon name="ticket" size={48} className="text-[#FF007F]" /></div>
+                        <h1 className="text-2xl font-black italic text-center uppercase mb-6">Fan-Tickets</h1>
                         <form onSubmit={handleBuy} className="space-y-4">
-                            <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5 mb-6">
-                                <button type="button" onClick={() => setBuyer({...buyer, type: 'day'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='day'?'bg-[#FF007F] text-white':'text-zinc-500'}`}>Tageskarte (5€)</button>
-                                <button type="button" onClick={() => setBuyer({...buyer, type: 'season'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='season'?'bg-white text-black':'text-zinc-500'}`}>Dauerkarte (40€)</button>
+                            <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                                <button type="button" onClick={() => setBuyer({...buyer, type: 'day'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='day'?'bg-[#FF007F] text-white':'text-zinc-500'}`}>Tageskarte</button>
+                                <button type="button" onClick={() => setBuyer({...buyer, type: 'season'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='season'?'bg-white text-black':'text-zinc-500'}`}>Dauerkarte</button>
                             </div>
+
                             <input type="text" placeholder="Dein Name" required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-[#FF007F]" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} />
                             <input type="email" placeholder="Deine E-Mail" required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-[#FF007F]" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} />
-                            <button type="submit" disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(255,0,127,0.4)]">
+
+                            {buyer.type === 'day' && (
+                                <div className="space-y-4 animate-slide-up pt-2">
+                                    <select required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none text-white appearance-none" value={buyer.gameId} onChange={e => setBuyer({...buyer, gameId: e.target.value})}>
+                                        <option value="" disabled>Für welches Spiel?</option>
+                                        {upcomingGames.map(g => <option key={g.id} value={g.id}>{g.label} ({new Date(g.date).toLocaleDateString()})</option>)}
+                                    </select>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-black/40 border border-white/10 p-3 rounded-xl">
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Erw. (5€)</label>
+                                            <div className="flex justify-between items-center">
+                                                <button type="button" onClick={()=>setBuyer({...buyer, adults: Math.max(1, buyer.adults-1)})} className="text-[#FF007F] font-black text-xl px-2">-</button>
+                                                <span className="font-black text-lg">{buyer.adults}</span>
+                                                <button type="button" onClick={()=>setBuyer({...buyer, adults: buyer.adults+1})} className="text-[#FF007F] font-black text-xl px-2">+</button>
+                                            </div>
+                                        </div>
+                                        <div className="bg-black/40 border border-white/10 p-3 rounded-xl">
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Kinder (2€)</label>
+                                            <div className="flex justify-between items-center">
+                                                <button type="button" onClick={()=>setBuyer({...buyer, children: Math.max(0, buyer.children-1)})} className="text-[#FF007F] font-black text-xl px-2">-</button>
+                                                <span className="font-black text-lg">{buyer.children}</span>
+                                                <button type="button" onClick={()=>setBuyer({...buyer, children: buyer.children+1})} className="text-[#FF007F] font-black text-xl px-2">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center mt-2">
+                                <span className="font-bold text-xs uppercase text-zinc-400">Summe:</span>
+                                <span className="font-black text-xl text-[#FF007F]">{totalPrice} €</span>
+                            </div>
+
+                            <button type="submit" disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">
                                 {loading ? 'Generiere...' : 'Ticket sichern'}
                             </button>
                             <p className="text-center text-[10px] text-zinc-500 uppercase mt-2">Zahlung erfolgt vor Ort an der Kasse.</p>
@@ -328,49 +368,27 @@
             const scannerRef = useRef(null);
 
             useEffect(() => {
-                return () => {
-                    if (scannerRef.current) {
-                        scannerRef.current.stop().catch(e => console.log("Scanner stop error", e));
-                    }
-                };
+                return () => { if (scannerRef.current) scannerRef.current.stop().catch(e => console.log(e)); };
             }, []);
 
             const startScanner = () => {
-                setScanResult(null);
-                setScannerActive(true);
-                
+                setScanResult(null); setScannerActive(true);
                 setTimeout(() => {
                     if(!window.Html5Qrcode) return alert("Scanner Modul noch nicht geladen.");
-                    
                     const html5QrCode = new window.Html5Qrcode("reader");
                     scannerRef.current = html5QrCode;
-
                     html5QrCode.start(
                         { facingMode: "environment" },
                         { fps: 10, qrbox: { width: 250, height: 250 } },
                         async (decodedText) => {
-                            html5QrCode.stop().then(() => {
-                                scannerRef.current = null;
-                                setScannerActive(false);
-                                verifyTicket(decodedText);
-                            }).catch(err => console.log(err));
+                            html5QrCode.stop().then(() => { scannerRef.current = null; setScannerActive(false); verifyTicket(decodedText); }).catch(err => console.log(err));
                         },
                         (errorMessage) => {}
-                    ).catch(err => {
-                        alert("Kamera Fehler: Bitte erlaube den Kamerazugriff.");
-                        setScannerActive(false);
-                    });
+                    ).catch(err => { alert("Kamera Fehler: Bitte erlaube den Kamerazugriff."); setScannerActive(false); });
                 }, 100);
             };
 
-            const stopScanner = () => {
-                if (scannerRef.current) {
-                    scannerRef.current.stop().then(() => {
-                        scannerRef.current = null;
-                        setScannerActive(false);
-                    }).catch(e => console.log(e));
-                }
-            };
+            const stopScanner = () => { if (scannerRef.current) { scannerRef.current.stop().then(() => { scannerRef.current = null; setScannerActive(false); }).catch(e => console.log(e)); } };
 
             const verifyTicket = async (id) => {
                 try {
@@ -381,74 +399,62 @@
                     if(docSnap.exists()) {
                         const data = docSnap.data();
                         const isSeason = data.type === 'season';
+                        const ticketDetails = isSeason ? 'Dauerkarte' : `${data.adults || 1} Erw. | ${data.children || 0} Kind(er) - ${data.gameLabel || 'Tageskarte'}`;
 
-                        // 1. Unbezahlt Check (Gilt für Tages- & Dauerkarte beim ERSTEN Scan)
+                        // 1. Unbezahlt Check
                         if (!data.paid) {
-                            setScanResult({ status: 'unpaid', id: id, data: data, msg: `Ticket unbezahlt! Bitte ${data.price} € kassieren.` });
+                            setScanResult({ status: 'unpaid', id: id, data: data, msg: `Ticket unbezahlt! Bitte ${data.price} € kassieren.`, details: ticketDetails });
                             return;
                         }
 
                         // 2. Tageskarte: Einmal scannen und entwerten
                         if (!isSeason) {
                             if (data.used) {
-                                setScanResult({ status: 'used', msg: `Achtung! Tageskarte wurde bereits entwertet. (${data.name})` });
+                                setScanResult({ status: 'used', msg: `Achtung! Ticket wurde bereits entwertet. (${data.name})`, details: ticketDetails });
                                 return;
                             }
                             await updateDoc(docRef, { used: true, lastScannedAt: Date.now() });
-                            setScanResult({ status: 'valid', msg: `Tageskarte gültig! Viel Spaß, ${data.name}!` });
+                            setScanResult({ status: 'valid', msg: `Ticket gültig! Viel Spaß, ${data.name}!`, details: ticketDetails });
                             if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
                             return;
                         }
 
-                        // 3. Dauerkarte: 24h Cooldown Logic
+                        // 3. Dauerkarte: 24h Cooldown
                         if (isSeason) {
                             const now = Date.now();
                             if (data.lastScannedAt) {
                                 const hoursPassed = (now - data.lastScannedAt) / (1000 * 60 * 60);
                                 if (hoursPassed < 24) {
                                     const hoursLeft = Math.ceil(24 - hoursPassed);
-                                    setScanResult({ status: 'used', msg: `Achtung! Dauerkarte wurde in den letzten 24h schon gescannt. (${data.name}) - Sperre für weitere ${hoursLeft}h.` });
+                                    setScanResult({ status: 'used', msg: `Dauerkarte wurde in den letzten 24h gescannt. (${data.name}) - Sperre: ${hoursLeft}h.` });
                                     return;
                                 }
                             }
-                            
                             await updateDoc(docRef, { lastScannedAt: now });
                             setScanResult({ status: 'valid', msg: `Dauerkarte gültig! Willkommen zurück, ${data.name}!` });
                             if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
                             return;
                         }
 
-                    } else {
-                        setScanResult({ status: 'invalid', msg: 'Ticket in Datenbank nicht gefunden!' });
-                    }
-                } catch(e) {
-                    setScanResult({ status: 'invalid', msg: 'Fehler beim Abrufen der Datenbank.' });
-                }
+                    } else { setScanResult({ status: 'invalid', msg: 'Ticket in Datenbank nicht gefunden!' }); }
+                } catch(e) { setScanResult({ status: 'invalid', msg: 'Fehler beim Abrufen der Datenbank.' }); }
             };
 
             const handleMarkAsPaid = async () => {
                 if(!scanResult?.id) return;
                 const { doc, updateDoc } = window.FB;
-                
                 const isSeason = scanResult.data.type === 'season';
                 const updateData = { paid: true, lastScannedAt: Date.now() };
-                
-                // Tageskarten sind nach dem Bezahlen direkt entwertet
-                if (!isSeason) {
-                    updateData.used = true;
-                }
+                if (!isSeason) updateData.used = true; // Tageskarten direkt nach Barzahlung werten
 
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
-                setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!` });
+                setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
                 if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
             };
 
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
-                    <header>
-                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Einlass-Scanner</h2>
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p>
-                    </header>
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Einlass-Scanner</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p></header>
                     
                     {!scannerActive && !scanResult && (
                         <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center">
@@ -460,9 +466,7 @@
                     {scannerActive && (
                         <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)]">
                             <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black"></div>
-                            <div className="mt-4 flex gap-2">
-                                <button onClick={stopScanner} className="flex-1 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
-                            </div>
+                            <button onClick={stopScanner} className="w-full mt-4 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
                         </div>
                     )}
 
@@ -470,10 +474,12 @@
                         <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl animate-slide-up ${scanResult.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
                             <RebelIcon name={scanResult.status === 'valid' ? 'check-circle' : scanResult.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
                             <h3 className="font-black text-xl uppercase mb-2">{scanResult.status === 'valid' ? 'Zutritt gewährt' : scanResult.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
-                            <p className="text-sm font-bold opacity-80 mb-6">{scanResult.msg}</p>
+                            <p className="text-sm font-bold opacity-80 mb-2">{scanResult.msg}</p>
+                            
+                            {scanResult.details && <div className="bg-black/30 p-2 rounded-lg text-xs font-black uppercase mb-6 border border-current opacity-80">{scanResult.details}</div>}
                             
                             {scanResult.status === 'unpaid' && (
-                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg">Geld erhalten & Entwerten</button>
+                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg">Als Bar Bezahlt markieren & Entwerten</button>
                             )}
                             
                             <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl">Nächstes scannen</button>
@@ -486,19 +492,13 @@
         const RebelCard = ({ member, goals = 0, mvpWins = 0, isMe }) => {
             const cardRef = useRef(null);
             const [rotate, setRotate] = useState({ x: 0, y: 0 });
-            
             const onMove = (e) => {
                 if (!cardRef.current) return;
                 const rect = cardRef.current.getBoundingClientRect();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                const x = clientX - rect.left;
-                const y = clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                setRotate({ x: ((y - centerY) / centerY) * -10, y: ((x - centerX) / centerX) * 10 });
+                setRotate({ x: (((clientY - rect.top) - rect.height / 2) / (rect.height / 2)) * -10, y: (((clientX - rect.left) - rect.width / 2) / (rect.width / 2)) * 10 });
             };
-
             const stats = { grip: member.grip || 85, vibe: member.vibe || 99, power: member.power || 88, soul: member.soul || 95 };
             const rating = Math.round((stats.grip + stats.vibe + stats.power + stats.soul) / 4);
 
@@ -518,14 +518,7 @@
                          <div className="mt-auto relative z-20" style={{transform: 'translateZ(30px)'}}>
                             <div className="px-5 pb-2 text-center">
                                 <h3 className="text-2xl rebel-font font-black italic uppercase leading-none truncate">{member.name}</h3>
-                                <div className="flex items-center justify-center gap-2 my-2">
-                                    <div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div>
-                                    <div className="flex flex-wrap items-center justify-center gap-1">
-                                        <span className="text-[10px] font-black text-[#FF007F] uppercase bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap">{goals} Tore 🔥</span>
-                                        {mvpWins > 0 && <span className="text-[10px] font-black text-yellow-500 uppercase bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 whitespace-nowrap">{mvpWins}x MVP 🏆</span>}
-                                    </div>
-                                    <div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div>
-                                </div>
+                                <div className="flex items-center justify-center gap-2 my-2"><div className="h-0.5 flex-grow bg-gradient-to-r from-transparent to-[#FF007F] opacity-50"></div><div className="flex flex-wrap items-center justify-center gap-1"><span className="text-[10px] font-black text-[#FF007F] uppercase bg-[#FF007F]/10 px-2 py-0.5 rounded-full border border-[#FF007F]/20 whitespace-nowrap">{goals} Tore 🔥</span>{mvpWins > 0 && <span className="text-[10px] font-black text-yellow-500 uppercase bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 whitespace-nowrap">{mvpWins}x MVP 🏆</span>}</div><div className="h-0.5 flex-grow bg-gradient-to-l from-transparent to-[#FF007F] opacity-50"></div></div>
                                 <p className="text-[9px] text-[#FF007F] font-black uppercase italic mb-1">"{member.motto || 'UNITED WE REBEL'}"</p>
                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">#{member.number || '??'}</p>
                             </div>
@@ -569,63 +562,41 @@
         const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme, schedule, mvpVotes, onVoteMvp }) => {
             const sizePoll = votesData['warmup_shirt_size'] || {};
             const pastGames = (schedule || []).filter(e => e.type === 'game' && new Date(e.date + 'T' + e.time) < new Date()).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
-
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Bestimme mit.</p></header>
-                    
                     <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-xl">
                         <div className="flex items-center gap-4 mb-6 text-white"><div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]"><RebelIcon name="shirt" size={28}/></div><div><h3 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Warmup-Shirt Größe</h3><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">Bestellung neue Saison</p></div></div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 border-white/5 text-white'}`}>{size}</button>)}
-                        </div>
+                        <div className="grid grid-cols-4 gap-2">{['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map(size => <button key={size} onClick={() => onVote('warmup_shirt_size', size)} className={`py-4 rounded-xl text-xs font-black uppercase border transition-all ${sizePoll[userId] === size ? 'bg-[#FF007F] text-white border-[#FF007F]' : 'bg-black/50 border-white/5 text-white'}`}>{size}</button>)}</div>
                         {isAdmin && <div className="mt-8 pt-6 border-t border-white/5 text-white"><h4 className="text-[10px] uppercase font-black text-[#FF007F] mb-4 tracking-widest text-center">Alle Stimmen:</h4><div className="grid grid-cols-1 gap-2">{Object.entries(sizePoll).map(([uid, val]) => (<div key={uid} className="flex justify-between items-center bg-black/30 p-3 rounded-xl border border-white/5 text-sm font-bold"><span>{SQUAD_DATA.find(s => s.id === uid)?.name}</span><span className="text-[#FF007F]">{val}</span></div>))}</div></div>}
                     </div>
-
                     {pastGames.length > 0 && (
                         <div className="space-y-6">
                             <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest px-2 mt-4">MVP der letzten Spiele</h3>
                             {pastGames.map(game => {
                                 const gameVotes = mvpVotes[`event_${game.id}`] || {};
                                 const myVote = gameVotes[userId];
-                                
                                 const counts = {};
                                 Object.values(gameVotes).forEach(pid => counts[pid] = (counts[pid] || 0) + 1);
                                 const totalVotes = Object.values(gameVotes).length;
-
                                 return (
                                     <div key={game.id} className="glass-card p-6 rounded-3xl border border-white/10 shadow-xl">
                                         <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h4 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>{game.label}</h4>
-                                                <p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">{new Date(game.date).toLocaleDateString('de-DE')}</p>
-                                            </div>
+                                            <div><h4 className={`rebel-font font-black italic text-lg uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>{game.label}</h4><p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold">{new Date(game.date).toLocaleDateString('de-DE')}</p></div>
                                             <RebelIcon name="award" className="text-yellow-500" size={24} />
                                         </div>
-
                                         {!myVote ? (
                                             <div className="space-y-3">
                                                 <p className="text-xs font-bold text-zinc-400">Wer war die Rebellin des Spiels?</p>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {SQUAD_DATA.map(p => (
-                                                        <button key={p.id} onClick={() => onVoteMvp(game.id, p.id)} className="bg-black/50 border border-white/5 text-white p-3 rounded-xl text-xs font-black italic uppercase hover:border-[#FF007F] hover:text-[#FF007F] transition-all truncate text-left">
-                                                            {p.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">{SQUAD_DATA.map(p => (<button key={p.id} onClick={() => onVoteMvp(game.id, p.id)} className="bg-black/50 border border-white/5 text-white p-3 rounded-xl text-xs font-black italic uppercase hover:border-[#FF007F] hover:text-[#FF007F] transition-all truncate text-left">{p.name}</button>))}</div>
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
                                                 <p className="text-[10px] font-black uppercase text-yellow-500 tracking-widest">Aktueller Stand:</p>
                                                 {Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([pid, c]) => (
                                                     <div key={pid} className="flex flex-col gap-1">
-                                                        <div className="flex justify-between text-[10px] font-black uppercase text-white">
-                                                            <span>{SQUAD_DATA.find(s=>s.id===pid)?.name} {myVote === pid && <span className="text-[#FF007F]">(Deine Wahl)</span>}</span>
-                                                            <span>{c} {c === 1 ? 'Stimme' : 'Stimmen'}</span>
-                                                        </div>
-                                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-yellow-500 shadow-[0_0_5px_currentColor]" style={{width: `${(c/totalVotes)*100}%`}}></div>
-                                                        </div>
+                                                        <div className="flex justify-between text-[10px] font-black uppercase text-white"><span>{SQUAD_DATA.find(s=>s.id===pid)?.name} {myVote === pid && <span className="text-[#FF007F]">(Deine Wahl)</span>}</span><span>{c} {c === 1 ? 'Stimme' : 'Stimmen'}</span></div>
+                                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-yellow-500 shadow-[0_0_5px_currentColor]" style={{width: `${(c/totalVotes)*100}%`}}></div></div>
                                                     </div>
                                                 ))}
                                                 <p className="text-[8px] text-zinc-600 uppercase text-center mt-2 italic">Voting ist anonym.</p>
@@ -645,16 +616,13 @@
             const [selectedProduct, setSelectedProduct] = useState(null);
             const [selectedSize, setSelectedSize] = useState('');
             const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
-
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
                     <header className="flex justify-between items-end">
                         <div><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Store</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Look like a Pro.</p></div>
                         <button onClick={onOpenCart} className="relative p-3 bg-[#FF007F]/10 text-[#FF007F] rounded-xl border border-[#FF007F]/20"><RebelIcon name="shopping-cart" size={24} />{cartCount > 0 && <span className="absolute -top-2 -right-2 bg-[#FF007F] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg">{cartCount}</span>}</button>
                     </header>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                        {[{id:'all', l:'Alles'}, {id:'fashion', l:'Fashion'}, {id:'access', l:'Accessoires'}].map(f => (<button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap border transition-all ${filter === f.id ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-800'}`}>{f.l}</button>))}
-                    </div>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar">{[{id:'all', l:'Alles'}, {id:'fashion', l:'Fashion'}, {id:'access', l:'Accessoires'}].map(f => (<button key={f.id} onClick={() => setFilter(f.id)} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap border transition-all ${filter === f.id ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-800'}`}>{f.l}</button>))}</div>
                     <div className="grid grid-cols-2 gap-4">
                         {filtered.map(p => (
                             <div key={p.id} onClick={() => { setSelectedProduct(p); setSelectedSize(p.sizes[0]); }} className="group shop-card-hover bg-black/40 border border-white/5 rounded-2xl overflow-hidden relative cursor-pointer">
@@ -682,23 +650,17 @@
         const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId }) => {
             const [activeSubTab, setActiveSubTab] = useState('status');
             const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
-
             const paidFinesTotal = useMemo(() => fines.filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
             const otherIncomeTotal = useMemo(() => transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
             const expensesTotal = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
-            
             const currentBalance = (paidFinesTotal + otherIncomeTotal) - expensesTotal;
             const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
 
-            if(!isAdmin) return null; // Kasse nur für Admins
+            if(!isAdmin) return null;
 
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
-                    <header>
-                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Kasse</h2>
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Admin Finanz-Zentrale</p>
-                    </header>
-
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Kasse</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Admin Finanz-Zentrale</p></header>
                     <div className="grid grid-cols-1 gap-4">
                         <div className="glass-card p-8 rounded-[2.5rem] border-[#FF007F]/30 shadow-[0_0_40px_rgba(255,0,127,0.1)] text-center relative overflow-hidden">
                              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FF007F] to-transparent opacity-50"></div>
@@ -711,7 +673,6 @@
                              </div>
                         </div>
                     </div>
-
                     <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
                         <button onClick={() => setActiveSubTab('status')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='status'?'bg-white text-black':'text-zinc-500'}`}>Übersicht</button>
                         <button onClick={() => setActiveSubTab('log')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='log'?'bg-white text-black':'text-zinc-500'}`}>Buchungen bearbeiten</button>
@@ -729,23 +690,15 @@
                                     <button onClick={() => setNewTrans({...newTrans, type: 'income'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='income'?'bg-green-500/20 border-green-500 text-green-500':'bg-black text-zinc-600 border-white/5'}`}>Einnahme</button>
                                     <button onClick={() => setNewTrans({...newTrans, type: 'expense'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='expense'?'bg-red-500/20 border-red-500 text-red-500':'bg-black text-zinc-600 border-white/5'}`}>Ausgabe</button>
                                 </div>
-                                <button onClick={() => {
-                                    if(!newTrans.label || !newTrans.amount) return;
-                                    onAddTransaction(newTrans);
-                                    setNewTrans({ label: '', amount: '', type: 'income' });
-                                }} className="w-full bg-white text-black py-3 rounded-xl font-black uppercase text-[10px]">Buchen</button>
+                                <button onClick={() => { if(!newTrans.label || !newTrans.amount) return; onAddTransaction(newTrans); setNewTrans({ label: '', amount: '', type: 'income' }); }} className="w-full bg-white text-black py-3 rounded-xl font-black uppercase text-[10px]">Buchen</button>
                             </section>
-
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Top Schuldner (Rebel Schulden)</h3>
                                 {SQUAD_DATA.map(s => {
                                     const debt = fines.filter(f => f.playerId === s.id && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
                                     if(debt === 0) return null;
                                     return (
-                                        <div key={s.id} className="bg-black/40 p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                            <span className="text-xs font-black text-white italic">{s.name}</span>
-                                            <span className="text-sm font-black text-[#FF007F]">{debt} €</span>
-                                        </div>
+                                        <div key={s.id} className="bg-black/40 p-4 rounded-2xl flex justify-between items-center border border-white/5"><span className="text-xs font-black text-white italic">{s.name}</span><span className="text-sm font-black text-[#FF007F]">{debt} €</span></div>
                                     );
                                 })}
                             </div>
@@ -758,20 +711,10 @@
                                 .sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
                                 .map((t, i) => (
                                     <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                        <div>
-                                            <p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p>
-                                            <p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p>
-                                        </div>
+                                        <div><p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p><p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p></div>
                                         <div className="flex items-center gap-3 shrink-0">
-                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
-                                                {t.type==='income'?'+':'-'} {t.amount} €
-                                            </span>
-                                            <button onClick={() => {
-                                                if(t.isFine) onUnpayFine(t.id);
-                                                else onDeleteTransaction(t.id);
-                                            }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors">
-                                                <RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/>
-                                            </button>
+                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>{t.type==='income'?'+':'-'} {t.amount} €</span>
+                                            <button onClick={() => { if(t.isFine) onUnpayFine(t.id); else onDeleteTransaction(t.id); }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors"><RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/></button>
                                         </div>
                                     </div>
                                 ))
@@ -786,8 +729,6 @@
             const [selectedPlayer, setSelectedPlayer] = useState('');
             const [selectedReason, setSelectedReason] = useState(FINE_CATALOG[0].id);
             const myDebt = useMemo(() => fines.filter(f => f.playerId === myId && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines, myId]);
-            
-            // Hall of Shame (Top Schulden)
             const leaderboard = useMemo(() => {
                 const map = {};
                 fines.filter(f => !f.paid).forEach(f => map[f.playerId] = (map[f.playerId] || 0) + f.amount);
@@ -796,24 +737,18 @@
 
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
-                    <header>
-                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2>
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p>
-                    </header>
-
+                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p></header>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 bg-gradient-to-br from-[#FF007F]/10 to-transparent">
                             <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine offenen Strafen</p>
                             <p className="text-4xl font-black italic text-white">{myDebt} €</p>
                         </div>
-                        
                         <div className="glass-card p-6 rounded-3xl border-white/5 shadow-xl">
                             <p className="text-[10px] font-black uppercase text-zinc-500 mb-3">Hall of Shame 👑</p>
                             <div className="space-y-2">
                                 {leaderboard.slice(0,3).map((l, i) => (
                                     <div key={i} className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
-                                        <span className="text-xs font-black italic text-white">{i+1}. {l.name}</span>
-                                        <span className="text-xs font-black text-[#FF007F]">{l.sum} €</span>
+                                        <span className="text-xs font-black italic text-white">{i+1}. {l.name}</span><span className="text-xs font-black text-[#FF007F]">{l.sum} €</span>
                                     </div>
                                 ))}
                             </div>
@@ -824,18 +759,9 @@
                         <section className="glass-card p-6 rounded-3xl border-[#FF007F]/30 bg-black/40 space-y-4">
                             <h3 className="rebel-font font-black italic text-sm text-[#FF007F] uppercase">Strafe verteilen</h3>
                             <div className="grid grid-cols-1 gap-3">
-                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
-                                    <option value="">Spielerin wählen</option>
-                                    {SQUAD_DATA.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
-                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedReason} onChange={e => setSelectedReason(e.target.value)}>
-                                    {FINE_CATALOG.map(f => <option key={f.id} value={f.id}>{f.label} ({f.price}€)</option>)}
-                                </select>
-                                <button onClick={() => {
-                                    if(!selectedPlayer) return alert('Wähle eine Rebellin!');
-                                    const item = FINE_CATALOG.find(f => f.id === selectedReason);
-                                    onAddFine(selectedPlayer, item.label, item.price);
-                                }} className="bg-[#FF007F] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Buchen</button>
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}><option value="">Spielerin wählen</option>{SQUAD_DATA.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                <select className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={selectedReason} onChange={e => setSelectedReason(e.target.value)}>{FINE_CATALOG.map(f => <option key={f.id} value={f.id}>{f.label} ({f.price}€)</option>)}</select>
+                                <button onClick={() => { if(!selectedPlayer) return alert('Wähle eine Rebellin!'); const item = FINE_CATALOG.find(f => f.id === selectedReason); onAddFine(selectedPlayer, item.label, item.price); }} className="bg-[#FF007F] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Buchen</button>
                             </div>
                         </section>
                     )}
@@ -845,14 +771,8 @@
                         <div className="space-y-2">
                             {fines.filter(f => !f.paid).map(f => (
                                 <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                    <div>
-                                        <p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p>
-                                        <p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-sm font-black text-white">{f.amount} €</span>
-                                        {isAdmin && <button onClick={() => onPayFine(f.id)} className="p-2 bg-green-500/20 text-green-500 rounded-lg"><RebelIcon name="check" size={16}/></button>}
-                                    </div>
+                                    <div><p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p><p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p></div>
+                                    <div className="flex items-center gap-4"><span className="text-sm font-black text-white">{f.amount} €</span>{isAdmin && <button onClick={() => onPayFine(f.id)} className="p-2 bg-green-500/20 text-green-500 rounded-lg"><RebelIcon name="check" size={16}/></button>}</div>
                                 </div>
                             ))}
                         </div>
@@ -872,14 +792,15 @@
                 return (schedule || []).find(e => e.type === 'game' && new Date(e.date) >= now && new Date(e.date) <= dayEnd);
             }, [schedule]);
 
-            const nextTraining = useMemo(() => {
+            // Nächstes Event finden (egal ob Training oder Spiel)
+            const nextEvent = useMemo(() => {
                 const now = new Date();
                 return (schedule || [])
-                    .filter(e => e.type === 'training' && new Date(e.date + 'T' + e.time) >= now)
+                    .filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now)
                     .sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
 
-            const hasVotedForNextTraining = nextTraining ? votesData[`event_${nextTraining.id}`]?.[me.id] : null;
+            const hasVotedForNextEvent = nextEvent ? votesData[`event_${nextEvent.id}`]?.[me.id] : null;
 
             useEffect(() => {
                 if (!matchDayEvent) return;
@@ -905,14 +826,19 @@
 
             return (
                 <div className="space-y-8 pb-10">
-                    {nextTraining && !hasVotedForNextTraining && (
-                        <div className="bg-[#FF007F]/10 border border-[#FF007F]/30 p-6 rounded-3xl space-y-4 animate-slide-up text-center shadow-xl">
-                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">Nächstes Training</h4>
-                            <p className={`font-black italic text-xl ${theme==='light'?'text-black':'text-white'}`}>{new Date(nextTraining.date).toLocaleDateString('de-DE')} | {nextTraining.time} Uhr</p>
+                    {nextEvent && !hasVotedForNextEvent && (
+                        <div className={`bg-[#FF007F]/10 border border-[#FF007F]/30 p-6 rounded-3xl space-y-4 animate-slide-up text-center shadow-xl`}>
+                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">
+                                Nächstes Event: {nextEvent.type === 'game' ? 'Spiel' : 'Training'}
+                            </h4>
+                            <p className={`font-black italic text-xl ${theme==='light'?'text-black':'text-white'}`}>
+                                {nextEvent.label} <br/>
+                                <span className="text-sm">{new Date(nextEvent.date).toLocaleDateString('de-DE')} | {nextEvent.time} Uhr</span>
+                            </p>
                             <p className="text-xs text-zinc-400 font-bold mb-2">Bist du am Start, {me.name}?</p>
                             <div className="grid grid-cols-3 gap-2">
                                 {['Dabei', 'Nein', 'Maybe'].map(opt => (
-                                    <button key={opt} onClick={() => onVote(nextTraining.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
+                                    <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
                                         {opt}
                                     </button>
                                 ))}
@@ -1366,7 +1292,7 @@
 
             if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /></div> );
             
-            if (showPublicShop) return <PublicTicketShop db={db} onBack={() => setShowPublicShop(false)} />;
+            if (showPublicShop) return <PublicTicketShop db={db} schedule={schedule} onBack={() => setShowPublicShop(false)} />;
 
             if (!user) return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
