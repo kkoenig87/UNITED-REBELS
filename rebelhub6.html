@@ -21,6 +21,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,800;0,900;1,100;1,800;1,900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 
@@ -70,6 +71,10 @@
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FF007F; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255,0,127,0.8); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* Scanner specific styles */
+        #qr-reader { border-radius: 1rem; overflow: hidden; border: 2px solid #FF007F; }
+        #qr-reader__scan_region video { object-fit: cover; }
     </style>
 </head>
 <body class="dark no-scrollbar">
@@ -78,8 +83,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query };
+        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc };
     </script>
 
     <script type="text/babel">
@@ -167,13 +172,138 @@
         };
 
         const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] flex-grow shrink-0 ${active ? 'text-[#FF007F] scale-110 drop-shadow-[0_0_12px_rgba(255,0,127,0.6)]' : 'text-zinc-600 hover:text-zinc-400'}`}>
                 <RebelIcon name={icon} size={22} />
                 <span className="text-[8px] font-black uppercase tracking-widest mt-1">{label}</span>
             </button>
         );
 
+        // --- PUBLIC TICKET SHOP ---
+        const PublicTicketShop = ({ db, onBack }) => {
+            const [buyer, setBuyer] = useState({ name: '', email: '', type: 'day' });
+            const [ticketId, setTicketId] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleBuy = async (e) => {
+                e.preventDefault();
+                if(!db || !buyer.name || !buyer.email) return;
+                setLoading(true);
+                try {
+                    const { collection, addDoc, serverTimestamp } = window.FB;
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), {
+                        ...buyer,
+                        used: false,
+                        timestamp: serverTimestamp()
+                    });
+                    setTicketId(docRef.id);
+                    if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                } catch(err) { alert('Fehler beim Kauf.'); }
+                setLoading(false);
+            };
+
+            if (ticketId) {
+                return (
+                    <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
+                        <div className="bg-[#111] border border-[#FF007F]/30 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(255,0,127,0.2)] max-w-sm w-full text-center">
+                            <h2 className="rebel-font font-black italic text-3xl uppercase mb-2">Dein Ticket</h2>
+                            <p className="text-zinc-400 text-xs mb-8 uppercase tracking-widest">{buyer.type === 'day' ? 'Tageskarte' : 'Dauerkarte'}</p>
+                            <div className="bg-white p-4 rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6">
+                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${ticketId}`} alt="QR Code" className="w-full h-full" />
+                            </div>
+                            <p className="font-bold text-lg">{buyer.name}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Bitte zeige diesen Code am Eingang vor.</p>
+                            <button onClick={onBack} className="mt-8 text-[#FF007F] font-black uppercase text-xs tracking-widest underline">Zurück zum Start</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
+                    <button onClick={onBack} className="absolute top-6 left-6 text-zinc-500"><RebelIcon name="arrow-left" size={28}/></button>
+                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-white/5 shadow-2xl">
+                        <div className="flex justify-center mb-6"><RebelIcon name="ticket" size={48} className="text-[#FF007F]" /></div>
+                        <h1 className="text-2xl font-black italic text-center uppercase mb-8">Fan-Tickets</h1>
+                        <form onSubmit={handleBuy} className="space-y-4">
+                            <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5 mb-6">
+                                <button type="button" onClick={() => setBuyer({...buyer, type: 'day'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='day'?'bg-[#FF007F] text-white':'text-zinc-500'}`}>Tageskarte (5€)</button>
+                                <button type="button" onClick={() => setBuyer({...buyer, type: 'season'})} className={`flex-1 py-3 rounded-lg text-xs font-black uppercase transition-all ${buyer.type==='season'?'bg-white text-black':'text-zinc-500'}`}>Dauerkarte (40€)</button>
+                            </div>
+                            <input type="text" placeholder="Dein Name" required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-[#FF007F]" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} />
+                            <input type="email" placeholder="Deine E-Mail" required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-[#FF007F]" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} />
+                            <button type="submit" disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(255,0,127,0.4)]">
+                                {loading ? 'Generiere...' : 'Ticket sichern'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
         // --- CORE VIEWS ---
+
+        const TicketScannerView = ({ db, theme }) => {
+            const [scanResult, setScanResult] = useState(null);
+            const [scannerActive, setScannerActive] = useState(true);
+
+            useEffect(() => {
+                if(!scannerActive || !window.Html5QrcodeScanner) return;
+                const scanner = new window.Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+                scanner.render(async (decodedText) => {
+                    scanner.clear();
+                    setScannerActive(false);
+                    verifyTicket(decodedText);
+                }, (err) => {});
+                return () => { scanner.clear().catch(e => {}); };
+            }, [scannerActive]);
+
+            const verifyTicket = async (id) => {
+                try {
+                    const { doc, getDoc, updateDoc } = window.FB;
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tickets', id);
+                    const docSnap = await getDoc(docRef);
+                    if(docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.type === 'season') {
+                            setScanResult({ status: 'valid', msg: `Dauerkarte gültig! Besitzer: ${data.name}` });
+                        } else if (data.used) {
+                            setScanResult({ status: 'used', msg: `Achtung! Ticket wurde bereits entwertet. (${data.name})` });
+                        } else {
+                            await updateDoc(docRef, { used: true });
+                            setScanResult({ status: 'valid', msg: `Tageskarte entwertet! Viel Spaß, ${data.name}!` });
+                            if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
+                        }
+                    } else {
+                        setScanResult({ status: 'invalid', msg: 'Ticket in Datenbank nicht gefunden!' });
+                    }
+                } catch(e) {
+                    setScanResult({ status: 'invalid', msg: 'Fehler beim Abrufen der Datenbank.' });
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-slide-up pb-20">
+                    <header>
+                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Einlass-Scanner</h2>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p>
+                    </header>
+                    
+                    {scannerActive ? (
+                        <div className="bg-black p-4 rounded-3xl border border-white/10 shadow-xl">
+                            <div id="qr-reader" className="w-full"></div>
+                            <p className="text-center text-[10px] text-zinc-500 uppercase mt-4 tracking-widest">Kamera auf QR-Code richten</p>
+                        </div>
+                    ) : (
+                        <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl ${scanResult?.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult?.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
+                            <RebelIcon name={scanResult?.status === 'valid' ? 'check-circle' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
+                            <h3 className="font-black text-xl uppercase mb-2">{scanResult?.status === 'valid' ? 'Zutritt gewährt' : 'Kein Zutritt'}</h3>
+                            <p className="text-sm font-bold opacity-80">{scanResult?.msg}</p>
+                            <button onClick={() => { setScanResult(null); setScannerActive(true); }} className="mt-8 bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full">Nächstes Ticket</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
         const RebelCard = ({ member, goals = 0, mvpWins = 0, isMe }) => {
             const cardRef = useRef(null);
@@ -371,7 +501,7 @@
             );
         };
 
-        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, myId }) => {
+        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId }) => {
             const [activeSubTab, setActiveSubTab] = useState('status');
             const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
 
@@ -382,11 +512,13 @@
             const currentBalance = (paidFinesTotal + otherIncomeTotal) - expensesTotal;
             const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
 
+            if(!isAdmin) return null; // Kasse nur für Admins
+
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
                     <header>
                         <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Rebel Kasse</h2>
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Finanz-Zentrale</p>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Admin Finanz-Zentrale</p>
                     </header>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -404,29 +536,27 @@
 
                     <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
                         <button onClick={() => setActiveSubTab('status')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='status'?'bg-white text-black':'text-zinc-500'}`}>Übersicht</button>
-                        <button onClick={() => setActiveSubTab('log')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='log'?'bg-white text-black':'text-zinc-500'}`}>Buchungen</button>
+                        <button onClick={() => setActiveSubTab('log')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${activeSubTab==='log'?'bg-white text-black':'text-zinc-500'}`}>Buchungen bearbeiten</button>
                     </div>
 
                     {activeSubTab === 'status' && (
                         <div className="space-y-6">
-                            {isAdmin && (
-                                <section className="glass-card p-6 rounded-3xl border-white/10 bg-black/20 space-y-4">
-                                    <h3 className="rebel-font font-black italic text-xs text-white uppercase">Neue Buchung</h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input type="text" placeholder="Zweck (z.B. Pizza)" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} />
-                                        <input type="number" placeholder="Betrag €" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.amount} onChange={e => setNewTrans({...newTrans, amount: e.target.value})} />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setNewTrans({...newTrans, type: 'income'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='income'?'bg-green-500/20 border-green-500 text-green-500':'bg-black text-zinc-600 border-white/5'}`}>Einnahme</button>
-                                        <button onClick={() => setNewTrans({...newTrans, type: 'expense'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='expense'?'bg-red-500/20 border-red-500 text-red-500':'bg-black text-zinc-600 border-white/5'}`}>Ausgabe</button>
-                                    </div>
-                                    <button onClick={() => {
-                                        if(!newTrans.label || !newTrans.amount) return;
-                                        onAddTransaction(newTrans);
-                                        setNewTrans({ label: '', amount: '', type: 'income' });
-                                    }} className="w-full bg-white text-black py-3 rounded-xl font-black uppercase text-[10px]">Buchen</button>
-                                </section>
-                            )}
+                            <section className="glass-card p-6 rounded-3xl border-white/10 bg-black/20 space-y-4">
+                                <h3 className="rebel-font font-black italic text-xs text-white uppercase">Neue Buchung</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="text" placeholder="Zweck (z.B. Pizza)" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} />
+                                    <input type="number" placeholder="Betrag €" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none" value={newTrans.amount} onChange={e => setNewTrans({...newTrans, amount: e.target.value})} />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setNewTrans({...newTrans, type: 'income'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='income'?'bg-green-500/20 border-green-500 text-green-500':'bg-black text-zinc-600 border-white/5'}`}>Einnahme</button>
+                                    <button onClick={() => setNewTrans({...newTrans, type: 'expense'})} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${newTrans.type==='expense'?'bg-red-500/20 border-red-500 text-red-500':'bg-black text-zinc-600 border-white/5'}`}>Ausgabe</button>
+                                </div>
+                                <button onClick={() => {
+                                    if(!newTrans.label || !newTrans.amount) return;
+                                    onAddTransaction(newTrans);
+                                    setNewTrans({ label: '', amount: '', type: 'income' });
+                                }} className="w-full bg-white text-black py-3 rounded-xl font-black uppercase text-[10px]">Buchen</button>
+                            </section>
 
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Top Schuldner (Rebel Schulden)</h3>
@@ -446,17 +576,25 @@
 
                     {activeSubTab === 'log' && (
                         <div className="space-y-3">
-                            {[...transactions, ...fines.filter(f => f.paid).map(f => ({ ...f, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` }))]
+                            {[...transactions.map(t => ({...t, isFine: false})), ...fines.filter(f => f.paid).map(f => ({ ...f, isFine: true, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` }))]
                                 .sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
                                 .map((t, i) => (
                                     <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/5">
                                         <div>
-                                            <p className="text-xs font-black text-white">{t.label || t.reason}</p>
+                                            <p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p>
                                             <p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p>
                                         </div>
-                                        <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
-                                            {t.type==='income'?'+':'-'} {t.amount} €
-                                        </span>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
+                                                {t.type==='income'?'+':'-'} {t.amount} €
+                                            </span>
+                                            <button onClick={() => {
+                                                if(t.isFine) onUnpayFine(t.id);
+                                                else onDeleteTransaction(t.id);
+                                            }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors">
+                                                <RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/>
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             }
@@ -471,6 +609,13 @@
             const [selectedReason, setSelectedReason] = useState(FINE_CATALOG[0].id);
             const myDebt = useMemo(() => fines.filter(f => f.playerId === myId && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines, myId]);
             
+            // Hall of Shame (Top Schulden)
+            const leaderboard = useMemo(() => {
+                const map = {};
+                fines.filter(f => !f.paid).forEach(f => map[f.playerId] = (map[f.playerId] || 0) + f.amount);
+                return Object.entries(map).map(([id, sum]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', sum })).sort((a,b) => b.sum - a.sum);
+            }, [fines]);
+
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
                     <header>
@@ -478,9 +623,23 @@
                         <p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p>
                     </header>
 
-                    <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 bg-gradient-to-br from-[#FF007F]/10 to-transparent">
-                        <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine offenen Strafen</p>
-                        <p className="text-4xl font-black italic text-white">{myDebt} €</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="glass-card p-6 rounded-3xl border-[#FF007F]/20 bg-gradient-to-br from-[#FF007F]/10 to-transparent">
+                            <p className="text-[10px] font-black uppercase text-[#FF007F] mb-1">Deine offenen Strafen</p>
+                            <p className="text-4xl font-black italic text-white">{myDebt} €</p>
+                        </div>
+                        
+                        <div className="glass-card p-6 rounded-3xl border-white/5 shadow-xl">
+                            <p className="text-[10px] font-black uppercase text-zinc-500 mb-3">Hall of Shame 👑</p>
+                            <div className="space-y-2">
+                                {leaderboard.slice(0,3).map((l, i) => (
+                                    <div key={i} className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                                        <span className="text-xs font-black italic text-white">{i+1}. {l.name}</span>
+                                        <span className="text-xs font-black text-[#FF007F]">{l.sum} €</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {isAdmin && (
@@ -504,7 +663,7 @@
                     )}
 
                     <section className="space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Aktuelle Sünden</h3>
+                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Offene Posten (Team)</h3>
                         <div className="space-y-2">
                             {fines.filter(f => !f.paid).map(f => (
                                 <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
@@ -849,7 +1008,8 @@
             );
         };
 
-        const App = () => {
+        const AppWrapper = () => {
+            const [showPublicShop, setShowPublicShop] = useState(false);
             const [user, setUser] = useState(null); 
             const [activeTab, setActiveTab] = useState('dashboard');
             const [loginData, setLoginData] = useState({ id: '', pw: '' });
@@ -898,7 +1058,7 @@
             }, []);
 
             useEffect(() => {
-                if (!db || !user || !window.FB) return;
+                if (!db || !window.FB) return;
                 const { collection, onSnapshot, doc } = window.FB;
                 
                 const unsubVotes = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'team_votes'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setVotesData(d); });
@@ -912,7 +1072,7 @@
                 const unsubMvp = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'mvp_votes'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setMvpVotes(d); });
                 const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), snap => { if(snap.exists()) setAnnouncement(snap.data().text || ""); });
                 return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); };
-            }, [db, user]);
+            }, [db]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
 
@@ -929,10 +1089,22 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { paid: true });
             };
 
+            const handleUnpayFine = async (fId) => {
+                if(!db) return;
+                const { doc, updateDoc } = window.FB;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { paid: false });
+            };
+
             const handleAddTransaction = async (t) => {
                 if(!db) return;
                 const { collection, addDoc, serverTimestamp } = window.FB;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'treasury'), { ...t, timestamp: serverTimestamp() });
+            };
+
+            const handleDeleteTransaction = async (tId) => {
+                if(!db) return;
+                const { doc, deleteDoc } = window.FB;
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'treasury', tId));
             };
 
             const handleVoteMvp = async (eventId, playerId) => {
@@ -991,7 +1163,31 @@
             }, [mvpVotes]);
 
             if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /></div> );
-            if (!user) return ( <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]"><div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center"><RebelLogo className="w-24 h-24 mx-auto mb-8" /><form onSubmit={handleLogin} className="space-y-6"><select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={e => setLoginData({...loginData, id: e.target.value})}><option value="" disabled>Identität wählen</option>{SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select><input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={e => setLoginData({...loginData, pw: e.target.value})}/><button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest">Anmelden</button></form></div></div> );
+            
+            if (showPublicShop) return <PublicTicketShop db={db} onBack={() => setShowPublicShop(false)} />;
+
+            if (!user) return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
+                    <div className="w-full max-w-md bg-[#111] p-10 rounded-[3rem] border border-[#FF007F]/20 shadow-2xl animate-slide-up text-center">
+                        <RebelLogo className="w-24 h-24 mx-auto mb-8" />
+                        <form onSubmit={handleLogin} className="space-y-6 mb-8">
+                            <select className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white outline-none appearance-none" value={loginData.id} onChange={e => setLoginData({...loginData, id: e.target.value})}>
+                                <option value="" disabled>Identität wählen</option>
+                                {SQUAD_DATA.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                            <input type="password" placeholder="Passwort" className="w-full bg-black border border-zinc-800 rounded-2xl py-4 px-5 text-white text-center outline-none focus:border-[#FF007F]" value={loginData.pw} onChange={e => setLoginData({...loginData, pw: e.target.value})}/>
+                            {loginError && <p className="text-[#FF007F] text-xs font-bold">{loginError}</p>}
+                            <button type="submit" className="w-full bg-[#FF007F] text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">Anmelden</button>
+                        </form>
+                        <div className="border-t border-white/10 pt-8">
+                            <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mb-4">Zuschauer & Fans</p>
+                            <button onClick={() => setShowPublicShop(true)} className="w-full bg-white text-black font-black py-4 rounded-2xl uppercase tracking-widest flex justify-center items-center gap-2">🎟️ Fan-Tickets kaufen</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const isAdmin = user.id === 'hc' || user.id === 'tm';
 
             return (
                 <div className={`min-h-screen pb-32 transition-all duration-500 ${theme === 'light' ? 'bg-[#f4f4f5] text-[#18181b]' : 'bg-[#050505] text-zinc-300'}`}>
@@ -1000,14 +1196,15 @@
                         <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
                     </header>
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={user.id==='hc'||user.id==='tm'} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
+                        {activeTab === 'dashboard' && <DashboardView me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} />}
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} />}
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={user.id==='hc'||user.id==='tm'} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />}
+                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />}
                         {activeTab === 'shop' && <FanShopView theme={theme} products={SHOP_PRODUCTS} onAddToCart={addToCart} cartCount={cart.length} onOpenCart={() => setIsCartOpen(true)} />}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
-                        {activeTab === 'treasury' && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={user.id==='hc'||user.id==='tm'} onAddTransaction={handleAddTransaction} myId={user.id} />}
-                        {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={user.id==='hc'||user.id==='tm'} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
+                        {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
+                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} />}
+                        {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
                     </main>
 
@@ -1046,17 +1243,17 @@
                         <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} />
                         <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
-                        <NavButton icon="shopping-bag" label="Shop" active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
-                        <NavButton icon="map-pin" label="Base" active={activeTab === 'base'} onClick={() => setActiveTab('base')} />
                         <NavButton icon="clipboard-list" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
-                        <NavButton icon="euro" label="Kasse" active={activeTab === 'treasury'} onClick={() => setActiveTab('treasury')} />
+                        {isAdmin && <NavButton icon="qr-code" label="Scanner" active={activeTab === 'scanner'} onClick={() => setActiveTab('scanner')} />}
+                        {isAdmin && <NavButton icon="euro" label="Kasse" active={activeTab === 'treasury'} onClick={() => setActiveTab('treasury')} />}
                         <NavButton icon="user-cog" label="Settings" active={activeTab === 'profil'} onClick={() => setActiveTab('profil')} />
                     </nav>
                 </div>
             );
         };
         
+        const App = () => <AppWrapper />;
         const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
 </body>
