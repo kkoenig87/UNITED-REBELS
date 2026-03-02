@@ -22,6 +22,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script type="text/javascript">
@@ -81,7 +82,6 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FF007F; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(255,0,127,0.8); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-        /* Neuer Scanner Style */
         #reader { border-radius: 1rem; overflow: hidden; border: 2px solid #FF007F; }
         #reader video { object-fit: cover; }
     </style>
@@ -193,23 +193,32 @@
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
 
+            // NEU: Snapshot des Ticket-Kartendesigns erstellen und herunterladen
             const handleDownloadQR = async () => {
-                const url = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${ticketId}`;
+                setLoading(true);
                 try {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    const blobUrl = window.URL.createObjectURL(blob);
+                    const element = document.getElementById('ticket-card-element');
+                    if (!element) return;
+                    
+                    const canvas = await window.html2canvas(element, {
+                        backgroundColor: '#111111', 
+                        scale: 3, // Hohe Auflösung
+                        useCORS: true,
+                        allowTaint: true
+                    });
+                    
+                    const image = canvas.toDataURL("image/png");
                     const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = `Rebel_Ticket_${buyer.name.replace(/\s+/g, '_')}.png`;
+                    link.href = image;
+                    link.download = `Rebels_${buyer.type === 'day' ? 'Tageskarte' : 'Dauerkarte'}_${buyer.name.replace(/\s+/g, '_')}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    window.URL.revokeObjectURL(blobUrl);
-                } catch (e) {
-                    // Fallback, falls das iPhone den Blob-Download blockiert
-                    window.open(url, '_blank'); 
+                } catch (err) {
+                    console.error("Fehler beim Speichern:", err);
+                    alert("Screenshot Fehler. Bitte mache manuell einen Screenshot vom Ticket.");
                 }
+                setLoading(false);
             };
 
             const handleBuy = async (e) => {
@@ -234,7 +243,7 @@
                         try {
                             await window.emailjs.send(
                                 "service_1clvlbc", 
-                                "template_vrawvqs", // DEINE TEMPLATE ID
+                                "template_vrawvqs", 
                                 {
                                     to_name: buyer.name,
                                     reply_to: buyer.email, 
@@ -257,23 +266,33 @@
             if (ticketId) {
                 return (
                     <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center animate-slide-up text-white">
-                        <div className="bg-[#111] border border-[#FF007F]/30 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(255,0,127,0.2)] max-w-sm w-full text-center">
-                            <h2 className="rebel-font font-black italic text-3xl uppercase mb-2">Dein Ticket</h2>
-                            <p className="text-zinc-400 text-xs mb-6 uppercase tracking-widest">{buyer.type === 'day' ? 'Tageskarte' : 'Dauerkarte'}</p>
+                        
+                        {/* DAS TICKET (Wird als Bild gespeichert) */}
+                        <div id="ticket-card-element" className="bg-[#111] border border-[#FF007F]/50 p-8 rounded-[2rem] shadow-[0_0_40px_rgba(255,0,127,0.3)] max-w-sm w-full text-center relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-[#FF007F] to-purple-600"></div>
+                            
+                            <h2 className="rebel-font font-black italic text-2xl uppercase mb-1 mt-2 text-white">UNITED REBELS</h2>
+                            <p className="text-[#FF007F] text-sm mb-6 uppercase tracking-widest font-black">{buyer.type === 'day' ? '🎟️ Tageskarte' : '👑 Dauerkarte'}</p>
                             
                             <div className="bg-white p-4 rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6 shadow-xl">
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${ticketId}`} alt="QR Code" className="w-full h-full" />
+                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${ticketId}`} alt="QR Code" className="w-full h-full" crossOrigin="anonymous" />
                             </div>
                             
-                            <p className="font-bold text-lg">{buyer.name}</p>
-                            <p className="text-[#FF007F] font-black mt-2 text-xl">An Kasse zahlen: {buyer.type === 'day' ? '5 €' : '40 €'}</p>
-                            
-                            <button onClick={handleDownloadQR} className="w-full bg-white text-black font-black py-4 rounded-xl uppercase tracking-widest mt-6 flex items-center justify-center gap-2 shadow-lg">📸 QR-Code speichern</button>
-
-                            <p className="text-[10px] text-zinc-500 uppercase mt-4">Screenshot machen oder Bild speichern. Du hast auch eine E-Mail erhalten.</p>
-                            
-                            <button onClick={onBack} className="mt-8 text-[#FF007F] font-black uppercase text-xs tracking-widest underline">Zurück zum Start</button>
+                            <p className="font-black text-2xl uppercase italic text-white leading-tight">{buyer.name}</p>
+                            <p className="text-zinc-400 font-bold mt-2 text-xs uppercase tracking-widest border-t border-white/10 pt-4 mt-4">
+                                {buyer.type === 'day' ? '5 € (Zahlbar an der Kasse)' : '40 € (Zahlbar an der Kasse)'}
+                            </p>
                         </div>
+
+                        {/* BUTTONS (Werden NICHT gespeichert) */}
+                        <div className="mt-8 max-w-sm w-full space-y-4">
+                            <button onClick={handleDownloadQR} disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">
+                                {loading ? 'Generiere Bild...' : '📸 Ticket-Bild speichern'}
+                            </button>
+                            <p className="text-[10px] text-zinc-500 uppercase text-center mb-4">Ticket wird als Bild auf dem Handy gespeichert. Du hast auch eine E-Mail erhalten.</p>
+                            <button onClick={onBack} className="mt-4 text-[#FF007F] font-black uppercase text-xs tracking-widest underline w-full text-center">Zurück zum Start</button>
+                        </div>
+
                     </div>
                 );
             }
