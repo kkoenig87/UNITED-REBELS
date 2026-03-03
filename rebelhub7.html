@@ -993,15 +993,16 @@
         };
 
         const ProfileManagement = ({ me, db, profile, profiles, health, ticketPrices, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateTicketPrices, theme, announcement, squadGoals, voteHistory }) => {
-            const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
+            const [local, setLocal] = useState({ name: profile?.name || me?.name || '', birthday: profile?.birthday || '', number: profile?.number || me?.number || '', motto: profile?.motto || '', emoji: profile?.emoji || '', carpool: profile?.carpool || false, carpoolLocation: profile?.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
-            const [localPrices, setLocalPrices] = useState({ adults: 5, children: 2 });
+            const [localPrices, setLocalPrices] = useState({ adults: ticketPrices?.adults || 5, children: ticketPrices?.children || 2 });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
-            const [newsInput, setNewsInput] = useState(announcement);
+            const [newsInput, setNewsInput] = useState(announcement || "");
             const [adminSelectedPlayer, setAdminSelectedPlayer] = useState('');
             const [adminCardValues, setAdminCardValues] = useState({ grip: 85, vibe: 99, power: 88, soul: 95, motto: '', icon: 'zap' });
-            const isAdmin = me.id === 'hc' || me.id === 'tm';
+            
+            const isAdmin = me?.id === 'hc' || me?.id === 'tm';
 
             useEffect(() => {
                 if (profile && Object.keys(profile).length > 0) {
@@ -1014,20 +1015,30 @@
             }, [ticketPrices]);
 
             useEffect(() => {
-                if (adminSelectedPlayer && profiles[adminSelectedPlayer]) {
+                if (adminSelectedPlayer && profiles && profiles[adminSelectedPlayer]) {
                     const p = profiles[adminSelectedPlayer];
                     setAdminCardValues({ grip: p.grip || 85, vibe: p.vibe || 99, power: p.power || 88, soul: p.soul || 95, motto: p.motto || '', icon: p.icon || 'zap' });
                 }
             }, [adminSelectedPlayer, profiles]);
 
             const handleSaveProfile = async () => { await onSave(local, me.id); };
-            const handleAdminSaveCard = async () => { if (!adminSelectedPlayer) return; await onSave(adminCardValues, adminSelectedPlayer); alert(`Karte aktualisiert!`); };
+            
+            const handleAdminSaveCard = async () => { 
+                if (!adminSelectedPlayer) return; 
+                await onSave(adminCardValues, adminSelectedPlayer); 
+                alert(`Karte aktualisiert!`); 
+            };
+            
             const handleAddEvent = async () => {
+                if (!db) return alert("Datenbank nicht verbunden!");
+                if (!newEvent.label || !newEvent.date) return alert("Bitte mindestens Titel und Datum ausfüllen!");
                 const { collection, addDoc } = window.FB;
-                if (!db) return;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
                 setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+                alert("Event gespeichert!");
             };
+
+            const myHealth = health ? health[me.id] : 'Fit';
 
             return (
                 <div className="space-y-8 animate-slide-up pb-10 text-white">
@@ -1037,10 +1048,10 @@
                             <input type="text" placeholder="Name" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.name} onChange={e => setLocal({...local, name: e.target.value})} />
                             <input type="text" placeholder="Emoji" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-center text-white" value={local.emoji} onChange={e => setLocal({...local, emoji: e.target.value})} />
                         </div>
-                        <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
+                        <input type="text" placeholder="Motto" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.motto} onChange={e => setLocal({...local, motto: e.target.value})} />
                         <div className="grid grid-cols-2 gap-4 text-white">
-                            <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
-                            <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
+                            <input type="text" placeholder="Geburtstag (TT.MM.)" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.birthday} onChange={e => setLocal({...local, birthday: e.target.value})} />
+                            <input type="text" placeholder="Nummer" className="w-full bg-black border border-white/10 rounded-xl p-4 outline-none text-white" value={local.number} onChange={e => setLocal({...local, number: e.target.value})} />
                         </div>
                         <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 text-white">
                             <div className="flex items-center gap-3"><label className="switch"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider"></span></label><span className="text-[10px] font-black uppercase tracking-widest">Rebel Taxi (Mitfahrgelegenheit)</span></div>
@@ -1052,10 +1063,10 @@
                     <section className="glass-card p-6 rounded-3xl border border-white/5 shadow-2xl">
                         <h3 className="rebel-font font-black italic uppercase text-lg mb-4 text-white">Rebel Activity Log</h3>
                         <div className="max-h-60 overflow-y-auto no-scrollbar space-y-2">
-                            {voteHistory && voteHistory.length === 0 ? (
+                            {(!voteHistory || voteHistory.length === 0) ? (
                                 <p className="text-zinc-500 text-xs italic text-center">Noch keine Aktivitäten.</p>
                             ) : (
-                                (voteHistory || []).map(entry => (
+                                voteHistory.map(entry => (
                                     <div key={entry.id} className="bg-white/5 p-3 rounded-xl border border-white/5 text-xs text-white">
                                         <div className="flex justify-between">
                                             <span className="font-bold text-[#FF007F] uppercase">{entry.userName}</span>
@@ -1075,7 +1086,7 @@
                         <h3 className={`rebel-font font-black italic uppercase text-lg mb-4 ${theme==='light'?'text-black':'text-white'}`}>Health Status</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {[{ id: 'Fit', icon: 'zap', color: 'text-green-500' }, { id: 'Angeschlagen', icon: 'thermometer', color: 'text-yellow-500' }, { id: 'Verletzt', icon: 'alert-triangle', color: 'text-red-500' }].map(s => (
-                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${health[me.id] === s.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><RebelIcon name={s.icon} className={s.color} size={24}/><span className="text-[8px] font-black uppercase text-white mt-1">{s.id}</span></button>
+                                <button key={s.id} onClick={() => onHealthUpdate(s.id)} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${myHealth === s.id ? 'bg-white/10 border-[#FF007F] scale-105' : 'bg-black/40 border-white/5 opacity-40'}`}><RebelIcon name={s.icon} className={s.color} size={24}/><span className="text-[8px] font-black uppercase text-white mt-1">{s.id}</span></button>
                             ))}
                         </div>
                     </section>
@@ -1112,8 +1123,8 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800">
                                 <h3 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest mb-4">Slacker-Check (Nächstes Event)</h3>
                                 <div className="space-y-2">
-                                    {schedule.filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0)).slice(0,1).map(next => {
-                                        const votes = votesData[`event_${next.id}`] || {};
+                                    {(schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0)).slice(0,1).map(next => {
+                                        const votes = votesData ? votesData[`event_${next.id}`] || {} : {};
                                         const missing = SQUAD_DATA.filter(s => s.id !== 'hc' && s.id !== 'tm' && !votes[s.id]);
                                         
                                         return missing.map(m => (
@@ -1133,8 +1144,8 @@
                                         <thead><tr className="text-[8px] text-zinc-500 uppercase tracking-widest"><th className="px-2">Name</th><th className="px-2 text-center">Tore</th><th className="px-2 text-center">Spiele</th></tr></thead>
                                         <tbody className="text-sm font-bold text-white">
                                             {SQUAD_DATA.map(p => {
-                                                const goals = squadGoals[p.id] || 0;
-                                                const games = schedule.filter(e => e.type === 'game' && e.stats?.players?.[p.id]?.g).length;
+                                                const goals = squadGoals ? squadGoals[p.id] || 0 : 0;
+                                                const games = (schedule || []).filter(e => e.type === 'game' && e.stats?.players?.[p.id]?.g).length;
                                                 return (<tr key={p.id} className="bg-white/5"><td className="p-3 rounded-l-xl border-y border-l border-white/5">{p.name}</td><td className="p-3 border-y border-white/5 text-center text-[#FF007F]">{goals}</td><td className="p-3 rounded-r-xl border-y border-r border-white/5 text-center">{games}</td></tr>);
                                             })}
                                         </tbody>
@@ -1151,10 +1162,10 @@
                                             <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Erwachsene</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localPrices.adults} onChange={e => setLocalPrices({...localPrices, adults: parseFloat(e.target.value)||0})} /></div>
                                             <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Kinder</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localPrices.children} onChange={e => setLocalPrices({...localPrices, children: parseFloat(e.target.value)||0})} /></div>
                                         </div>
-                                        <button onClick={() => { onUpdateTicketPrices(localPrices); alert("Preise gespeichert!"); }} className="w-full bg-zinc-800 text-white py-2 rounded-xl font-black uppercase text-[10px]">Preise aktualisieren</button>
+                                        <button onClick={() => { onUpdateTicketPrices(localPrices); }} className="w-full bg-zinc-800 text-white py-2 rounded-xl font-black uppercase text-[10px]">Preise aktualisieren</button>
                                     </div>
 
-                                    <div className="space-y-1 text-white border-t border-white/5 pt-4"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
+                                    <div className="space-y-1 text-white border-t border-white/5 pt-4"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); alert("News online!"); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
                                         <div className="grid grid-cols-2 gap-2 text-white">
@@ -1187,7 +1198,7 @@
 
                             <section className="space-y-4 text-white">
                                 <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2 tracking-widest">Event Verwaltung</h3>
-                                {schedule.map(ev => (
+                                {(schedule || []).map(ev => (
                                     <div key={ev.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 text-white">
                                         <div className="truncate pr-4 text-white"><p className="font-bold text-xs uppercase italic truncate text-white">{ev.label}</p><p className="text-[9px] text-zinc-600 truncate mt-1 text-white">{new Date(ev.date).toLocaleDateString('de-DE')} | {ev.time} Uhr</p></div>
                                         <div className="flex gap-2 shrink-0">
