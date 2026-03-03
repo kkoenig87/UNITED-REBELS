@@ -98,7 +98,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
-
+        
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk", 
             authDomain: "hsg-rebelhub.firebaseapp.com",
@@ -188,7 +188,7 @@
         );
 
         // --- PUBLIC TICKET SHOP ---
-        const PublicTicketShop = ({ db, schedule, onBack }) => {
+        const PublicTicketShop = ({ db, schedule, ticketPrices, onBack }) => {
             const [buyer, setBuyer] = useState({ name: '', email: '', type: 'day', gameId: '', adults: 1, children: 0 });
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
@@ -198,8 +198,10 @@
                 return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= new Date().setHours(0,0,0,0));
             }, [schedule]);
 
-            // Preisberechnung (5€ Erw, 2€ Kind - anpassbar)
-            const totalPrice = buyer.type === 'season' ? 40 : (buyer.adults * 5) + (buyer.children * 2);
+            // Preisberechnung (Dynamisch aus Datenbank)
+            const priceAdult = ticketPrices?.adults || 5;
+            const priceChild = ticketPrices?.children || 2;
+            const totalPrice = buyer.type === 'season' ? 40 : (buyer.adults * priceAdult) + (buyer.children * priceChild);
 
             const handleDownloadQR = async () => {
                 setLoading(true);
@@ -326,7 +328,7 @@
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-black/40 border border-white/10 p-3 rounded-xl">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Erw. (5€)</label>
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Erw. ({priceAdult}€)</label>
                                             <div className="flex justify-between items-center">
                                                 <button type="button" onClick={()=>setBuyer({...buyer, adults: Math.max(1, buyer.adults-1)})} className="text-[#FF007F] font-black text-xl px-2">-</button>
                                                 <span className="font-black text-lg">{buyer.adults}</span>
@@ -334,7 +336,7 @@
                                             </div>
                                         </div>
                                         <div className="bg-black/40 border border-white/10 p-3 rounded-xl">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Kinder (2€)</label>
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase block text-center mb-2">Kinder ({priceChild}€)</label>
                                             <div className="flex justify-between items-center">
                                                 <button type="button" onClick={()=>setBuyer({...buyer, children: Math.max(0, buyer.children-1)})} className="text-[#FF007F] font-black text-xl px-2">-</button>
                                                 <span className="font-black text-lg">{buyer.children}</span>
@@ -561,7 +563,7 @@
 
         const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme, schedule, mvpVotes, onVoteMvp }) => {
             const sizePoll = votesData['warmup_shirt_size'] || {};
-            const pastGames = (schedule || []).filter(e => e.type === 'game' && new Date(e.date + 'T' + e.time) < new Date()).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+            const pastGames = (schedule || []).filter(e => e.type === 'game' && new Date(e.date + 'T' + (e.time||'00:00')) < new Date()).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
             return (
                 <div className="space-y-8 animate-slide-up pb-10">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Team Votings</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Bestimme mit.</p></header>
@@ -792,15 +794,15 @@
                 return (schedule || []).find(e => e.type === 'game' && new Date(e.date) >= now && new Date(e.date) <= dayEnd);
             }, [schedule]);
 
-            // Nächstes Event finden (egal ob Training oder Spiel)
-            const nextEvent = useMemo(() => {
+            // Nächstes Event finden (NUR Training)
+            const nextTraining = useMemo(() => {
                 const now = new Date();
                 return (schedule || [])
-                    .filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now)
+                    .filter(e => e.type === 'training' && new Date(e.date + 'T' + (e.time||'00:00')) >= now)
                     .sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
 
-            const hasVotedForNextEvent = nextEvent ? votesData[`event_${nextEvent.id}`]?.[me.id] : null;
+            const hasVotedForNextTraining = nextTraining ? votesData[`event_${nextTraining.id}`]?.[me.id] : null;
 
             useEffect(() => {
                 if (!matchDayEvent) return;
@@ -826,19 +828,17 @@
 
             return (
                 <div className="space-y-8 pb-10">
-                    {nextEvent && !hasVotedForNextEvent && (
+                    {nextTraining && !hasVotedForNextTraining && (
                         <div className={`bg-[#FF007F]/10 border border-[#FF007F]/30 p-6 rounded-3xl space-y-4 animate-slide-up text-center shadow-xl`}>
-                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">
-                                Nächstes Event: {nextEvent.type === 'game' ? 'Spiel' : 'Training'}
-                            </h4>
+                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">Nächstes Training</h4>
                             <p className={`font-black italic text-xl ${theme==='light'?'text-black':'text-white'}`}>
-                                {nextEvent.label} <br/>
-                                <span className="text-sm">{new Date(nextEvent.date).toLocaleDateString('de-DE')} | {nextEvent.time} Uhr</span>
+                                {nextTraining.label} <br/>
+                                <span className="text-sm">{new Date(nextTraining.date).toLocaleDateString('de-DE')} | {nextTraining.time} Uhr</span>
                             </p>
                             <p className="text-xs text-zinc-400 font-bold mb-2">Bist du am Start, {me.name}?</p>
                             <div className="grid grid-cols-3 gap-2">
                                 {['Dabei', 'Nein', 'Maybe'].map(opt => (
-                                    <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
+                                    <button key={opt} onClick={() => onVote(nextTraining.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
                                         {opt}
                                     </button>
                                 ))}
@@ -916,9 +916,10 @@
             );
         };
 
-        const ProfileManagement = ({ me, db, profile, profiles, health, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, theme, announcement, squadGoals, voteHistory }) => {
+        const ProfileManagement = ({ me, db, profile, profiles, health, ticketPrices, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateTicketPrices, theme, announcement, squadGoals, voteHistory }) => {
             const [local, setLocal] = useState({ name: profile.name || me.name, birthday: profile.birthday || '', number: profile.number || me.number || '', motto: profile.motto || '', emoji: profile.emoji || '', carpool: profile.carpool || false, carpoolLocation: profile.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
+            const [localPrices, setLocalPrices] = useState({ adults: 5, children: 2 });
             const [editingStats, setEditingStats] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
             const [newsInput, setNewsInput] = useState(announcement);
@@ -931,6 +932,10 @@
                     setLocal(prev => ({ ...prev, ...profile, name: profile.name || prev.name, number: profile.number || prev.number }));
                 }
             }, [profile]);
+
+            useEffect(() => {
+                if (ticketPrices) setLocalPrices(ticketPrices);
+            }, [ticketPrices]);
 
             useEffect(() => {
                 if (adminSelectedPlayer && profiles[adminSelectedPlayer]) {
@@ -1047,7 +1052,17 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
-                                    <div className="space-y-1 text-white"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
+                                    {/* NEU: Flexible Ticketpreise */}
+                                    <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                                        <h4 className="text-[10px] font-black uppercase text-[#FF007F] mb-3 tracking-widest">Tageskarten Preise (€)</h4>
+                                        <div className="grid grid-cols-2 gap-3 text-white mb-3">
+                                            <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Erwachsene</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localPrices.adults} onChange={e => setLocalPrices({...localPrices, adults: parseFloat(e.target.value)||0})} /></div>
+                                            <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Kinder</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localPrices.children} onChange={e => setLocalPrices({...localPrices, children: parseFloat(e.target.value)||0})} /></div>
+                                        </div>
+                                        <button onClick={() => { onUpdateTicketPrices(localPrices); alert("Preise gespeichert!"); }} className="w-full bg-zinc-800 text-white py-2 rounded-xl font-black uppercase text-[10px]">Preise aktualisieren</button>
+                                    </div>
+
+                                    <div className="space-y-1 text-white border-t border-white/5 pt-4"><label className="text-[8px] font-black uppercase text-zinc-500 ml-2">News Ticker</label><div className="flex gap-2"><input type="text" className="flex-grow bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newsInput} onChange={e => setNewsInput(e.target.value)} /><button onClick={() => { const { doc, setDoc } = window.FB; setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: newsInput }); }} className="bg-[#FF007F] p-3 rounded-xl text-white"><RebelIcon name="check" size={16}/></button></div></div>
                                     <div className="border-t border-white/5 pt-4 space-y-3">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-500 mb-2">Event anlegen</h4>
                                         <div className="grid grid-cols-2 gap-2 text-white">
@@ -1150,6 +1165,7 @@
             const [fines, setFines] = useState([]);
             const [transactions, setTransactions] = useState([]);
             const [announcement, setAnnouncement] = useState("");
+            const [ticketPrices, setTicketPrices] = useState({ adults: 5, children: 2 });
             const [theme, setTheme] = useState('dark');
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -1199,7 +1215,9 @@
                 const unsubHistory = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setVoteHistory(list.slice(0, 50)); });
                 const unsubMvp = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'mvp_votes'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setMvpVotes(d); });
                 const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), snap => { if(snap.exists()) setAnnouncement(snap.data().text || ""); });
-                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); };
+                const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), snap => { if(snap.exists()) setTicketPrices(snap.data()); });
+                
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); };
             }, [db]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
@@ -1292,7 +1310,7 @@
 
             if (loading) return ( <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white"><RebelLogo className="w-24 h-24 animate-pulse" status={cloudStatus} /></div> );
             
-            if (showPublicShop) return <PublicTicketShop db={db} schedule={schedule} onBack={() => setShowPublicShop(false)} />;
+            if (showPublicShop) return <PublicTicketShop db={db} schedule={schedule} ticketPrices={ticketPrices} onBack={() => setShowPublicShop(false)} />;
 
             if (!user) return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#050505]">
@@ -1333,7 +1351,7 @@
                         {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
                         {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
-                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
+                        {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
                     </main>
 
                     {showDebugInfo && (
