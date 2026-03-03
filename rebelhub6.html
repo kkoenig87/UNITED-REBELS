@@ -98,7 +98,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
-        
+
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyD4M0EZiwohVckXIinS2_GwF1khlKfpgOk", 
             authDomain: "hsg-rebelhub.firebaseapp.com",
@@ -193,12 +193,10 @@
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
 
-            // Zukünftige Spiele filtern
             const upcomingGames = useMemo(() => {
                 return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= new Date().setHours(0,0,0,0));
             }, [schedule]);
 
-            // Preisberechnung (Dynamisch aus Datenbank)
             const priceAdult = ticketPrices?.adults || 5;
             const priceChild = ticketPrices?.children || 2;
             const totalPrice = buyer.type === 'season' ? 40 : (buyer.adults * priceAdult) + (buyer.children * priceChild);
@@ -727,7 +725,7 @@
             );
         };
 
-        const FinesView = ({ theme, fines, myId, isAdmin, onAddFine, onPayFine }) => {
+        const FinesView = ({ theme, fines, myId, isAdmin, onAddFine, onPayFine, onDeleteFine, onIncreaseFine }) => {
             const [selectedPlayer, setSelectedPlayer] = useState('');
             const [selectedReason, setSelectedReason] = useState(FINE_CATALOG[0].id);
             const myDebt = useMemo(() => fines.filter(f => f.playerId === myId && !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines, myId]);
@@ -773,8 +771,20 @@
                         <div className="space-y-2">
                             {fines.filter(f => !f.paid).map(f => (
                                 <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                    <div><p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p><p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p></div>
-                                    <div className="flex items-center gap-4"><span className="text-sm font-black text-white">{f.amount} €</span>{isAdmin && <button onClick={() => onPayFine(f.id)} className="p-2 bg-green-500/20 text-green-500 rounded-lg"><RebelIcon name="check" size={16}/></button>}</div>
+                                    <div>
+                                        <p className="text-xs font-black text-white">{SQUAD_DATA.find(s => s.id === f.playerId)?.name}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-bold">{f.reason}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-white mr-2">{f.amount} €</span>
+                                        {isAdmin && (
+                                            <>
+                                                <button onClick={() => onPayFine(f.id)} className="p-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500 hover:text-black transition-colors" title="Bezahlt markieren"><RebelIcon name="check" size={16}/></button>
+                                                <button onClick={() => onIncreaseFine(f.id, f.amount, f.reason)} className="p-2 bg-yellow-500/20 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-black transition-colors" title="Strafe erhöhen"><RebelIcon name="plus" size={16}/></button>
+                                                <button onClick={() => onDeleteFine(f.id)} className="p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors" title="Löschen"><RebelIcon name="trash-2" size={16}/></button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -794,15 +804,15 @@
                 return (schedule || []).find(e => e.type === 'game' && new Date(e.date) >= now && new Date(e.date) <= dayEnd);
             }, [schedule]);
 
-            // Nächstes Event finden (NUR Training)
-            const nextTraining = useMemo(() => {
+            // Nächstes Event finden (egal ob Training oder Spiel)
+            const nextEvent = useMemo(() => {
                 const now = new Date();
                 return (schedule || [])
-                    .filter(e => e.type === 'training' && new Date(e.date + 'T' + (e.time||'00:00')) >= now)
+                    .filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now)
                     .sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
 
-            const hasVotedForNextTraining = nextTraining ? votesData[`event_${nextTraining.id}`]?.[me.id] : null;
+            const hasVotedForNextEvent = nextEvent ? votesData[`event_${nextEvent.id}`]?.[me.id] : null;
 
             useEffect(() => {
                 if (!matchDayEvent) return;
@@ -828,17 +838,19 @@
 
             return (
                 <div className="space-y-8 pb-10">
-                    {nextTraining && !hasVotedForNextTraining && (
+                    {nextEvent && !hasVotedForNextEvent && (
                         <div className={`bg-[#FF007F]/10 border border-[#FF007F]/30 p-6 rounded-3xl space-y-4 animate-slide-up text-center shadow-xl`}>
-                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">Nächstes Training</h4>
+                            <h4 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest">
+                                Nächstes Event: {nextEvent.type === 'game' ? 'Spiel' : 'Training'}
+                            </h4>
                             <p className={`font-black italic text-xl ${theme==='light'?'text-black':'text-white'}`}>
-                                {nextTraining.label} <br/>
-                                <span className="text-sm">{new Date(nextTraining.date).toLocaleDateString('de-DE')} | {nextTraining.time} Uhr</span>
+                                {nextEvent.label} <br/>
+                                <span className="text-sm">{new Date(nextEvent.date).toLocaleDateString('de-DE')} | {nextEvent.time} Uhr</span>
                             </p>
                             <p className="text-xs text-zinc-400 font-bold mb-2">Bist du am Start, {me.name}?</p>
                             <div className="grid grid-cols-3 gap-2">
                                 {['Dabei', 'Nein', 'Maybe'].map(opt => (
-                                    <button key={opt} onClick={() => onVote(nextTraining.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
+                                    <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className="py-3 bg-black/50 border border-white/10 rounded-xl text-xs font-black uppercase text-white hover:bg-[#FF007F] hover:border-[#FF007F] transition-all">
                                         {opt}
                                     </button>
                                 ))}
@@ -1052,7 +1064,6 @@
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800 shadow-2xl">
                                 <h3 className="rebel-font font-black italic text-[#FF007F] uppercase text-sm mb-4 tracking-widest text-center">Admin Command Center</h3>
                                 <div className="space-y-4">
-                                    {/* NEU: Flexible Ticketpreise */}
                                     <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
                                         <h4 className="text-[10px] font-black uppercase text-[#FF007F] mb-3 tracking-widest">Tageskarten Preise (€)</h4>
                                         <div className="grid grid-cols-2 gap-3 text-white mb-3">
@@ -1241,6 +1252,28 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { paid: false });
             };
 
+            const handleDeleteFine = async (fId) => {
+                if(window.confirm('Strafe wirklich löschen?')) {
+                    if(!db) return;
+                    const { doc, deleteDoc } = window.FB;
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId));
+                }
+            };
+
+            const handleIncreaseFine = async (fId, currentAmount, currentReason) => {
+                const addAmountStr = window.prompt('Um wie viel Euro soll die Strafe erhöht werden?', '2');
+                if(!addAmountStr) return;
+                const addAmount = parseFloat(addAmountStr.replace(',', '.'));
+                if(isNaN(addAmount) || addAmount <= 0) return;
+                
+                if(!db) return;
+                const { doc, updateDoc } = window.FB;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fId), { 
+                    amount: currentAmount + addAmount,
+                    reason: currentReason + ' (+ Erhöhung)'
+                });
+            };
+
             const handleAddTransaction = async (t) => {
                 if(!db) return;
                 const { collection, addDoc, serverTimestamp } = window.FB;
@@ -1350,7 +1383,7 @@
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
                         {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} />}
-                        {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} />}
+                        {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} onDeleteFine={handleDeleteFine} onIncreaseFine={handleIncreaseFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} />}
                     </main>
 
