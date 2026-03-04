@@ -799,8 +799,13 @@
         return;
     }
 
-    // 2. Nachricht zusammenbauen und WhatsApp öffnen
-    const text = `🚨 *REBEL KASSENWART REMINDER* 🚨%0A%0AHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:%0A%0A${debtorNames.join('%0A')}%0A%0ABitte bringt das Geld zeitnah zum nächsten Event mit. Danke! 💸`;
+    // 2. PayPal Link definieren (HIER DEINEN PAYPAL NAMEN EINTRAGEN)
+    const paypalMeName = "DEINPAYPALNAME"; 
+    const paypalLink = `https://paypal.me/${paypalMeName}`;
+
+    // 3. Nachricht zusammenbauen und WhatsApp öffnen
+    const text = `🚨 *REBEL KASSENWART REMINDER* 🚨%0A%0AHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:%0A%0A${debtorNames.join('%0A')}%0A%0ABitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:%0A${paypalLink}%0A(Bitte "Geld an Freunde senden" auswählen!) 💸`;
+    
     window.open(`https://wa.me/?text=${text}`, '_blank');
 };
             return (
