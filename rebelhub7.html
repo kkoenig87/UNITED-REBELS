@@ -1266,7 +1266,7 @@
             );
         };
 
-        const ProfileManagement = ({ me, db, profile, profiles, health, ticketPrices, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateTicketPrices, theme, announcement, squadGoals, voteHistory }) => {
+        const ProfileManagement = ({ me, db, profile, profiles, health, ticketPrices, onSave, onHealthUpdate, schedule, onDeleteEvent, onUpdateEvent, onSaveStats, onUpdateTicketPrices, theme, announcement, squadGoals, voteHistory, votesData }) => {
             const [local, setLocal] = useState({ name: profile?.name || me?.name || '', birthday: profile?.birthday || '', number: profile?.number || me?.number || '', motto: profile?.motto || '', emoji: profile?.emoji || '', carpool: profile?.carpool || false, carpoolLocation: profile?.carpoolLocation || '' });
             const [newEvent, setNewEvent] = useState({ type: 'training', date: '', time: '', endTime: '', label: '', location: '', meetingTime: '', meetingLocation: '', jerseyColor: '', isHome: true });
             const [localPrices, setLocalPrices] = useState({ adults: ticketPrices?.adults || 5, children: ticketPrices?.children || 2 });
@@ -1396,20 +1396,48 @@
 
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800">
                                 <h3 className="text-[10px] font-black uppercase text-[#FF007F] tracking-widest mb-4">Slacker-Check (Nächstes Event)</h3>
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                     {(schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0)).slice(0,1).map(next => {
                                         const votes = votesData ? votesData[`event_${next.id}`] || {} : {};
                                         const missing = SQUAD_DATA.filter(s => s.id !== 'hc' && s.id !== 'tm' && !votes[s.id]);
-                                        
-                                        return missing.map(m => (
-                                            <div key={m.id} className="flex justify-between items-center bg-red-500/5 p-3 rounded-xl border border-red-500/10">
-                                                <span className="text-xs font-bold text-white">{m.name}</span>
-                                                <span className="text-[8px] font-black uppercase text-red-500">Antwort fehlt</span>
+
+                                        return (
+                                            <div key={next.id} className="space-y-3">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-xs text-zinc-400 font-bold uppercase">{next.label}</span>
+                                                    <span className="text-[10px] bg-red-500/20 text-red-500 px-2 py-1 rounded-lg font-black">{missing.length} Offen</span>
+                                                </div>
+
+                                            <div className="space-y-2 mb-4">
+                                                {missing.map(m => (
+                                                    <div key={m.id} className="flex justify-between items-center bg-red-500/5 p-3 rounded-xl border border-red-500/10">
+                                                        <span className="text-xs font-bold text-white">{m.name}</span>
+                                                        <span className="text-[8px] font-black uppercase text-red-500">Antwort fehlt</span>
+                                                    </div>
+                                                ))}
+                                                {missing.length === 0 && (
+                                                    <p className="text-xs text-green-500 font-bold text-center py-2">Alle Mädels haben abgestimmt! 🔥</p>
+                                                 )}
                                             </div>
-                                        ));
-                                    })}
+
+                                            {missing.length > 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        const names = missing.map(s => s.name).join(', ');
+                                                        const text = `🚨 *REBEL REMINDER* 🚨%0A%0AFür *${next.label}* fehlen noch Rückmeldungen von:%0A%0A👉 ${names}%0A%0ABitte im Hub abstimmen, sonst 0,50€ Strafe! ⚡`;
+                                                        window.open(`https://wa.me/?text=${text}`, '_blank');
+                                                    }}
+                                                    className="w-full bg-[#25D366] text-white py-3 rounded-xl text-xs font-black uppercase shadow-lg active:scale-95 transition-all"
+                                                >
+                                                    WhatsApp Reminder senden
+                                                </button>
+                                           )}
+                                        </div>
+                                        );
+                                  })}
                                 </div>
                             </section>
+
 
                             <section className="glass-card p-6 rounded-3xl border border-zinc-800">
                                 <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-4">Saison Statistik</h3>
