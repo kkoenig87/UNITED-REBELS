@@ -1091,7 +1091,7 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                                 <input type="text" placeholder="Hype das Team..." className="flex-grow bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-[#FF007F] outline-none" value={newShout} onChange={e => setNewShout(e.target.value)} onKeyDown={e => e.key === 'Enter' && (onPostShout(newShout, false), setNewShout(''))} />
                                 <button onClick={() => { onPostShout(newShout, false); setNewShout(''); }} className="bg-[#FF007F] p-3 rounded-xl text-white shadow-lg"><RebelIcon name="send" size={18}/></button>
                             </div>
-                            <div className="max-h-60 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                            <div className="max-h-96 overflow-y-auto p-4 space-y-4 no-scrollbar">
                                 {shoutbox.map(shout => (
                                     <div key={shout.id} className="animate-slide-up group">
                                         <div className="flex justify-between items-end mb-1">
