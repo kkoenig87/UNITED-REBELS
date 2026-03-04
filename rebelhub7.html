@@ -782,6 +782,27 @@
                 return Object.entries(map).map(([id, sum]) => ({ name: SQUAD_DATA.find(s => s.id === id)?.name || '?', sum })).sort((a,b) => b.sum - a.sum);
             }, [fines]);
 
+            const handleFinesReminder = () => {
+    // 1. Alle Schulden pro Spielerin zusammenrechnen
+    const debtMap = {};
+    fines.filter(f => !f.paid).forEach(f => {
+        debtMap[f.playerId] = (debtMap[f.playerId] || 0) + (f.amount || 0);
+    });
+
+    const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
+        const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
+        return `👉 ${name}: ${amount.toFixed(2).replace('.', ',')}€`;
+    });
+
+    if (debtorNames.length === 0) {
+        alert("Es gibt keine offenen Strafen! Alle sind brav. 😇");
+        return;
+    }
+
+    // 2. Nachricht zusammenbauen und WhatsApp öffnen
+    const text = `🚨 *REBEL KASSENWART REMINDER* 🚨%0A%0AHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:%0A%0A${debtorNames.join('%0A')}%0A%0ABitte bringt das Geld zeitnah zum nächsten Event mit. Danke! 💸`;
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+};
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p></header>
@@ -814,7 +835,14 @@
                     )}
 
                     <section className="space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-zinc-500 px-2">Offene Posten (Team)</h3>
+                        <div className="flex justify-between items-center px-2">
+    <h3 className="text-[10px] font-black uppercase text-zinc-500">Offene Posten (Team)</h3>
+    {isAdmin && fines.filter(f => !f.paid).length > 0 && (
+        <button onClick={handleFinesReminder} className="bg-[#25D366] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-lg active:scale-95 transition-all">
+            WhatsApp Reminder
+        </button>
+    )}
+</div>
                         <div className="space-y-2">
                             {fines.filter(f => !f.paid).map(f => (
                                 <div key={f.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5">
