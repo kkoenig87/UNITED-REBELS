@@ -895,16 +895,39 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'carpools', event.id), newData); // HIER ebenfalls
     };
 
-    const handleOffer = () => {
-        if(!location) return alert("Von wo fährst du los?");
-        saveCarpools({ ...carpools, [me.id]: { seats, location, passengers: [] } });
-        setOfferMode(false);
+    const handleOffer = async () => {
+                if(!location) return alert("Von wo fährst du los?");
+                
+                // 1. Fahrt in der Datenbank für dieses Event speichern
+                await saveCarpools({ ...carpools, [me.id]: { seats, location, passengers: [] } });
+                
+                // 2. NEU: Profil-Settings updaten (Schalter umlegen für das Auto-Icon im Plan!)
+                if (db) {
+                    const { doc, setDoc } = window.FB;
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', me.id), { 
+                        carpool: true, 
+                        carpoolLocation: location 
+                    }, { merge: true });
+                }
+                
+                setOfferMode(false);
     };
 
-    const handleCancelOffer = () => {
-        if(window.confirm("Fahrt wirklich stornieren? Deine Mitfahrer müssen sich neu organisieren!")) {
-            const next = { ...carpools }; delete next[me.id]; saveCarpools(next);
-        }
+    const handleCancelOffer = async () => {
+                if(window.confirm("Fahrt wirklich stornieren? Deine Mitfahrer müssen sich neu organisieren!")) {
+                    // 1. Fahrt aus diesem Event löschen
+                    const next = { ...carpools }; 
+                    delete next[me.id]; 
+                    await saveCarpools(next);
+                    
+                    // 2. NEU: Profil-Settings wieder ausschalten (Auto-Icon verschwindet)
+                    if (db) {
+                        const { doc, setDoc } = window.FB;
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', me.id), { 
+                            carpool: false 
+                        }, { merge: true });
+                    }
+                }
     };
 
     const handleJoin = (driverId) => {
