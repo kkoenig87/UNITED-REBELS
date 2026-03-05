@@ -93,7 +93,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc };
+        // NEU: Messaging Import
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
+        
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc, getMessaging, getToken, onMessage };
     </script>
 
     <script type="text/babel">
