@@ -222,8 +222,9 @@
                     return;
                 }
                 const names = slackers.map(s => s.name).join(', ');
-                const text = `🚨 *REBEL REMINDER* 🚨%0A%0AFür *${event.label}* fehlen noch Rückmeldungen von:%0A%0A👉 ${names}%0A%0ABitte im Hub abstimmen, sonst 0,50€ Strafe! ⚡`;
-                window.open(`https://wa.me/?text=${text}`, '_blank');
+                // Wir nutzen jetzt saubere Zeilenumbrüche (\n) und lassen JavaScript das encoden!
+                const rawText = `🚨 *REBEL REMINDER* 🚨\n\nFür *${event.label}* fehlen noch Rückmeldungen von:\n\n👉 ${names}\n\nBitte im Hub abstimmen, sonst 0,50€ Strafe! ⚡`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(rawText)}`, '_blank');
             };
 
             return (
@@ -791,31 +792,30 @@
             }, [fines]);
 
             const handleFinesReminder = () => {
-    // 1. Alle Schulden pro Spielerin zusammenrechnen
-    const debtMap = {};
-    fines.filter(f => !f.paid).forEach(f => {
-        debtMap[f.playerId] = (debtMap[f.playerId] || 0) + (f.amount || 0);
-    });
+                const debtMap = {};
+                fines.filter(f => !f.paid).forEach(f => {
+                    debtMap[f.playerId] = (debtMap[f.playerId] || 0) + (f.amount || 0);
+                });
 
-    const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
-        const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
-        return `👉 ${name}: ${amount.toFixed(2).replace('.', ',')}€`;
-    });
+                const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
+                    const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
+                    return `👉 ${name}: ${amount.toFixed(2).replace('.', ',')}€`;
+                });
 
-    if (debtorNames.length === 0) {
-        alert("Es gibt keine offenen Strafen! Alle sind brav. 😇");
-        return;
-    }
+                if (debtorNames.length === 0) {
+                    alert("Es gibt keine offenen Strafen! Alle sind brav. 😇");
+                    return;
+                }
 
-    // 2. PayPal Link definieren (HIER DEINEN PAYPAL NAMEN EINTRAGEN)
-    const paypalMeName = "DEINPAYPALNAME"; 
-    const paypalLink = `https://paypal.me/${paypalMeName}`;
+                // HIER DEINEN PAYPAL NAMEN EINTRAGEN:
+                const paypalMeName = "DEINPAYPALNAME"; 
+                const paypalLink = `https://paypal.me/${paypalMeName}`;
 
-    // 3. Nachricht zusammenbauen und WhatsApp öffnen
-    const text = `🚨 *REBEL KASSENWART REMINDER* 🚨%0A%0AHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:%0A%0A${debtorNames.join('%0A')}%0A%0ABitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:%0A${paypalLink}%0A(Bitte "Geld an Freunde senden" auswählen!) 💸`;
-    
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-};
+                const rawText = `🚨 *REBEL KASSENWART REMINDER* 🚨\n\nHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:\n\n${debtorNames.join('\n')}\n\nBitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:\n${paypalLink}\n(Bitte "Geld an Freunde senden" auswählen!) 💸`;
+                
+                window.open(`https://wa.me/?text=${encodeURIComponent(rawText)}`, '_blank');
+            };
+            
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p></header>
@@ -1660,8 +1660,16 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             
             const addToCart = (product, size) => { setCart([...cart, { ...product, cartId: Date.now(), selectedSize: size }]); triggerHype(); };
             const removeFromCart = (cartId) => { setCart(cart.filter(item => item.cartId !== cartId)); };
-            const handleCheckout = () => { const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('%0A'); const total = cart.reduce((sum, i) => sum + i.price, 0); const msg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:%0A%0A${itemsList}%0A%0AGesamt: ${total}€%0A%0ABitte bestätigen!`; window.open(`https://wa.me/4917600000000?text=${msg}`, '_blank'); setCart([]); setIsCartOpen(false); };
-
+            
+            const handleCheckout = () => { 
+                const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('\n'); 
+                const total = cart.reduce((sum, i) => sum + i.price, 0); 
+                const rawMsg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:\n\n${itemsList}\n\nGesamt: ${total}€\n\nBitte bestätigen! 🛍️`; 
+                window.open(`https://wa.me/4917600000000?text=${encodeURIComponent(rawMsg)}`, '_blank'); 
+                setCart([]); 
+                setIsCartOpen(false); 
+            };
+            
             const attendanceData = useMemo(() => {
                 const map = {};
                 SQUAD_DATA.forEach(p => {
