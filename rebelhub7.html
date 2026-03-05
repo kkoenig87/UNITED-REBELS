@@ -1225,6 +1225,28 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                 alert("Event gespeichert!");
             };
 
+            const handleEnablePush = async () => {
+                if (!window.FCM) return alert("Push-Dienst lädt noch...");
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        const { getToken } = window.FB;
+                        // HIER IST DEIN VAPID KEY IM EINSATZ:
+                        const token = await getToken(window.FCM, { vapidKey: "BNUAPIDhl2t7_2JsBGK8QTWg9yMC_1qmin0V7kJp0HEu3xQ5ttB3rs995PgMIewz5JwrsCDbC0K7e0FVvKbE2hw" });
+                        
+                        if (token) {
+                            await onSave({ fcmToken: token }, me.id);
+                            alert("🔔 BING! Push-Benachrichtigungen sind erfolgreich aktiviert!");
+                        }
+                    } else {
+                        alert("Schade! Du hast die Benachrichtigungen blockiert.");
+                    }
+                } catch (e) {
+                    console.error("Push Fehler:", e);
+                    alert("Fehler beim Aktivieren. Bist du im Safari und hast die App auf dem Homescreen?");
+                }
+            };
+
             const myHealth = health ? health[me.id] : 'Fit';
 
             return (
