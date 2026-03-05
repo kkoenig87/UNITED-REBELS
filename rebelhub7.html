@@ -217,14 +217,14 @@
 
             const handleWhatsApp = () => {
                 if (slackers.length === 0) {
-                    alert("Alle haben abgestimmt! 🔥");
+                    alert("Alle haben abgestimmt! \uD83D\uDD25");
                     if(onHype) onHype();
                     return;
                 }
                 const names = slackers.map(s => s.name).join(', ');
-                // Wir nutzen jetzt saubere Zeilenumbrüche (\n) und lassen JavaScript das encoden!
-                const rawText = `🚨 *REBEL REMINDER* 🚨\n\nFür *${event.label}* fehlen noch Rückmeldungen von:\n\n👉 ${names}\n\nBitte im Hub abstimmen, sonst 0,50€ Strafe! ⚡`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(rawText)}`, '_blank');
+                // 100% sichere Unicode-Emojis: 🚨, 👉, ⚡
+                const rawText = "\uD83D\uDEA8 *REBEL REMINDER* \uD83D\uDEA8\n\nFür *" + event.label + "* fehlen noch Rückmeldungen von:\n\n\uD83D\uDC49 " + names + "\n\nBitte im Hub abstimmen, sonst 0,50€ Strafe! \u26A1";
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
             };
 
             return (
@@ -799,11 +799,11 @@
 
                 const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
                     const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
-                    return `👉 ${name}: ${amount.toFixed(2).replace('.', ',')}€`;
+                    return "\uD83D\uDC49 " + name + ": " + amount.toFixed(2).replace('.', ',') + "€";
                 });
 
                 if (debtorNames.length === 0) {
-                    alert("Es gibt keine offenen Strafen! Alle sind brav. 😇");
+                    alert("Es gibt keine offenen Strafen! Alle sind brav. \uD83D\uDE07");
                     return;
                 }
 
@@ -811,9 +811,10 @@
                 const paypalMeName = "DEINPAYPALNAME"; 
                 const paypalLink = `https://paypal.me/${paypalMeName}`;
 
-                const rawText = `🚨 *REBEL KASSENWART REMINDER* 🚨\n\nHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:\n\n${debtorNames.join('\n')}\n\nBitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:\n${paypalLink}\n(Bitte "Geld an Freunde senden" auswählen!) 💸`;
+                // 100% sichere Unicode-Emojis: 🚨, 👉, 💸
+                const rawText = "\uD83D\uDEA8 *REBEL KASSENWART REMINDER* \uD83D\uDEA8\n\nHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:\n\n" + debtorNames.join('\n') + "\n\nBitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:\n" + paypalLink + "\n(Bitte \"Geld an Freunde senden\" auswählen!) \uD83D\uDCB8";
                 
-                window.open(`https://wa.me/?text=${encodeURIComponent(rawText)}`, '_blank');
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
             };
             
             return (
@@ -1664,8 +1665,8 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             const handleCheckout = () => { 
                 const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('\n'); 
                 const total = cart.reduce((sum, i) => sum + i.price, 0); 
-                const rawMsg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:\n\n${itemsList}\n\nGesamt: ${total}€\n\nBitte bestätigen! 🛍️`; 
-                window.open(`https://wa.me/4917600000000?text=${encodeURIComponent(rawMsg)}`, '_blank'); 
+                const rawMsg = "Hey Kai, ich (" + user.name + ") würde gerne im Rebel Shop bestellen:\n\n" + itemsList + "\n\nGesamt: " + total + "€\n\nBitte bestätigen! \uD83D\uDECD\uFE0F"; 
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawMsg)}`, '_blank'); 
                 setCart([]); 
                 setIsCartOpen(false); 
             };
