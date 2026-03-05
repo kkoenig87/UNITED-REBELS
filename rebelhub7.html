@@ -1228,12 +1228,22 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
 
             const handleEnablePush = async () => {
                 if (!window.FCM) return alert("Push-Dienst lädt noch...");
+                if (!('serviceWorker' in navigator)) return alert("Dein Browser unterstützt keine Service Worker.");
+
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         const { getToken } = window.FB;
-                        // HIER IST DEIN VAPID KEY IM EINSATZ:
-                        const token = await getToken(window.FCM, { vapidKey: "BNUAPIDhl2t7_2JsBGK8QTWg9yMC_1qmin0V7kJp0HEu3xQ5ttB3rs995PgMIewz5JwrsCDbC0K7e0FVvKbE2hw" });
+                        
+                        // 1. Wir registrieren den Service Worker manuell mit relativem Pfad ('./'), 
+                        // das verhindert Fehler auf GitHub Pages!
+                        const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                        
+                        // 2. Wir übergeben die Registrierung an Firebase
+                        const token = await getToken(window.FCM, { 
+                            vapidKey: "BNUAPIDhl2t7_2JsBGK8QTWg9yMC_1qmin0V7kJp0HEu3xQ5ttB3rs995PgMIewz5JwrsCDbC0K7e0FVvKbE2hw",
+                            serviceWorkerRegistration: registration 
+                        });
                         
                         if (token) {
                             await onSave({ fcmToken: token }, me.id);
@@ -1244,7 +1254,8 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                     }
                 } catch (e) {
                     console.error("Push Fehler:", e);
-                    alert("Fehler beim Aktivieren. Bist du im Safari und hast die App auf dem Homescreen?");
+                    // Wir geben den exakten Fehler aus, falls es nochmal hakt!
+                    alert("Fehler beim Aktivieren: " + e.message); 
                 }
             };
 
