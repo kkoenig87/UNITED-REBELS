@@ -1068,6 +1068,17 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                     <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-3 rounded-xl text-xs font-black uppercase border transition-all ${votesData[`event_${nextEvent.id}`]?.[me.id] === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg scale-105' : 'bg-black/50 text-white border-white/10'}`}>{opt}</button>
                                 ))}
                             </div>
+                            
+                            {/* NEU: Das Coach-Board Widget */}
+                            {nextEvent.tactic && (
+                                <div className="mt-5 bg-black/50 p-4 rounded-2xl border border-[#FF007F]/30 text-left animate-slide-up shadow-inner">
+                                    <div className="flex items-center gap-2 mb-2 text-[#FF007F]">
+                                        <RebelIcon name="clipboard-list" size={16} />
+                                        <h5 className="text-[10px] font-black uppercase tracking-widest">Coach-Board</h5>
+                                    </div>
+                                    <p className="text-xs text-zinc-300 font-bold whitespace-pre-wrap">{nextEvent.tactic}</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1226,7 +1237,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                 if (!newEvent.label || !newEvent.date) return alert("Bitte mindestens Titel und Datum ausfüllen!");
                 const { collection, addDoc } = window.FB;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
-                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true, tactic:''});
                 alert("Event gespeichert!");
             };
 
@@ -1434,6 +1445,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                         </div>
                                         <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                         <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                        <textarea placeholder="Coach Notes / Taktik (optional)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F] min-h-[60px]" value={newEvent.tactic || ''} onChange={e => setNewEvent({...newEvent, tactic: e.target.value})}></textarea>
                                         <div className="grid grid-cols-3 gap-2 text-white text-white text-white">
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
@@ -1479,6 +1491,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                 <div className="bg-[#111] p-6 rounded-3xl border border-white/10 space-y-4">
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
                                     <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
+                                    <textarea placeholder="Coach Notes / Taktik (Fokus, Gegner-Infos...)" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none focus:border-[#FF007F] min-h-[80px]" value={editingEvent.tactic || ''} onChange={e => setEditingEvent({...editingEvent, tactic: e.target.value})}></textarea>
                                     <div className="grid grid-cols-3 gap-4 text-white text-white">
                                         <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
                                         <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
