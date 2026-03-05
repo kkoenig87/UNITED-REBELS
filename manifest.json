@@ -1,0 +1,15 @@
+{
+  "name": "Rebel Hub",
+  "short_name": "Rebel Hub",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#FF007F",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
