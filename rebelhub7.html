@@ -1499,11 +1499,20 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
                     if (!window.FB) { setLoading(false); return; }
                     try {
-                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FB;
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, getMessaging, onMessage } = window.FB;
                         const app = initializeApp(firebaseConfig);
                         const auth = getAuth(app);
                         const firestore = getFirestore(app);
+                        
+                        // NEU: Messaging initialisieren und global verfügbar machen
+                        window.FCM = getMessaging(app);
                         setDb(firestore);
+
+                        // NEU: Wenn die App gerade GEÖFFNET ist und eine Push reinkommt
+                        onMessage(window.FCM, (payload) => {
+                            alert(`🚨 REBEL NEWS: ${payload.notification.title}\n\n${payload.notification.body}`);
+                        });
+
                         await signInAnonymously(auth);
                         onAuthStateChanged(auth, (u) => {
                             if (u) {
