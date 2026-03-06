@@ -422,6 +422,7 @@
             const [scanResult, setScanResult] = useState(null);
             const [scannerActive, setScannerActive] = useState(false);
             const [viewMode, setViewMode] = useState('scanner'); // 'scanner' oder 'list'
+            const [filterGame, setFilterGame] = useState('all'); // NEU: Filter für Spiele
             const scannerRef = useRef(null);
 
             useEffect(() => {
@@ -499,12 +500,40 @@
                 const { doc, updateDoc } = window.FB;
                 const isSeason = scanResult.data.type === 'season';
                 const updateData = { paid: true, lastScannedAt: Date.now() };
-                if (!isSeason) updateData.used = true; // Tageskarten direkt nach Barzahlung werten
+                if (!isSeason) updateData.used = true;
 
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
                 setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
                 if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
             };
+
+            // NEU: Ticket löschen Funktion
+            const handleDeleteTicket = async (ticketId, ticketName) => {
+                if(window.confirm(`Ticket von ${ticketName} wirklich löschen? Das storniert die Reservierung und zieht ggf. Einnahmen sofort aus der Kasse ab.`)) {
+                    try {
+                        const { doc, deleteDoc } = window.FB;
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', ticketId));
+                    } catch(e) {
+                        alert("Fehler beim Löschen des Tickets.");
+                    }
+                }
+            };
+
+            // NEU: Spiele für den Filter sammeln
+            const uniqueGames = useMemo(() => {
+                const games = new Set();
+                (tickets || []).forEach(t => {
+                    if (t.type === 'day' && t.gameLabel) games.add(t.gameLabel);
+                });
+                return Array.from(games);
+            }, [tickets]);
+
+            // NEU: Tickets filtern
+            const filteredTickets = useMemo(() => {
+                if (filterGame === 'all') return tickets || [];
+                if (filterGame === 'season') return (tickets || []).filter(t => t.type === 'season');
+                return (tickets || []).filter(t => t.gameLabel === filterGame);
+            }, [tickets, filterGame]);
 
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
@@ -520,31 +549,51 @@
 
                     {viewMode === 'list' && (
                         <div className="space-y-4 animate-slide-up">
+                            
+                            {/* NEU: Filter Dropdown */}
+                            <select 
+                                value={filterGame} 
+                                onChange={e => setFilterGame(e.target.value)}
+                                className="w-full bg-black/40 border border-[#FF007F]/30 rounded-xl p-4 text-xs text-white outline-none font-bold uppercase shadow-lg appearance-none"
+                            >
+                                <option value="all">Alle Tickets anzeigen</option>
+                                <option value="season">Nur Dauerkarten</option>
+                                {uniqueGames.map(game => (
+                                    <option key={game} value={game}>{game}</option>
+                                ))}
+                            </select>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Offen (Reserviert)</p>
-                                    <p className="text-2xl font-black text-yellow-500 mt-1">{(tickets || []).filter(t=>!t.paid).length}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Offen (Res.)</p>
+                                    <p className="text-2xl font-black text-yellow-500 mt-1">{filteredTickets.filter(t=>!t.paid).length}</p>
                                 </div>
                                 <div className="bg-black/40 p-4 rounded-2xl border border-[#FF007F]/20 text-center">
-                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Bezahlt & Drin</p>
-                                    <p className="text-2xl font-black text-[#FF007F] mt-1">{(tickets || []).filter(t=>t.paid).length}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Bezahlt</p>
+                                    <p className="text-2xl font-black text-[#FF007F] mt-1">{filteredTickets.filter(t=>t.paid).length}</p>
                                 </div>
                             </div>
                             
                             <div className="space-y-2">
-                                {(tickets || []).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(t => (
+                                {filteredTickets.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(t => (
                                     <div key={t.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
-                                        <div>
-                                            <p className="font-bold text-sm text-white uppercase italic">{t.name}</p>
-                                            <p className="text-[9px] text-zinc-400 mt-1">{t.type === 'season' ? '👑 Dauerkarte' : `🎟️ ${t.adults} Erw. / ${t.children} Kind(er) - ${t.gameLabel}`}</p>
+                                        <div className="flex-1 pr-4 truncate">
+                                            <p className="font-bold text-sm text-white uppercase italic truncate">{t.name}</p>
+                                            <p className="text-[9px] text-zinc-400 mt-1 truncate">{t.type === 'season' ? '👑 Dauerkarte' : `🎟️ ${t.adults} Erw. / ${t.children} Kind(er) - ${t.gameLabel}`}</p>
                                         </div>
-                                        <div className="text-right shrink-0">
+                                        <div className="text-right shrink-0 flex flex-col items-end gap-2">
                                             <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md ${t.paid ? 'bg-[#FF007F]/20 text-[#FF007F]' : 'bg-yellow-500/20 text-yellow-500'}`}>{t.paid ? 'Bezahlt' : 'Offen'}</span>
-                                            <p className="text-sm font-black text-white mt-2">{t.price} €</p>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-sm font-black text-white">{t.price} €</p>
+                                                {/* NEU: Löschen Button */}
+                                                <button onClick={() => handleDeleteTicket(t.id, t.name)} className="text-zinc-600 hover:text-red-500 p-1 transition-colors">
+                                                    <RebelIcon name="trash-2" size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
-                                {(!tickets || tickets.length === 0) && <p className="text-center text-zinc-500 text-xs italic py-8">Noch keine Tickets verkauft.</p>}
+                                {filteredTickets.length === 0 && <p className="text-center text-zinc-500 text-xs italic py-8">Keine Tickets in dieser Ansicht gefunden.</p>}
                             </div>
                         </div>
                     )}
