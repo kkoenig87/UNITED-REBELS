@@ -418,8 +418,6 @@
 
         // --- CORE VIEWS ---
 
-        // --- CORE VIEWS ---
-
         const TicketScannerView = ({ db, theme, tickets }) => {
             const [scanResult, setScanResult] = useState(null);
             const [scannerActive, setScannerActive] = useState(false);
@@ -501,7 +499,7 @@
                 const { doc, updateDoc } = window.FB;
                 const isSeason = scanResult.data.type === 'season';
                 const updateData = { paid: true, lastScannedAt: Date.now() };
-                if (!isSeason) updateData.used = true;
+                if (!isSeason) updateData.used = true; // Tageskarten direkt nach Barzahlung werten
 
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
                 setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
@@ -583,56 +581,7 @@
                 </div>
             );
         };
-
-            const handleMarkAsPaid = async () => {
-                if(!scanResult?.id) return;
-                const { doc, updateDoc } = window.FB;
-                const isSeason = scanResult.data.type === 'season';
-                const updateData = { paid: true, lastScannedAt: Date.now() };
-                if (!isSeason) updateData.used = true; // Tageskarten direkt nach Barzahlung werten
-
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
-                setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
-                if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
-            };
-
-            return (
-                <div className="space-y-6 animate-slide-up pb-20">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Einlass-Scanner</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p></header>
-                    
-                    {!scannerActive && !scanResult && (
-                        <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center">
-                            <RebelIcon name="camera" size={64} className="mx-auto mb-4 text-[#FF007F]" />
-                            <button onClick={startScanner} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">Kamera Starten</button>
-                        </div>
-                    )}
-
-                    {scannerActive && (
-                        <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)]">
-                            <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black"></div>
-                            <button onClick={stopScanner} className="w-full mt-4 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
-                        </div>
-                    )}
-
-                    {scanResult && (
-                        <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl animate-slide-up ${scanResult.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
-                            <RebelIcon name={scanResult.status === 'valid' ? 'check-circle' : scanResult.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
-                            <h3 className="font-black text-xl uppercase mb-2">{scanResult.status === 'valid' ? 'Zutritt gewährt' : scanResult.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
-                            <p className="text-sm font-bold opacity-80 mb-2">{scanResult.msg}</p>
-                            
-                            {scanResult.details && <div className="bg-black/30 p-2 rounded-lg text-xs font-black uppercase mb-6 border border-current opacity-80">{scanResult.details}</div>}
-                            
-                            {scanResult.status === 'unpaid' && (
-                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg">Als Bar Bezahlt markieren & Entwerten</button>
-                            )}
-                            
-                            <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl">Nächstes scannen</button>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
+        
         const RebelCard = ({ member, goals = 0, mvpWins = 0, isMe }) => {
             const cardRef = useRef(null);
             const [rotate, setRotate] = useState({ x: 0, y: 0 });
