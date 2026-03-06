@@ -1255,8 +1255,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             );
         };
         
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools }) => {
-            const [newShout, setNewShout] = useState('');
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools, fines, transactions, treasuryGoal }) => {            const [newShout, setNewShout] = useState('');
             const nextEvent = useMemo(() => {
                 const now = new Date();
                 return (schedule || []).filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
