@@ -1039,6 +1039,105 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
         </div>
     );
 };
+
+        // --- NEU: KABINEN GLÜCKSRAD ---
+        const KabinenGluecksrad = ({ theme }) => {
+            const options = [
+                { label: 'Kuchen backen 🍰', color: '#FF007F' },
+                { label: 'Kiste Kaltgetränke 🍻', color: '#8b5cf6' },
+                { label: 'Trikots waschen 👕', color: '#3b82f6' },
+                { label: '10€ Teamkasse 💸', color: '#ec4899' },
+                { label: 'Bälle aufpumpen 🏀', color: '#10b981' },
+                { label: 'Glück gehabt! 🍀', color: '#f59e0b' }
+            ];
+
+            const [rotation, setRotation] = useState(0);
+            const [isSpinning, setIsSpinning] = useState(false);
+            const [winner, setWinner] = useState(null);
+
+            const sliceAngle = 360 / options.length;
+
+            const spinWheel = () => {
+                if (isSpinning) return;
+                setIsSpinning(true);
+                setWinner(null);
+
+                const winningIndex = Math.floor(Math.random() * options.length);
+                const centerAngle = (winningIndex * sliceAngle) + (sliceAngle / 2);
+                const targetRotation = 360 - centerAngle;
+                
+                const currentMod = rotation % 360;
+                const extraSpins = 360 * 5; 
+                
+                let addedRotation = targetRotation - currentMod;
+                if (addedRotation < 0) addedRotation += 360; 
+                
+                const finalRotation = rotation + extraSpins + addedRotation;
+                setRotation(finalRotation);
+
+                setTimeout(() => {
+                    setIsSpinning(false);
+                    setWinner(options[winningIndex].label);
+                    if (window.confetti && options[winningIndex].label.includes('Glück')) {
+                        window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#ffffff'] });
+                    } else if (window.confetti) {
+                        window.confetti({ particleCount: 100, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] });
+                    }
+                }, 4000);
+            };
+
+            const gradientStops = options.map((opt, i) => `${opt.color} ${i * sliceAngle}deg ${(i + 1) * sliceAngle}deg`).join(', ');
+
+            return (
+                <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-2xl text-center mb-8 animate-slide-up">
+                    <h3 className="rebel-font font-black italic text-xl uppercase mb-1 text-white">Das Glücksrad 🎡</h3>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-8">Strafe oder Glück?</p>
+                    
+                    <div className="relative w-64 h-64 mx-auto mb-8">
+                        {/* Zeiger */}
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[24px] border-t-white z-20 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"></div>
+                        
+                        {/* Rad */}
+                        <div 
+                            className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-[0_0_30px_rgba(255,0,127,0.4)] relative"
+                            style={{ 
+                                background: `conic-gradient(${gradientStops})`,
+                                transform: `rotate(${rotation}deg)`, 
+                                transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' 
+                            }}
+                        >
+                            {options.map((opt, i) => (
+                                <div key={i} className="absolute top-0 left-0 w-full h-full" style={{ transform: `rotate(${i * sliceAngle}deg)` }}>
+                                    <div 
+                                        className="absolute top-4 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase text-white drop-shadow-md flex flex-col items-center justify-start h-[112px] w-16"
+                                        style={{ transform: `rotate(${sliceAngle / 2}deg)`, transformOrigin: 'bottom center' }}
+                                    >
+                                        {opt.label.split(' ').map((word, idx) => <span key={idx} className="leading-tight">{word}</span>)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Mittelpunkt */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-inner border-2 border-zinc-200 z-10 flex items-center justify-center"><div className="w-3 h-3 bg-[#FF007F] rounded-full"></div></div>
+                    </div>
+
+                    {winner && (
+                        <div className="animate-slide-up mb-6 bg-black/40 p-4 rounded-2xl border border-[#FF007F]/30">
+                            <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Das Urteil lautet:</p>
+                            <p className="text-xl font-black italic text-[#FF007F]">{winner}</p>
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={spinWheel} 
+                        disabled={isSpinning}
+                        className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                    >
+                        {isSpinning ? 'Rad dreht...' : 'Rad Drehen!'}
+                    </button>
+                </div>
+            );
+        };
         
         const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools }) => {
             const [newShout, setNewShout] = useState('');
@@ -1767,8 +1866,16 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
                         {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} />}
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} allCarpools={allCarpools} />}
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />}
-                        {activeTab === 'shop' && <FanShopView theme={theme} products={SHOP_PRODUCTS} onAddToCart={addToCart} cartCount={cart.length} onOpenCart={() => setIsCartOpen(true)} />}
+                        {activeTab === 'kabine' && (
+                            <div className="space-y-4 pb-10">
+                                <header>
+                                    <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Die Kabine</h2>
+                                    <p className="text-sm text-zinc-500 uppercase tracking-widest">Team-Life & Fun</p>
+                                </header>
+                                <KabinenGluecksrad theme={theme} />
+                                <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />
+                            </div>
+                        )}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
@@ -1811,7 +1918,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                     <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
                         <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} badgeCount={openVotesCount} />
-                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
+                        <NavButton icon="dices" label="Kabine" active={activeTab === 'kabine' || activeTab === 'poll'} onClick={() => setActiveTab('kabine')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
                         <NavButton icon="clipboard-list" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
                         {isAdmin && <NavButton icon="qr-code" label="Scanner" active={activeTab === 'scanner'} onClick={() => setActiveTab('scanner')} />}
