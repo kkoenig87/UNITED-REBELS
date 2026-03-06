@@ -703,9 +703,10 @@
             );
         };
 
-        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId }) => {
+        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId, treasuryGoal, onUpdateGoal }) => {
             const [activeSubTab, setActiveSubTab] = useState('status');
             const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
+            const [localGoal, setLocalGoal] = useState({ label: treasuryGoal?.label || '', target: treasuryGoal?.target || 1000 }); // NEU
             const paidFinesTotal = useMemo(() => fines.filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
             const otherIncomeTotal = useMemo(() => transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
             const expensesTotal = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
@@ -736,6 +737,15 @@
 
                     {activeSubTab === 'status' && (
                         <div className="space-y-6">
+                            {/* NEU: Admin Ziel-Einstellung */}
+                            <div className="bg-black/30 p-4 rounded-2xl border border-white/5 shadow-inner">
+                                <h4 className="text-[10px] font-black uppercase text-[#FF007F] mb-3 tracking-widest flex items-center gap-2"><RebelIcon name="target" size={14}/> Dashboard Ziel ändern</h4>
+                                <div className="grid grid-cols-2 gap-3 text-white mb-3">
+                                    <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Titel (z.B. Malle)</label><input type="text" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localGoal.label} onChange={e => setLocalGoal({...localGoal, label: e.target.value})} /></div>
+                                    <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ziel-Betrag (€)</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localGoal.target} onChange={e => setLocalGoal({...localGoal, target: parseFloat(e.target.value)||0})} /></div>
+                                </div>
+                                <button onClick={() => onUpdateGoal(localGoal)} className="w-full bg-white text-black py-2 rounded-xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-transform">Ziel speichern</button>
+                            </div>
                             <section className="glass-card p-6 rounded-3xl border-white/10 bg-black/20 space-y-4">
                                 <h3 className="rebel-font font-black italic text-xs text-white uppercase">Neue Buchung</h3>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1252,6 +1262,15 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                 return (schedule || []).filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
 
+            // NEU: Kassen-Berechnung fürs Dashboard
+            const currentBalance = useMemo(() => {
+                const pFines = (fines||[]).filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+                const oInc = (transactions||[]).filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                const exp = (transactions||[]).filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                return (pFines + oInc) - exp;
+            }, [fines, transactions]);
+            const goalPercent = Math.min(100, Math.round((currentBalance / (treasuryGoal?.target || 1)) * 100));
+
             return (
                 <div className="space-y-8 pb-10">
                     {openVotesCount > 0 && me.id !== 'hc' && me.id !== 'tm' && (
@@ -1260,6 +1279,24 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                             <button onClick={() => setActiveTab('votes')} className="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">PLANER</button>
                         </div>
                     )}
+
+                    {/* NEU: Kassen-Ziel Anzeige */}
+                    <div className="glass-card p-5 rounded-3xl border border-[#FF007F]/30 shadow-[0_0_20px_rgba(255,0,127,0.15)] animate-slide-up">
+                        <div className="flex justify-between items-end mb-3">
+                            <div>
+                                <p className="text-[9px] font-black uppercase text-[#FF007F] tracking-widest mb-1 flex items-center gap-1"><RebelIcon name="target" size={12}/> Team-Ziel</p>
+                                <p className="text-sm font-bold text-white uppercase italic">{treasuryGoal?.label || 'Saison-Ziel'}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-black text-white leading-none mb-1">{currentBalance.toFixed(2)} €</p>
+                                <p className="text-[9px] text-zinc-500 uppercase font-bold">von {treasuryGoal?.target || 500} €</p>
+                            </div>
+                        </div>
+                        <div className="h-4 w-full bg-black/60 rounded-full overflow-hidden border border-white/10 relative">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600 to-[#FF007F] shadow-[0_0_15px_#FF007F] transition-all duration-1000 ease-out" style={{width: `${goalPercent}%`}}></div>
+                            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white drop-shadow-md z-10">{goalPercent}%</span>
+                        </div>
+                    </div>
                     
                     {announcement && (<div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl text-white flex gap-3 shadow-lg"><RebelIcon name="megaphone" size={20}/><p className="text-sm font-bold">{announcement}</p></div>)}
 
@@ -1323,7 +1360,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             );
         };
 
-        const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme, isAdmin, onAddFine, triggerHype, allCarpools }) => {
+        const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme, isAdmin, onAddFine, triggerHype, allCarpools, onUpdateEvent }) => {
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
                 <div className="space-y-6 pb-10">
@@ -1367,6 +1404,67 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                         </div>
                                     ))}
                                 </div>
+                                {/* NEU: DIENSTE & ROULETTE */}
+                                {event.type === 'game' && (
+                                    <div className="mt-4 pt-4 border-t border-dashed border-white/10 space-y-2">
+                                        <h5 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-3 flex items-center gap-2"><RebelIcon name="clipboard-check" size={14}/> Team-Dienste</h5>
+                                        
+                                        {[
+                                            { id: 'trikots', label: 'Trikots', icon: 'shirt', color: 'text-blue-400' },
+                                            { id: 'getraenke', label: 'Getränke', icon: 'cup-soda', color: 'text-yellow-400' },
+                                            { id: 'harz', label: 'Harz & Tape', icon: 'droplet', color: 'text-zinc-300' }
+                                        ].map(duty => {
+                                            const duties = event.duties || {};
+                                            const assignedPlayer = duties[duty.id] ? SQUAD_DATA.find(s => s.id === duties[duty.id]) : null;
+
+                                            const handleVolunteer = () => {
+                                                const newDuties = { ...duties, [duty.id]: userId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                if (window.confetti) window.confetti({ particleCount: 30, colors: ['#22c55e'] });
+                                            };
+
+                                            const handleRoulette = () => {
+                                                // Wer ist 'Dabei'?
+                                                const attendingIds = Object.entries(eventVotes).filter(([uid, val]) => val === 'Dabei').map(([uid]) => uid);
+                                                // Wer hat noch keinen anderen Dienst an diesem Tag?
+                                                const alreadyAssigned = Object.values(duties);
+                                                let available = attendingIds.filter(id => !alreadyAssigned.includes(id) && id !== 'hc' && id !== 'tm');
+                                                // Falls keiner "Dabei" ist oder alle einen Dienst haben, nimm alle Spieler:
+                                                if (available.length === 0) available = SQUAD_DATA.map(s=>s.id).filter(id => id !== 'hc' && id !== 'tm'); 
+                                                
+                                                const randomId = available[Math.floor(Math.random() * available.length)];
+                                                const newDuties = { ...duties, [duty.id]: randomId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                triggerHype();
+                                            };
+
+                                            return (
+                                                <div key={duty.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`p-1.5 rounded-lg bg-white/5 ${duty.color}`}><RebelIcon name={duty.icon} size={14} /></div>
+                                                        <span className="text-[11px] font-bold text-white uppercase">{duty.label}</span>
+                                                    </div>
+                                                    
+                                                    {assignedPlayer ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-white/10 ${assignedPlayer.id === userId ? 'text-[#FF007F] border border-[#FF007F]/30' : 'text-white'}`}>
+                                                                {assignedPlayer.name}
+                                                            </span>
+                                                            {(isAdmin || assignedPlayer.id === userId) && (
+                                                                <button onClick={() => { const newDuties = {...duties}; delete newDuties[duty.id]; onUpdateEvent(event.id, { duties: newDuties }); }} className="text-zinc-500 hover:text-red-500 p-1"><RebelIcon name="x" size={14}/></button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={handleVolunteer} className="text-[9px] bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg font-black uppercase hover:bg-green-500 hover:text-black transition-all active:scale-95">Ich mach's!</button>
+                                                            {isAdmin && <button onClick={handleRoulette} className="text-[12px] bg-[#FF007F]/20 border border-[#FF007F]/40 text-[#FF007F] px-3 py-1 rounded-lg hover:bg-[#FF007F] hover:text-white transition-all active:scale-95 drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">🎲</button>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -1758,6 +1856,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             const [mvpVotes, setMvpVotes] = useState({});
             const [allCarpools, setAllCarpools] = useState({});
             const [rebelCamPhotos, setRebelCamPhotos] = useState([]);
+            const [treasuryGoal, setTreasuryGoal] = useState({ label: 'Mannschaftsfahrt', target: 1000 });
 
             useEffect(() => {
                 const startApp = async () => {
@@ -1810,8 +1909,9 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                 const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), snap => { if(snap.exists()) setTicketPrices(snap.data()); });
                 const unsubCarpools = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'carpools'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setAllCarpools(d); });
                 const unsubCam = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rebel_cam'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setRebelCamPhotos(list.slice(0, 20)); });
+                const unsubGoal = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), snap => { if(snap.exists()) setTreasuryGoal(snap.data()); });
                 
-                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); unsubCarpools(); unsubCam(); };
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); unsubCarpools(); unsubCam(); unsubGoal(); };
             }, [db]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
@@ -1988,26 +2088,23 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                         <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
                     </header>
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} />}
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} allCarpools={allCarpools} />}
+                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} fines={fines} transactions={transactions} treasuryGoal={treasuryGoal} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} allCarpools={allCarpools} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} />}
                         {activeTab === 'kabine' && (
                             <div className="space-y-4 pb-10">
                                 <header>
                                     <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Die Kabine</h2>
                                     <p className="text-sm text-zinc-500 uppercase tracking-widest">Team-Life & Fun</p>
                                 </header>
-                                
                                 <KabinenGluecksrad theme={theme} />
-                                
                                 <RebelCam photos={rebelCamPhotos} onUpload={handleUploadPhoto} onDelete={handleDeletePhoto} me={user} isAdmin={isAdmin} />
-                                
                                 <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />
                             </div>
                         )}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
-                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} />}
+                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} treasuryGoal={treasuryGoal} onUpdateGoal={async (g) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), g); }} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} onDeleteFine={handleDeleteFine} onIncreaseFine={handleIncreaseFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} votesData={votesData} />}
                     </main>
