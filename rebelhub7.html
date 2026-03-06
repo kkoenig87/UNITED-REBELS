@@ -418,9 +418,12 @@
 
         // --- CORE VIEWS ---
 
-        const TicketScannerView = ({ db, theme }) => {
+        // --- CORE VIEWS ---
+
+        const TicketScannerView = ({ db, theme, tickets }) => {
             const [scanResult, setScanResult] = useState(null);
             const [scannerActive, setScannerActive] = useState(false);
+            const [viewMode, setViewMode] = useState('scanner'); // 'scanner' oder 'list'
             const scannerRef = useRef(null);
 
             useEffect(() => {
@@ -457,13 +460,11 @@
                         const isSeason = data.type === 'season';
                         const ticketDetails = isSeason ? 'Dauerkarte' : `${data.adults || 1} Erw. | ${data.children || 0} Kind(er) - ${data.gameLabel || 'Tageskarte'}`;
 
-                        // 1. Unbezahlt Check
                         if (!data.paid) {
                             setScanResult({ status: 'unpaid', id: id, data: data, msg: `Ticket unbezahlt! Bitte ${data.price} € kassieren.`, details: ticketDetails });
                             return;
                         }
 
-                        // 2. Tageskarte: Einmal scannen und entwerten
                         if (!isSeason) {
                             if (data.used) {
                                 setScanResult({ status: 'used', msg: `Achtung! Ticket wurde bereits entwertet. (${data.name})`, details: ticketDetails });
@@ -475,7 +476,6 @@
                             return;
                         }
 
-                        // 3. Dauerkarte: 24h Cooldown
                         if (isSeason) {
                             const now = Date.now();
                             if (data.lastScannedAt) {
@@ -495,6 +495,94 @@
                     } else { setScanResult({ status: 'invalid', msg: 'Ticket in Datenbank nicht gefunden!' }); }
                 } catch(e) { setScanResult({ status: 'invalid', msg: 'Fehler beim Abrufen der Datenbank.' }); }
             };
+
+            const handleMarkAsPaid = async () => {
+                if(!scanResult?.id) return;
+                const { doc, updateDoc } = window.FB;
+                const isSeason = scanResult.data.type === 'season';
+                const updateData = { paid: true, lastScannedAt: Date.now() };
+                if (!isSeason) updateData.used = true;
+
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
+                setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
+                if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
+            };
+
+            return (
+                <div className="space-y-6 animate-slide-up pb-20">
+                    <header>
+                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Kasse & Einlass</h2>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets verwalten</p>
+                    </header>
+                    
+                    <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
+                        <button onClick={() => setViewMode('scanner')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${viewMode==='scanner'?'bg-[#FF007F] text-white':'text-zinc-500'}`}>QR Scanner</button>
+                        <button onClick={() => setViewMode('list')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${viewMode==='list'?'bg-white text-black':'text-zinc-500'}`}>Gästeliste</button>
+                    </div>
+
+                    {viewMode === 'list' && (
+                        <div className="space-y-4 animate-slide-up">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-center">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Offen (Reserviert)</p>
+                                    <p className="text-2xl font-black text-yellow-500 mt-1">{(tickets || []).filter(t=>!t.paid).length}</p>
+                                </div>
+                                <div className="bg-black/40 p-4 rounded-2xl border border-[#FF007F]/20 text-center">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Bezahlt & Drin</p>
+                                    <p className="text-2xl font-black text-[#FF007F] mt-1">{(tickets || []).filter(t=>t.paid).length}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                {(tickets || []).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(t => (
+                                    <div key={t.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
+                                        <div>
+                                            <p className="font-bold text-sm text-white uppercase italic">{t.name}</p>
+                                            <p className="text-[9px] text-zinc-400 mt-1">{t.type === 'season' ? '👑 Dauerkarte' : `🎟️ ${t.adults} Erw. / ${t.children} Kind(er) - ${t.gameLabel}`}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md ${t.paid ? 'bg-[#FF007F]/20 text-[#FF007F]' : 'bg-yellow-500/20 text-yellow-500'}`}>{t.paid ? 'Bezahlt' : 'Offen'}</span>
+                                            <p className="text-sm font-black text-white mt-2">{t.price} €</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!tickets || tickets.length === 0) && <p className="text-center text-zinc-500 text-xs italic py-8">Noch keine Tickets verkauft.</p>}
+                            </div>
+                        </div>
+                    )}
+
+                    {viewMode === 'scanner' && !scannerActive && !scanResult && (
+                        <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center animate-slide-up">
+                            <RebelIcon name="camera" size={64} className="mx-auto mb-4 text-[#FF007F]" />
+                            <button onClick={startScanner} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">Kamera Starten</button>
+                        </div>
+                    )}
+
+                    {viewMode === 'scanner' && scannerActive && (
+                        <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)] animate-slide-up">
+                            <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black"></div>
+                            <button onClick={stopScanner} className="w-full mt-4 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
+                        </div>
+                    )}
+
+                    {viewMode === 'scanner' && scanResult && (
+                        <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl animate-slide-up ${scanResult.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
+                            <RebelIcon name={scanResult.status === 'valid' ? 'check-circle' : scanResult.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
+                            <h3 className="font-black text-xl uppercase mb-2">{scanResult.status === 'valid' ? 'Zutritt gewährt' : scanResult.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
+                            <p className="text-sm font-bold opacity-80 mb-2">{scanResult.msg}</p>
+                            
+                            {scanResult.details && <div className="bg-black/30 p-2 rounded-lg text-xs font-black uppercase mb-6 border border-current opacity-80">{scanResult.details}</div>}
+                            
+                            {scanResult.status === 'unpaid' && (
+                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg active:scale-95 transition-transform">Als Bar Bezahlt markieren & Entwerten</button>
+                            )}
+                            
+                            <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl active:scale-95 transition-transform">Nächstes scannen</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
             const handleMarkAsPaid = async () => {
                 if(!scanResult?.id) return;
@@ -732,7 +820,7 @@
                              <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-[0.2em] mb-2">Verfügbares Budget</p>
                              <p className="text-6xl font-black italic text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{currentBalance.toFixed(2)} €</p>
                              <div className="flex justify-center gap-6 mt-6 border-t border-white/5 pt-6">
-                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Eingenommen</p><p className="text-sm font-black text-green-500">{(paidFinesTotal + otherIncomeTotal).toFixed(2)} €</p></div>
+                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Eingenommen</p><p className="text-sm font-black text-green-500">{(paidFinesTotal + otherIncomeTotal + paidTicketsTotal).toFixed(2)} €</p></div>
                                 <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Ausgegeben</p><p className="text-sm font-black text-red-500">{expensesTotal.toFixed(2)} €</p></div>
                                 <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Noch offen</p><p className="text-sm font-black text-yellow-500">{openDebtTotal.toFixed(2)} €</p></div>
                              </div>
@@ -1283,19 +1371,21 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             );
         };
         
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools, fines, transactions, treasuryGoal }) => {            const [newShout, setNewShout] = useState('');
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools, fines, transactions, treasuryGoal, tickets }) => {            
+                const [newShout, setNewShout] = useState('');
             const nextEvent = useMemo(() => {
                 const now = new Date();
                 return (schedule || []).filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
 
-            // NEU: Kassen-Berechnung fürs Dashboard
+            // NEU: Kassen-Berechnung inkl. Tickets fürs Dashboard
             const currentBalance = useMemo(() => {
                 const pFines = (fines||[]).filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
                 const oInc = (transactions||[]).filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
                 const exp = (transactions||[]).filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-                return (pFines + oInc) - exp;
-            }, [fines, transactions]);
+                const pTickets = (tickets||[]).filter(t => t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                return (pFines + oInc + pTickets) - exp;
+            }, [fines, transactions, tickets]);
             const goalPercent = Math.min(100, Math.round((currentBalance / (treasuryGoal?.target || 1)) * 100));
 
             return (
@@ -2117,7 +2207,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                         <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
                     </header>
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} fines={fines} transactions={transactions} treasuryGoal={treasuryGoal} />}
+                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} fines={fines} transactions={transactions} treasuryGoal={treasuryGoal} tickets={tickets} />}
                         {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} allCarpools={allCarpools} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} />}
                         {activeTab === 'kabine' && (
                             <div className="space-y-4 pb-10">
@@ -2132,7 +2222,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                         )}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
-                        {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
+                        {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} tickets={tickets} />}
                         {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} tickets={tickets} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} treasuryGoal={treasuryGoal} onUpdateGoal={async (g) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), g); }} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} onDeleteFine={handleDeleteFine} onIncreaseFine={handleIncreaseFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} votesData={votesData} />}
