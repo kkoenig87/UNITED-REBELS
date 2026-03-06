@@ -703,15 +703,23 @@
             );
         };
 
-        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId, treasuryGoal, onUpdateGoal }) => {
+        const TreasuryView = ({ theme, fines, transactions, tickets, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId, treasuryGoal, onUpdateGoal }) => {
             const [activeSubTab, setActiveSubTab] = useState('status');
             const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
-            const [localGoal, setLocalGoal] = useState({ label: treasuryGoal?.label || '', target: treasuryGoal?.target || 1000 }); // NEU
+            const [localGoal, setLocalGoal] = useState({ label: treasuryGoal?.label || '', target: treasuryGoal?.target || 1000 }); 
+            
+            // BERECHNUNGEN (inkl. Tickets)
             const paidFinesTotal = useMemo(() => fines.filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
             const otherIncomeTotal = useMemo(() => transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
             const expensesTotal = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
-            const currentBalance = (paidFinesTotal + otherIncomeTotal) - expensesTotal;
-            const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+            
+            // NEU: Ticket-Umsätze berechnen
+            const paidTicketsTotal = useMemo(() => (tickets || []).filter(t => t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0), [tickets]);
+            const openTicketsTotal = useMemo(() => (tickets || []).filter(t => !t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0), [tickets]);
+
+            // Kassenstand und Schulden aktualisiert
+            const currentBalance = (paidFinesTotal + otherIncomeTotal + paidTicketsTotal) - expensesTotal;
+            const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0) + openTicketsTotal;
 
             if(!isAdmin) return null;
 
@@ -773,14 +781,34 @@
 
                     {activeSubTab === 'log' && (
                         <div className="space-y-3">
-                            {[...transactions.map(t => ({...t, isFine: false})), ...fines.filter(f => f.paid).map(f => ({ ...f, isFine: true, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` }))]
+                            {[
+                                // Manuelle Buchungen
+                                ...transactions.map(t => ({...t, isFine: false, isTicket: false})), 
+                                // Bezahlte Strafen
+                                ...fines.filter(f => f.paid).map(f => ({ ...f, isFine: true, isTicket: false, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` })),
+                                // NEU: Bezahlte Tickets
+                                ...(tickets || []).filter(t => t.paid).map(t => ({ ...t, isFine: false, isTicket: true, type: 'income', label: `Ticket: ${t.name} (${t.type === 'day' ? 'Tageskarte' : 'Dauerkarte'})`, amount: t.price }))
+                            ]
                                 .sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
                                 .map((t, i) => (
                                     <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                        <div><p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p><p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p></div>
+                                        <div>
+                                            <p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p>
+                                            <p className="text-[8px] text-zinc-500 uppercase font-bold">
+                                                {t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}
+                                                {t.isTicket && " (An der Kasse bar bezahlt)"}
+                                            </p>
+                                        </div>
                                         <div className="flex items-center gap-3 shrink-0">
-                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>{t.type==='income'?'+':'-'} {t.amount} €</span>
-                                            <button onClick={() => { if(t.isFine) onUnpayFine(t.id); else onDeleteTransaction(t.id); }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors"><RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/></button>
+                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
+                                                {t.type==='income'?'+':'-'} {t.amount} €
+                                            </span>
+                                            {/* Tickets können hier im Log nicht gelöscht werden, da sie ans Ticket-System gekoppelt sind */}
+                                            {!t.isTicket && (
+                                                <button onClick={() => { if(t.isFine) onUnpayFine(t.id); else onDeleteTransaction(t.id); }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors">
+                                                    <RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -1856,6 +1884,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
             const [allCarpools, setAllCarpools] = useState({});
             const [rebelCamPhotos, setRebelCamPhotos] = useState([]);
             const [treasuryGoal, setTreasuryGoal] = useState({ label: 'Mannschaftsfahrt', target: 1000 });
+            const [tickets, setTickets] = useState([]);
 
             useEffect(() => {
                 const startApp = async () => {
@@ -1909,8 +1938,9 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                 const unsubCarpools = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'carpools'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setAllCarpools(d); });
                 const unsubCam = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rebel_cam'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setRebelCamPhotos(list.slice(0, 20)); });
                 const unsubGoal = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), snap => { if(snap.exists()) setTreasuryGoal(snap.data()); });
+                const unsubTickets = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); setTickets(list); });
                 
-                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); unsubCarpools(); unsubCam(); unsubGoal(); };
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); unsubCarpools(); unsubCam(); unsubGoal(); unsubTickets(); };
             }, [db]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
@@ -2103,7 +2133,7 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
                         {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
-                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} treasuryGoal={treasuryGoal} onUpdateGoal={async (g) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), g); }} />}
+                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} tickets={tickets} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} treasuryGoal={treasuryGoal} onUpdateGoal={async (g) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), g); }} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} onDeleteFine={handleDeleteFine} onIncreaseFine={handleIncreaseFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} votesData={votesData} />}
                     </main>
