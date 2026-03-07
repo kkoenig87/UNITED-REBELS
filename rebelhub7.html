@@ -746,6 +746,100 @@
             );
         };
 
+        // --- NEU: DIENSTPLAN ROULETTE ---
+        const TeamDutiesWidget = ({ schedule, votesData, userId, isAdmin, onUpdateEvent, triggerHype, theme }) => {
+            const upcomingGames = useMemo(() => {
+                const now = new Date().setHours(0,0,0,0);
+                return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= now).sort((a,b) => new Date(a.date) - new Date(b.date));
+            }, [schedule]);
+
+            if (upcomingGames.length === 0) return null;
+
+            return (
+                <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-2xl mb-8 animate-slide-up">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]">
+                            <RebelIcon name="clipboard-list" size={28}/>
+                        </div>
+                        <div>
+                            <h3 className={`rebel-font font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Dienstplan</h3>
+                            <p className="text-[10px] text-zinc-400 mt-1 uppercase font-bold tracking-widest">Trikots, Kasten & Harz</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {upcomingGames.map(event => {
+                            const eventVotes = votesData[`event_${event.id}`] || {};
+                            const duties = event.duties || {};
+                            return (
+                                <div key={event.id} className="bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase text-white mb-0.5">{event.label}</h4>
+                                            <p className="text-[9px] text-[#FF007F] font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} Uhr</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        {[
+                                            { id: 'trikots', label: 'Trikots', icon: 'shirt', color: 'text-blue-400' },
+                                            { id: 'getraenke', label: 'Getränke', icon: 'cup-soda', color: 'text-yellow-400' },
+                                            { id: 'harz', label: 'Harz & Tape', icon: 'droplet', color: 'text-zinc-300' }
+                                        ].map(duty => {
+                                            const assignedPlayer = duties[duty.id] ? SQUAD_DATA.find(s => s.id === duties[duty.id]) : null;
+
+                                            const handleVolunteer = () => {
+                                                const newDuties = { ...duties, [duty.id]: userId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                if (window.confetti) window.confetti({ particleCount: 30, colors: ['#22c55e'] });
+                                            };
+
+                                            const handleRoulette = () => {
+                                                const attendingIds = Object.entries(eventVotes).filter(([uid, val]) => val === 'Dabei').map(([uid]) => uid);
+                                                const alreadyAssigned = Object.values(duties);
+                                                let available = attendingIds.filter(id => !alreadyAssigned.includes(id) && id !== 'hc' && id !== 'tm');
+                                                if (available.length === 0) available = SQUAD_DATA.map(s=>s.id).filter(id => id !== 'hc' && id !== 'tm'); 
+                                                
+                                                const randomId = available[Math.floor(Math.random() * available.length)];
+                                                const newDuties = { ...duties, [duty.id]: randomId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                triggerHype();
+                                            };
+
+                                            return (
+                                                <div key={duty.id} className="flex items-center justify-between bg-[#111] p-2.5 rounded-xl border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`p-1.5 rounded-lg bg-white/5 ${duty.color}`}><RebelIcon name={duty.icon} size={14} /></div>
+                                                        <span className="text-[11px] font-bold text-white uppercase">{duty.label}</span>
+                                                    </div>
+                                                    
+                                                    {assignedPlayer ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-white/10 ${assignedPlayer.id === userId ? 'text-[#FF007F] border border-[#FF007F]/30' : 'text-white'}`}>
+                                                                {assignedPlayer.name}
+                                                            </span>
+                                                            {(isAdmin || assignedPlayer.id === userId) && (
+                                                                <button onClick={() => { const newDuties = {...duties}; delete newDuties[duty.id]; onUpdateEvent(event.id, { duties: newDuties }); }} className="text-zinc-500 hover:text-red-500 p-1"><RebelIcon name="x" size={14}/></button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={handleVolunteer} className="text-[9px] bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg font-black uppercase hover:bg-green-500 hover:text-black transition-all active:scale-95">Ich mach's!</button>
+                                                            {isAdmin && <button onClick={handleRoulette} className="text-[12px] bg-[#FF007F]/20 border border-[#FF007F]/40 text-[#FF007F] px-3 py-1 rounded-lg hover:bg-[#FF007F] hover:text-white transition-all active:scale-95 drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">🎲</button>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
         const GeneralPollsView = ({ votesData, userId, onVote, isAdmin, theme, schedule, mvpVotes, onVoteMvp }) => {
             const sizePoll = votesData['warmup_shirt_size'] || {};
             const pastGames = (schedule || []).filter(e => e.type === 'game' && new Date(e.date + 'T' + (e.time||'00:00')) < new Date()).sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
@@ -1564,66 +1658,6 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                         </div>
                                     ))}
                                 </div>
-                                {/* NEU: DIENSTE & ROULETTE */}
-                                {event.type === 'game' && (
-                                    <div className="mt-4 pt-4 border-t border-dashed border-white/10 space-y-2">
-                                        <h5 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-3 flex items-center gap-2"><RebelIcon name="clipboard-check" size={14}/> Team-Dienste</h5>
-                                        
-                                        {[
-                                            { id: 'trikots', label: 'Trikots', icon: 'shirt', color: 'text-blue-400' },
-                                            { id: 'getraenke', label: 'Getränke', icon: 'cup-soda', color: 'text-yellow-400' },
-                                            { id: 'harz', label: 'Harz & Tape', icon: 'droplet', color: 'text-zinc-300' }
-                                        ].map(duty => {
-                                            const duties = event.duties || {};
-                                            const assignedPlayer = duties[duty.id] ? SQUAD_DATA.find(s => s.id === duties[duty.id]) : null;
-
-                                            const handleVolunteer = () => {
-                                                const newDuties = { ...duties, [duty.id]: userId };
-                                                onUpdateEvent(event.id, { duties: newDuties });
-                                                if (window.confetti) window.confetti({ particleCount: 30, colors: ['#22c55e'] });
-                                            };
-
-                                            const handleRoulette = () => {
-                                                // Wer ist 'Dabei'?
-                                                const attendingIds = Object.entries(eventVotes).filter(([uid, val]) => val === 'Dabei').map(([uid]) => uid);
-                                                // Wer hat noch keinen anderen Dienst an diesem Tag?
-                                                const alreadyAssigned = Object.values(duties);
-                                                let available = attendingIds.filter(id => !alreadyAssigned.includes(id) && id !== 'hc' && id !== 'tm');
-                                                // Falls keiner "Dabei" ist oder alle einen Dienst haben, nimm alle Spieler:
-                                                if (available.length === 0) available = SQUAD_DATA.map(s=>s.id).filter(id => id !== 'hc' && id !== 'tm'); 
-                                                
-                                                const randomId = available[Math.floor(Math.random() * available.length)];
-                                                const newDuties = { ...duties, [duty.id]: randomId };
-                                                onUpdateEvent(event.id, { duties: newDuties });
-                                                triggerHype();
-                                            };
-
-                                            return (
-                                                <div key={duty.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`p-1.5 rounded-lg bg-white/5 ${duty.color}`}><RebelIcon name={duty.icon} size={14} /></div>
-                                                        <span className="text-[11px] font-bold text-white uppercase">{duty.label}</span>
-                                                    </div>
-                                                    
-                                                    {assignedPlayer ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-white/10 ${assignedPlayer.id === userId ? 'text-[#FF007F] border border-[#FF007F]/30' : 'text-white'}`}>
-                                                                {assignedPlayer.name}
-                                                            </span>
-                                                            {(isAdmin || assignedPlayer.id === userId) && (
-                                                                <button onClick={() => { const newDuties = {...duties}; delete newDuties[duty.id]; onUpdateEvent(event.id, { duties: newDuties }); }} className="text-zinc-500 hover:text-red-500 p-1"><RebelIcon name="x" size={14}/></button>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex gap-2">
-                                                            <button onClick={handleVolunteer} className="text-[9px] bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg font-black uppercase hover:bg-green-500 hover:text-black transition-all active:scale-95">Ich mach's!</button>
-                                                            {isAdmin && <button onClick={handleRoulette} className="text-[12px] bg-[#FF007F]/20 border border-[#FF007F]/40 text-[#FF007F] px-3 py-1 rounded-lg hover:bg-[#FF007F] hover:text-white transition-all active:scale-95 drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">🎲</button>}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
                                 )}
                             </div>
                         );
@@ -2260,6 +2294,8 @@ const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
                                 </header>
                                 <KabinenGluecksrad theme={theme} />
                                 <RebelCam photos={rebelCamPhotos} onUpload={handleUploadPhoto} onDelete={handleDeletePhoto} me={user} isAdmin={isAdmin} />
+                                {/* NEUER DIENSTPLAN */}
+                                <TeamDutiesWidget schedule={schedule} votesData={votesData} userId={user.id} isAdmin={isAdmin} triggerHype={triggerHype} theme={theme} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} />
                                 <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />
                             </div>
                         )}
