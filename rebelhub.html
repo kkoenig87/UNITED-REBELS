@@ -9,9 +9,10 @@
     <meta name="apple-mobile-web-app-title" content="REBEL HUB">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#050505" id="theme-meta">
-    
+
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
     
     <title>UNITED REBELS - Rebel Hub Ultimate</title>
     
@@ -93,7 +94,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc };
+        // NEU: Messaging Import
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
+        
+        window.FB = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc, serverTimestamp, query, getDoc, getMessaging, getToken, onMessage };
     </script>
 
     <script type="text/babel">
@@ -107,7 +111,7 @@
             messagingSenderId: "240623232398",
             appId: "1:240623232398:web:012f79f0ebfa20cc3ff0df"
         };
-
+        
         const SQUAD_DATA = [
             { id: 'hc', name: "Heiko", pw: "RebelHeiko26", icon: "zap", number: 'HC' },
             { id: 'tm', name: "Kai", pw: "RebelKai26", icon: "sparkles", number: 'TM' }, 
@@ -126,7 +130,11 @@
             { id: 'p13', name: "Ayleen", pw: "Jackson", icon: "zap", number: '28' },
             { id: 'p14', name: "Sandra", pw: "v3rr@t1cHd1rnIch7", icon: "award", number: '28' },
             { id: 'p15', name: "Tini", pw: "26072011", icon: "flame", number: '33' },
-            { id: 'p16', name: "Nessi", pw: "Blumenwiese2026!", icon: "zap", number: '??' }
+            { id: 'p16', name: "Nessi", pw: "Blumenwiese2026!", icon: "zap", number: '22' },
+            { id: 'p17', name: "Manu", pw: "RebelManu26!", icon: "target", number: '??' },
+            { id: 'p18', name: "Christiane", pw: "RebelChris26!", icon: "sparkles", number: '??' },
+            { id: 'p19', name: "Sofia", pw: "RebelSofia26!", icon: "crosshair", number: '??' },
+            { id: 'p20', name: "Maya", pw: "RebelMaya26!", icon: "flame", number: '??' }
         ];
 
         const FINE_CATALOG = [
@@ -209,13 +217,14 @@
 
             const handleWhatsApp = () => {
                 if (slackers.length === 0) {
-                    alert("Alle haben abgestimmt! 🔥");
+                    alert("Alle haben abgestimmt! \uD83D\uDD25");
                     if(onHype) onHype();
                     return;
                 }
                 const names = slackers.map(s => s.name).join(', ');
-                const text = `🚨 *REBEL REMINDER* 🚨%0A%0AFür *${event.label}* fehlen noch Rückmeldungen von:%0A%0A👉 ${names}%0A%0ABitte im Hub abstimmen, sonst 0,50€ Strafe! ⚡`;
-                window.open(`https://wa.me/?text=${text}`, '_blank');
+                // 100% sichere Unicode-Emojis: 🚨, 👉, ⚡
+                const rawText = "\uD83D\uDEA8 *REBEL REMINDER* \uD83D\uDEA8\n\nFür *" + event.label + "* fehlen noch Rückmeldungen von:\n\n\uD83D\uDC49 " + names + "\n\nBitte im Hub abstimmen, sonst 0,50€ Strafe! \u26A1";
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
             };
 
             return (
@@ -234,14 +243,18 @@
             );
         };
 
-        // --- PUBLIC TICKET SHOP ---
+       // --- PUBLIC TICKET SHOP ---
         const PublicTicketShop = ({ db, schedule, ticketPrices, onBack }) => {
             const [buyer, setBuyer] = useState({ name: '', email: '', type: 'day', gameId: '', adults: 1, children: 0 });
             const [ticketId, setTicketId] = useState(null);
             const [loading, setLoading] = useState(false);
 
+            // Besserer Filter für zukünftige Spiele (nimmt auch die Uhrzeit mit rein)
             const upcomingGames = useMemo(() => {
-                return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= new Date().setHours(0,0,0,0));
+                const now = new Date();
+                return (schedule || [])
+                    .filter(e => e.type === 'game' && new Date(e.date + 'T' + (e.time||'00:00')) >= now)
+                    .sort((a,b) => new Date(a.date) - new Date(b.date));
             }, [schedule]);
 
             const priceAdult = ticketPrices?.adults || 5;
@@ -276,9 +289,14 @@
                     const { collection, addDoc, serverTimestamp } = window.FB;
                     const selectedGame = upcomingGames.find(g => g.id === buyer.gameId);
                     
+                    // WICHTIG: Das Datum direkt in den Namen brennen, für die saubere Gästeliste!
+                    const finalGameLabel = selectedGame 
+                        ? `${selectedGame.label} - ${new Date(selectedGame.date).toLocaleDateString('de-DE')}` 
+                        : 'Alle Spiele (Saison)';
+
                     const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), {
                         ...buyer,
-                        gameLabel: selectedGame ? selectedGame.label : 'Alle Spiele (Saison)',
+                        gameLabel: finalGameLabel, // <- Jetzt inkl. Datum gespeichert!
                         used: false,
                         paid: false,
                         price: totalPrice,
@@ -290,7 +308,7 @@
                     if (window.emailjs) {
                         try {
                             const ticketText = buyer.type === 'day' 
-                                ? `Tageskarte (${totalPrice}€) - ${buyer.adults} Erw., ${buyer.children} Kind(er)` 
+                                ? `Tageskarte (${totalPrice}€) - ${buyer.adults} Erw., ${buyer.children} Kind(er)\nSpiel: ${finalGameLabel}` 
                                 : 'Dauerkarte (40€)';
                                 
                             await window.emailjs.send(
@@ -321,10 +339,12 @@
                             <h2 className="rebel-font font-black italic text-2xl uppercase mb-1 mt-2 text-white">UNITED REBELS</h2>
                             <p className="text-[#FF007F] text-sm mb-2 uppercase tracking-widest font-black">{buyer.type === 'day' ? '🎟️ Tageskarte' : '👑 Dauerkarte'}</p>
                             
-                            {buyer.type === 'day' && (
-                                <div className="mb-4 bg-white/5 p-2 rounded-xl border border-white/10">
-                                    <p className="text-xs font-bold text-white uppercase">{selectedGame?.label}</p>
-                                    <p className="text-[10px] text-zinc-400 mt-1">{buyer.adults} Erw. | {buyer.children} Kind(er)</p>
+                            {/* Verbessertes Ticket-Design inkl. Datum */}
+                            {buyer.type === 'day' && selectedGame && (
+                                <div className="mb-4 bg-white/5 p-3 rounded-xl border border-white/10">
+                                    <p className="text-xs font-bold text-white uppercase">{selectedGame.label}</p>
+                                    <p className="text-[10px] text-[#FF007F] font-black uppercase mt-0.5">{new Date(selectedGame.date).toLocaleDateString('de-DE')} | {selectedGame.time} Uhr</p>
+                                    <p className="text-[10px] text-zinc-400 mt-2 pt-2 border-t border-white/10">{buyer.adults} Erw. | {buyer.children} Kind(er)</p>
                                 </div>
                             )}
 
@@ -366,10 +386,20 @@
 
                             {buyer.type === 'day' && (
                                 <div className="space-y-4 animate-slide-up pt-2">
-                                    <select required className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm outline-none text-white appearance-none" value={buyer.gameId} onChange={e => setBuyer({...buyer, gameId: e.target.value})}>
-                                        <option value="" disabled>Für welches Spiel?</option>
-                                        {upcomingGames.map(g => <option key={g.id} value={g.id}>{g.label} ({new Date(g.date).toLocaleDateString()})</option>)}
-                                    </select>
+                                    
+                                    {/* Verbessertes Dropdown Menü für Spiele */}
+                                    {upcomingGames.length === 0 ? (
+                                        <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl text-center">
+                                            <p className="text-xs font-bold text-red-500">Aktuell sind keine Spiele geplant.</p>
+                                        </div>
+                                    ) : (
+                                        <select required className="w-full bg-black border border-[#FF007F]/50 rounded-xl p-4 text-sm outline-none text-white appearance-none font-bold shadow-lg" value={buyer.gameId} onChange={e => setBuyer({...buyer, gameId: e.target.value})}>
+                                            <option value="" disabled>Welches Spiel möchtest du sehen?</option>
+                                            {upcomingGames.map(g => (
+                                                <option key={g.id} value={g.id}>{g.label} ({new Date(g.date).toLocaleDateString('de-DE')})</option>
+                                            ))}
+                                        </select>
+                                    )}
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-black/40 border border-white/10 p-3 rounded-xl">
@@ -397,7 +427,7 @@
                                 <span className="font-black text-xl text-[#FF007F]">{totalPrice} €</span>
                             </div>
 
-                            <button type="submit" disabled={loading} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">
+                            <button type="submit" disabled={loading || (buyer.type === 'day' && upcomingGames.length === 0)} className="w-full bg-[#FF007F] text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)] disabled:opacity-50 disabled:scale-100">
                                 {loading ? 'Generiere...' : 'Ticket sichern'}
                             </button>
                             <p className="text-center text-[10px] text-zinc-500 uppercase mt-2">Zahlung erfolgt vor Ort an der Kasse.</p>
@@ -406,12 +436,13 @@
                 </div>
             );
         };
-
         // --- CORE VIEWS ---
 
-        const TicketScannerView = ({ db, theme }) => {
+        const TicketScannerView = ({ db, theme, tickets, schedule }) => {
             const [scanResult, setScanResult] = useState(null);
             const [scannerActive, setScannerActive] = useState(false);
+            const [viewMode, setViewMode] = useState('scanner'); // 'scanner' oder 'list'
+            const [filterGame, setFilterGame] = useState('all');
             const scannerRef = useRef(null);
 
             useEffect(() => {
@@ -448,13 +479,11 @@
                         const isSeason = data.type === 'season';
                         const ticketDetails = isSeason ? 'Dauerkarte' : `${data.adults || 1} Erw. | ${data.children || 0} Kind(er) - ${data.gameLabel || 'Tageskarte'}`;
 
-                        // 1. Unbezahlt Check
                         if (!data.paid) {
                             setScanResult({ status: 'unpaid', id: id, data: data, msg: `Ticket unbezahlt! Bitte ${data.price} € kassieren.`, details: ticketDetails });
                             return;
                         }
 
-                        // 2. Tageskarte: Einmal scannen und entwerten
                         if (!isSeason) {
                             if (data.used) {
                                 setScanResult({ status: 'used', msg: `Achtung! Ticket wurde bereits entwertet. (${data.name})`, details: ticketDetails });
@@ -466,7 +495,6 @@
                             return;
                         }
 
-                        // 3. Dauerkarte: 24h Cooldown
                         if (isSeason) {
                             const now = Date.now();
                             if (data.lastScannedAt) {
@@ -492,32 +520,144 @@
                 const { doc, updateDoc } = window.FB;
                 const isSeason = scanResult.data.type === 'season';
                 const updateData = { paid: true, lastScannedAt: Date.now() };
-                if (!isSeason) updateData.used = true; // Tageskarten direkt nach Barzahlung werten
+                if (!isSeason) updateData.used = true;
 
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', scanResult.id), updateData);
                 setScanResult({ status: 'valid', msg: `Bezahlt & ${isSeason ? 'Aktiviert' : 'Entwertet'}! Viel Spaß, ${scanResult.data.name}!`, details: scanResult.details });
                 if (window.confetti) window.confetti({ particleCount: 50, colors: ['#00FF00'] });
             };
 
+            const handleDeleteTicket = async (ticketId, ticketName) => {
+                if(window.confirm(`Ticket von ${ticketName} wirklich löschen? Das storniert die Reservierung und zieht ggf. Einnahmen sofort aus der Kasse ab.`)) {
+                    try {
+                        const { doc, deleteDoc } = window.FB;
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', ticketId));
+                    } catch(e) {
+                        alert("Fehler beim Löschen des Tickets.");
+                    }
+                }
+            };
+
+            const handleManualCheckIn = async (t) => {
+                if(window.confirm(`Gast: ${t.name}\nTicket: ${t.type === 'season' ? 'Dauerkarte' : t.gameLabel}\nBetrag: ${t.price}€\n\nTicket manuell einchecken und Betrag als bar bezahlt verbuchen?`)) {
+                    try {
+                        const { doc, updateDoc } = window.FB;
+                        const isSeason = t.type === 'season';
+                        const updateData = { paid: true, lastScannedAt: Date.now() };
+                        if (!isSeason) updateData.used = true;
+
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tickets', t.id), updateData);
+                        if (window.confetti) window.confetti({ particleCount: 50, colors: ['#22c55e'] });
+                    } catch(e) {
+                        alert("Fehler beim manuellen Check-in.");
+                    }
+                }
+            };
+
+            // NEU: Zukünftige Spiele direkt aus dem Kalender laden
+            const upcomingGames = useMemo(() => {
+                const now = new Date().setHours(0,0,0,0);
+                return (schedule || [])
+                    .filter(e => e.type === 'game' && new Date(e.date) >= now)
+                    .sort((a,b) => new Date(a.date) - new Date(b.date));
+            }, [schedule]);
+
+            // Tickets filtern
+            const filteredTickets = useMemo(() => {
+                if (filterGame === 'all') return tickets || [];
+                if (filterGame === 'season') return (tickets || []).filter(t => t.type === 'season');
+                return (tickets || []).filter(t => t.gameLabel === filterGame);
+            }, [tickets, filterGame]);
+
             return (
                 <div className="space-y-6 animate-slide-up pb-20">
-                    <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Einlass-Scanner</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets prüfen</p></header>
+                    <header>
+                        <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Kasse & Einlass</h2>
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest">Tickets verwalten</p>
+                    </header>
                     
-                    {!scannerActive && !scanResult && (
-                        <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center">
+                    <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5">
+                        <button onClick={() => setViewMode('scanner')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${viewMode==='scanner'?'bg-[#FF007F] text-white':'text-zinc-500'}`}>QR Scanner</button>
+                        <button onClick={() => setViewMode('list')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${viewMode==='list'?'bg-white text-black':'text-zinc-500'}`}>Gästeliste</button>
+                    </div>
+
+                    {viewMode === 'list' && (
+                        <div className="space-y-4 animate-slide-up">
+                            
+                            {/* Dropdown basierend auf echtem Spielplan */}
+                            <select 
+                                value={filterGame} 
+                                onChange={e => setFilterGame(e.target.value)}
+                                className="w-full bg-black/40 border border-[#FF007F]/30 rounded-xl p-4 text-xs text-white outline-none font-bold uppercase shadow-lg appearance-none"
+                            >
+                                <option value="all">Alle Tickets anzeigen</option>
+                                <option value="season">Nur Dauerkarten</option>
+                                <option disabled>──────────</option>
+                                {upcomingGames.map(game => (
+                                    <option key={game.id} value={game.label}>{game.label} ({new Date(game.date).toLocaleDateString('de-DE')})</option>
+                                ))}
+                            </select>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-center">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Offen (Res.)</p>
+                                    <p className="text-2xl font-black text-yellow-500 mt-1">{filteredTickets.filter(t=>!t.paid).length}</p>
+                                </div>
+                                <div className="bg-black/40 p-4 rounded-2xl border border-[#FF007F]/20 text-center">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Bezahlt</p>
+                                    <p className="text-2xl font-black text-[#FF007F] mt-1">{filteredTickets.filter(t=>t.paid).length}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                {filteredTickets.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(t => (
+                                    <div key={t.id} className="bg-[#111] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-md">
+                                        <div className="flex-1 pr-4 truncate">
+                                            <p className="font-bold text-sm text-white uppercase italic truncate">{t.name}</p>
+                                            <p className="text-[9px] text-zinc-400 mt-1 truncate">{t.type === 'season' ? '👑 Dauerkarte' : `🎟️ ${t.adults} Erw. / ${t.children} Kind(er) - ${t.gameLabel}`}</p>
+                                        </div>
+                                        <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                                            
+                                            {t.paid ? (
+                                                <span className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-[#FF007F]/20 text-[#FF007F]">Bezahlt & Drin</span>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleManualCheckIn(t)} 
+                                                    className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-green-500/20 text-green-500 border border-green-500/30 hover:bg-green-500 hover:text-black transition-all active:scale-95 shadow-lg"
+                                                >
+                                                    Check-In (Bar)
+                                                </button>
+                                            )}
+
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-sm font-black text-white">{t.price} €</p>
+                                                <button onClick={() => handleDeleteTicket(t.id, t.name)} className="text-zinc-600 hover:text-red-500 p-1 transition-colors">
+                                                    <RebelIcon name="trash-2" size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {filteredTickets.length === 0 && <p className="text-center text-zinc-500 text-xs italic py-8">Keine Tickets in dieser Ansicht gefunden.</p>}
+                            </div>
+                        </div>
+                    )}
+
+                    {viewMode === 'scanner' && !scannerActive && !scanResult && (
+                        <div className="bg-black/40 p-8 rounded-3xl border border-white/5 shadow-xl text-center animate-slide-up">
                             <RebelIcon name="camera" size={64} className="mx-auto mb-4 text-[#FF007F]" />
                             <button onClick={startScanner} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">Kamera Starten</button>
                         </div>
                     )}
 
-                    {scannerActive && (
-                        <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)]">
+                    {viewMode === 'scanner' && scannerActive && (
+                        <div className="bg-black p-4 rounded-3xl border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.3)] animate-slide-up">
                             <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black"></div>
                             <button onClick={stopScanner} className="w-full mt-4 bg-zinc-800 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest">Abbrechen</button>
                         </div>
                     )}
 
-                    {scanResult && (
+                    {viewMode === 'scanner' && scanResult && (
                         <div className={`p-8 rounded-3xl text-center border-2 shadow-2xl animate-slide-up ${scanResult.status === 'valid' ? 'bg-green-500/10 border-green-500 text-green-500' : scanResult.status === 'used' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : scanResult.status === 'unpaid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
                             <RebelIcon name={scanResult.status === 'valid' ? 'check-circle' : scanResult.status === 'unpaid' ? 'euro' : 'alert-triangle'} size={64} className="mx-auto mb-4" />
                             <h3 className="font-black text-xl uppercase mb-2">{scanResult.status === 'valid' ? 'Zutritt gewährt' : scanResult.status === 'unpaid' ? 'Kassieren!' : 'Kein Zutritt'}</h3>
@@ -526,16 +666,16 @@
                             {scanResult.details && <div className="bg-black/30 p-2 rounded-lg text-xs font-black uppercase mb-6 border border-current opacity-80">{scanResult.details}</div>}
                             
                             {scanResult.status === 'unpaid' && (
-                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg">Als Bar Bezahlt markieren & Entwerten</button>
+                                <button onClick={handleMarkAsPaid} className="mb-4 bg-orange-500 text-white py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-lg active:scale-95 transition-transform">Als Bar Bezahlt markieren & Entwerten</button>
                             )}
                             
-                            <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl">Nächstes scannen</button>
+                            <button onClick={startScanner} className="bg-white text-black py-4 px-8 rounded-xl font-black uppercase tracking-widest w-full shadow-xl active:scale-95 transition-transform">Nächstes scannen</button>
                         </div>
                     )}
                 </div>
             );
         };
-
+        
         const RebelCard = ({ member, goals = 0, mvpWins = 0, isMe }) => {
             const cardRef = useRef(null);
             const [rotate, setRotate] = useState({ x: 0, y: 0 });
@@ -600,6 +740,100 @@
                                     </div>
                                 </div>
                             );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEU: DIENSTPLAN ROULETTE ---
+        const TeamDutiesWidget = ({ schedule, votesData, userId, isAdmin, onUpdateEvent, triggerHype, theme }) => {
+            const upcomingGames = useMemo(() => {
+                const now = new Date().setHours(0,0,0,0);
+                return (schedule || []).filter(e => e.type === 'game' && new Date(e.date) >= now).sort((a,b) => new Date(a.date) - new Date(b.date));
+            }, [schedule]);
+
+            if (upcomingGames.length === 0) return null;
+
+            return (
+                <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-2xl mb-8 animate-slide-up">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-[#FF007F]/20 rounded-2xl text-[#FF007F]">
+                            <RebelIcon name="clipboard-list" size={28}/>
+                        </div>
+                        <div>
+                            <h3 className={`rebel-font font-black italic text-xl uppercase leading-none ${theme==='light'?'text-black':'text-white'}`}>Dienstplan</h3>
+                            <p className="text-[10px] text-zinc-400 mt-1 uppercase font-bold tracking-widest">Trikots, Kasten & Harz</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {upcomingGames.map(event => {
+                            const eventVotes = votesData[`event_${event.id}`] || {};
+                            const duties = event.duties || {};
+                            return (
+                                <div key={event.id} className="bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase text-white mb-0.5">{event.label}</h4>
+                                            <p className="text-[9px] text-[#FF007F] font-bold uppercase">{new Date(event.date).toLocaleDateString('de-DE')} | {event.time} Uhr</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        {[
+                                            { id: 'trikots', label: 'Trikots', icon: 'shirt', color: 'text-blue-400' },
+                                            { id: 'getraenke', label: 'Getränke', icon: 'cup-soda', color: 'text-yellow-400' },
+                                            { id: 'harz', label: 'Traubenzucker & Tape', icon: 'zap', color: 'text-zinc-300' }
+                                        ].map(duty => {
+                                            const assignedPlayer = duties[duty.id] ? SQUAD_DATA.find(s => s.id === duties[duty.id]) : null;
+
+                                            const handleVolunteer = () => {
+                                                const newDuties = { ...duties, [duty.id]: userId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                if (window.confetti) window.confetti({ particleCount: 30, colors: ['#22c55e'] });
+                                            };
+
+                                            const handleRoulette = () => {
+                                                const attendingIds = Object.entries(eventVotes).filter(([uid, val]) => val === 'Dabei').map(([uid]) => uid);
+                                                const alreadyAssigned = Object.values(duties);
+                                                let available = attendingIds.filter(id => !alreadyAssigned.includes(id) && id !== 'hc' && id !== 'tm');
+                                                if (available.length === 0) available = SQUAD_DATA.map(s=>s.id).filter(id => id !== 'hc' && id !== 'tm'); 
+                                                
+                                                const randomId = available[Math.floor(Math.random() * available.length)];
+                                                const newDuties = { ...duties, [duty.id]: randomId };
+                                                onUpdateEvent(event.id, { duties: newDuties });
+                                                triggerHype();
+                                            };
+
+                                            return (
+                                                <div key={duty.id} className="flex items-center justify-between bg-[#111] p-2.5 rounded-xl border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`p-1.5 rounded-lg bg-white/5 ${duty.color}`}><RebelIcon name={duty.icon} size={14} /></div>
+                                                        <span className="text-[11px] font-bold text-white uppercase">{duty.label}</span>
+                                                    </div>
+                                                    
+                                                    {assignedPlayer ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded bg-white/10 ${assignedPlayer.id === userId ? 'text-[#FF007F] border border-[#FF007F]/30' : 'text-white'}`}>
+                                                                {assignedPlayer.name}
+                                                            </span>
+                                                            {(isAdmin || assignedPlayer.id === userId) && (
+                                                                <button onClick={() => { const newDuties = {...duties}; delete newDuties[duty.id]; onUpdateEvent(event.id, { duties: newDuties }); }} className="text-zinc-500 hover:text-red-500 p-1"><RebelIcon name="x" size={14}/></button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={handleVolunteer} className="text-[9px] bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg font-black uppercase hover:bg-green-500 hover:text-black transition-all active:scale-95">Ich mach's!</button>
+                                                            {isAdmin && <button onClick={handleRoulette} className="text-[12px] bg-[#FF007F]/20 border border-[#FF007F]/40 text-[#FF007F] px-3 py-1 rounded-lg hover:bg-[#FF007F] hover:text-white transition-all active:scale-95 drop-shadow-[0_0_8px_rgba(255,0,127,0.5)]">🎲</button>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )
                         })}
                     </div>
                 </div>
@@ -694,14 +928,23 @@
             );
         };
 
-        const TreasuryView = ({ theme, fines, transactions, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId }) => {
+        const TreasuryView = ({ theme, fines, transactions, tickets, isAdmin, onAddTransaction, onDeleteTransaction, onUnpayFine, myId, treasuryGoal, onUpdateGoal }) => {
             const [activeSubTab, setActiveSubTab] = useState('status');
             const [newTrans, setNewTrans] = useState({ label: '', amount: '', type: 'income' });
+            const [localGoal, setLocalGoal] = useState({ label: treasuryGoal?.label || '', target: treasuryGoal?.target || 1000 }); 
+            
+            // BERECHNUNGEN (inkl. Tickets)
             const paidFinesTotal = useMemo(() => fines.filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0), [fines]);
             const otherIncomeTotal = useMemo(() => transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
             const expensesTotal = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0), [transactions]);
-            const currentBalance = (paidFinesTotal + otherIncomeTotal) - expensesTotal;
-            const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+            
+            // NEU: Ticket-Umsätze berechnen
+            const paidTicketsTotal = useMemo(() => (tickets || []).filter(t => t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0), [tickets]);
+            const openTicketsTotal = useMemo(() => (tickets || []).filter(t => !t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0), [tickets]);
+
+            // Kassenstand und Schulden aktualisiert
+            const currentBalance = (paidFinesTotal + otherIncomeTotal + paidTicketsTotal) - expensesTotal;
+            const openDebtTotal = fines.filter(f => !f.paid).reduce((sum, f) => sum + (f.amount || 0), 0) + openTicketsTotal;
 
             if(!isAdmin) return null;
 
@@ -714,7 +957,7 @@
                              <p className="text-[10px] font-black uppercase text-[#FF007F] tracking-[0.2em] mb-2">Verfügbares Budget</p>
                              <p className="text-6xl font-black italic text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{currentBalance.toFixed(2)} €</p>
                              <div className="flex justify-center gap-6 mt-6 border-t border-white/5 pt-6">
-                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Eingenommen</p><p className="text-sm font-black text-green-500">{(paidFinesTotal + otherIncomeTotal).toFixed(2)} €</p></div>
+                                <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Eingenommen</p><p className="text-sm font-black text-green-500">{(paidFinesTotal + otherIncomeTotal + paidTicketsTotal).toFixed(2)} €</p></div>
                                 <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Ausgegeben</p><p className="text-sm font-black text-red-500">{expensesTotal.toFixed(2)} €</p></div>
                                 <div><p className="text-[8px] uppercase text-zinc-500 font-bold">Noch offen</p><p className="text-sm font-black text-yellow-500">{openDebtTotal.toFixed(2)} €</p></div>
                              </div>
@@ -727,6 +970,15 @@
 
                     {activeSubTab === 'status' && (
                         <div className="space-y-6">
+                            {/* NEU: Admin Ziel-Einstellung */}
+                            <div className="bg-black/30 p-4 rounded-2xl border border-white/5 shadow-inner">
+                                <h4 className="text-[10px] font-black uppercase text-[#FF007F] mb-3 tracking-widest flex items-center gap-2"><RebelIcon name="target" size={14}/> Dashboard Ziel ändern</h4>
+                                <div className="grid grid-cols-2 gap-3 text-white mb-3">
+                                    <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Titel (z.B. Malle)</label><input type="text" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localGoal.label} onChange={e => setLocalGoal({...localGoal, label: e.target.value})} /></div>
+                                    <div><label className="text-[8px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Ziel-Betrag (€)</label><input type="number" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={localGoal.target} onChange={e => setLocalGoal({...localGoal, target: parseFloat(e.target.value)||0})} /></div>
+                                </div>
+                                <button onClick={() => onUpdateGoal(localGoal)} className="w-full bg-white text-black py-2 rounded-xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-transform">Ziel speichern</button>
+                            </div>
                             <section className="glass-card p-6 rounded-3xl border-white/10 bg-black/20 space-y-4">
                                 <h3 className="rebel-font font-black italic text-xs text-white uppercase">Neue Buchung</h3>
                                 <div className="grid grid-cols-2 gap-2">
@@ -754,14 +1006,34 @@
 
                     {activeSubTab === 'log' && (
                         <div className="space-y-3">
-                            {[...transactions.map(t => ({...t, isFine: false})), ...fines.filter(f => f.paid).map(f => ({ ...f, isFine: true, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` }))]
+                            {[
+                                // Manuelle Buchungen
+                                ...transactions.map(t => ({...t, isFine: false, isTicket: false})), 
+                                // Bezahlte Strafen
+                                ...fines.filter(f => f.paid).map(f => ({ ...f, isFine: true, isTicket: false, type: 'income', label: `Strafe: ${f.reason} (${SQUAD_DATA.find(s => s.id === f.playerId)?.name})` })),
+                                // NEU: Bezahlte Tickets
+                                ...(tickets || []).filter(t => t.paid).map(t => ({ ...t, isFine: false, isTicket: true, type: 'income', label: `Ticket: ${t.name} (${t.type === 'day' ? 'Tageskarte' : 'Dauerkarte'})`, amount: t.price }))
+                            ]
                                 .sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
                                 .map((t, i) => (
                                     <div key={i} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                                        <div><p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p><p className="text-[8px] text-zinc-500 uppercase font-bold">{t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p></div>
+                                        <div>
+                                            <p className="text-xs font-black text-white pr-2">{t.label || t.reason}</p>
+                                            <p className="text-[8px] text-zinc-500 uppercase font-bold">
+                                                {t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}
+                                                {t.isTicket && " (An der Kasse bar bezahlt)"}
+                                            </p>
+                                        </div>
                                         <div className="flex items-center gap-3 shrink-0">
-                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>{t.type==='income'?'+':'-'} {t.amount} €</span>
-                                            <button onClick={() => { if(t.isFine) onUnpayFine(t.id); else onDeleteTransaction(t.id); }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors"><RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/></button>
+                                            <span className={`text-sm font-black ${t.type==='income'?'text-green-500':'text-red-500'}`}>
+                                                {t.type==='income'?'+':'-'} {t.amount} €
+                                            </span>
+                                            {/* Tickets können hier im Log nicht gelöscht werden, da sie ans Ticket-System gekoppelt sind */}
+                                            {!t.isTicket && (
+                                                <button onClick={() => { if(t.isFine) onUnpayFine(t.id); else onDeleteTransaction(t.id); }} className="p-2 bg-black/50 text-zinc-400 hover:text-red-500 rounded-lg border border-white/10 transition-colors">
+                                                    <RebelIcon name={t.isFine ? "rotate-ccw" : "trash-2"} size={14}/>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -783,31 +1055,31 @@
             }, [fines]);
 
             const handleFinesReminder = () => {
-    // 1. Alle Schulden pro Spielerin zusammenrechnen
-    const debtMap = {};
-    fines.filter(f => !f.paid).forEach(f => {
-        debtMap[f.playerId] = (debtMap[f.playerId] || 0) + (f.amount || 0);
-    });
+                const debtMap = {};
+                fines.filter(f => !f.paid).forEach(f => {
+                    debtMap[f.playerId] = (debtMap[f.playerId] || 0) + (f.amount || 0);
+                });
 
-    const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
-        const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
-        return `👉 ${name}: ${amount.toFixed(2).replace('.', ',')}€`;
-    });
+                const debtorNames = Object.entries(debtMap).map(([pId, amount]) => {
+                    const name = SQUAD_DATA.find(s => s.id === pId)?.name || 'Rebel';
+                    return "\uD83D\uDC49 " + name + ": " + amount.toFixed(2).replace('.', ',') + "€";
+                });
 
-    if (debtorNames.length === 0) {
-        alert("Es gibt keine offenen Strafen! Alle sind brav. 😇");
-        return;
-    }
+                if (debtorNames.length === 0) {
+                    alert("Es gibt keine offenen Strafen! Alle sind brav. \uD83D\uDE07");
+                    return;
+                }
 
-    // 2. PayPal Link definieren (HIER DEINEN PAYPAL NAMEN EINTRAGEN)
-    const paypalMeName = "DEINPAYPALNAME"; 
-    const paypalLink = `https://paypal.me/${paypalMeName}`;
+                // HIER DEINEN PAYPAL NAMEN EINTRAGEN:
+                const paypalMeName = "DEINPAYPALNAME"; 
+                const paypalLink = `https://paypal.me/${paypalMeName}`;
 
-    // 3. Nachricht zusammenbauen und WhatsApp öffnen
-    const text = `🚨 *REBEL KASSENWART REMINDER* 🚨%0A%0AHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:%0A%0A${debtorNames.join('%0A')}%0A%0ABitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:%0A${paypalLink}%0A(Bitte "Geld an Freunde senden" auswählen!) 💸`;
-    
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-};
+                // 100% sichere Unicode-Emojis: 🚨, 👉, 💸
+                const rawText = "\uD83D\uDEA8 *REBEL KASSENWART REMINDER* \uD83D\uDEA8\n\nHey Mädels, bitte denkt an eure offenen Strafen aus dem Rebel Hub:\n\n" + debtorNames.join('\n') + "\n\nBitte bringt das Geld zeitnah zum nächsten Event mit oder zahlt direkt per PayPal:\n" + paypalLink + "\n(Bitte \"Geld an Freunde senden\" auswählen!) \uD83D\uDCB8";
+                
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
+            };
+            
             return (
                 <div className="space-y-8 animate-slide-up pb-20">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Strafenkatalog</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Rebel Disziplin</p></header>
@@ -874,60 +1146,43 @@
         };
 
         // --- SMART REBEL TAXI KOMPONENTE ---
-const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefügt
-    const [carpools, setCarpools] = useState({});
+const SmartRebelTaxi = ({ schedule, me, profiles, db, allCarpools }) => {
+    const upcoming = useMemo(() => {
+        const now = new Date();
+        return (schedule || []).filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now).sort((a,b) => new Date(a.date) - new Date(b.date));
+    }, [schedule]);
+
+    const [selectedEventId, setSelectedEventId] = useState('');
     const [offerMode, setOfferMode] = useState(false);
     const [seats, setSeats] = useState(3);
     const [location, setLocation] = useState(profiles[me.id]?.carpoolLocation || '');
 
+    // Wählt automatisch das nächste Event aus, sobald geladen
     useEffect(() => {
-        if (!db || !event) return; // HIER window.DB_INSTANCE durch db ersetzt
-        const { doc, onSnapshot } = window.FB;
-        const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'carpools', event.id), (docSnap) => {
-            if (docSnap.exists()) setCarpools(docSnap.data());
-            else setCarpools({});
-        });
-        return () => unsub();
-    }, [event, db]);
+        if (!selectedEventId && upcoming.length > 0) setSelectedEventId(upcoming[0].id);
+    }, [upcoming, selectedEventId]);
+
+    if (upcoming.length === 0) return null;
+
+    const activeEvent = upcoming.find(e => e.id === selectedEventId) || upcoming[0];
+    const carpools = (allCarpools && activeEvent) ? (allCarpools[activeEvent.id] || {}) : {};
 
     const saveCarpools = async (newData) => {
+        if (!db || !activeEvent) return;
         const { doc, setDoc } = window.FB;
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'carpools', event.id), newData); // HIER ebenfalls
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'carpools', activeEvent.id), newData);
     };
 
     const handleOffer = async () => {
-                if(!location) return alert("Von wo fährst du los?");
-                
-                // 1. Fahrt in der Datenbank für dieses Event speichern
-                await saveCarpools({ ...carpools, [me.id]: { seats, location, passengers: [] } });
-                
-                // 2. NEU: Profil-Settings updaten (Schalter umlegen für das Auto-Icon im Plan!)
-                if (db) {
-                    const { doc, setDoc } = window.FB;
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', me.id), { 
-                        carpool: true, 
-                        carpoolLocation: location 
-                    }, { merge: true });
-                }
-                
-                setOfferMode(false);
+        if(!location) return alert("Von wo fährst du los?");
+        await saveCarpools({ ...carpools, [me.id]: { seats, location, passengers: [] } });
+        setOfferMode(false);
     };
 
     const handleCancelOffer = async () => {
-                if(window.confirm("Fahrt wirklich stornieren? Deine Mitfahrer müssen sich neu organisieren!")) {
-                    // 1. Fahrt aus diesem Event löschen
-                    const next = { ...carpools }; 
-                    delete next[me.id]; 
-                    await saveCarpools(next);
-                    
-                    // 2. NEU: Profil-Settings wieder ausschalten (Auto-Icon verschwindet)
-                    if (db) {
-                        const { doc, setDoc } = window.FB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', me.id), { 
-                            carpool: false 
-                        }, { merge: true });
-                    }
-                }
+        if(window.confirm("Fahrt wirklich stornieren? Deine Mitfahrer müssen sich neu organisieren!")) {
+            const next = { ...carpools }; delete next[me.id]; await saveCarpools(next);
+        }
     };
 
     const handleJoin = (driverId) => {
@@ -942,26 +1197,31 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
         saveCarpools({ ...carpools, [driverId]: { ...car, passengers: car.passengers.filter(p => p !== me.id) } });
     };
 
-    if (!event) return null;
-
     const isDriver = !!carpools[me.id];
     const myDriverId = Object.keys(carpools).find(dId => carpools[dId].passengers.includes(me.id));
     const isPassenger = !!myDriverId;
 
     return (
         <div className="bg-green-500/10 border border-green-500/30 p-5 rounded-3xl space-y-4 animate-slide-up shadow-lg">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <RebelIcon name="car" className="text-green-500" size={24} />
                     <h4 className="text-xs font-black uppercase text-green-500 tracking-widest">Smart Taxi</h4>
                 </div>
-                <span className="text-[8px] font-bold uppercase text-green-500/70 italic border border-green-500/20 px-2 py-1 rounded-md">{event.label}</span>
             </div>
 
+            <select 
+                value={selectedEventId} 
+                onChange={e => { setSelectedEventId(e.target.value); setOfferMode(false); }}
+                className="w-full bg-black/40 border border-green-500/30 rounded-xl p-3 text-xs text-green-400 outline-none font-bold uppercase shadow-sm"
+            >
+                {upcoming.map(e => <option key={e.id} value={e.id}>{e.label} ({new Date(e.date).toLocaleDateString()})</option>)}
+            </select>
+
             {Object.keys(carpools).length === 0 ? (
-                <p className="text-[10px] text-zinc-500 italic">Noch keine Fahrten für dieses Event angeboten.</p>
+                <p className="text-[10px] text-zinc-500 italic mt-2">Noch keine Fahrten für dieses Event angeboten.</p>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 mt-4">
                     {Object.entries(carpools).map(([driverId, car]) => {
                         const driverName = SQUAD_DATA.find(s => s.id === driverId)?.name || 'Rebel';
                         const isFull = car.passengers.length >= car.seats;
@@ -1008,13 +1268,13 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
             )}
 
             {!isDriver && !isPassenger && !offerMode && (
-                <button onClick={() => setOfferMode(true)} className="w-full bg-white/5 text-zinc-300 hover:text-white py-3 rounded-xl text-[10px] font-black uppercase border border-white/10 transition-all">
+                <button onClick={() => setOfferMode(true)} className="w-full mt-2 bg-white/5 text-zinc-300 hover:text-white py-3 rounded-xl text-[10px] font-black uppercase border border-white/10 transition-all">
                     Selbst Fahrt anbieten 🚙
                 </button>
             )}
 
             {offerMode && (
-                <div className="bg-black p-4 rounded-2xl border border-green-500/50 space-y-4 shadow-xl">
+                <div className="bg-black p-4 rounded-2xl border border-green-500/50 space-y-4 shadow-xl mt-2">
                     <div>
                         <label className="text-[8px] uppercase text-zinc-500 font-bold ml-1">Abfahrtsort</label>
                         <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-[#111] border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-green-500" placeholder="z.B. Rüsselsheim Mitte" />
@@ -1035,20 +1295,235 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
             )}
 
             {isDriver && (
-                <button onClick={handleCancelOffer} className="w-full bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase border border-red-500/20 mt-2">
+                <button onClick={handleCancelOffer} className="w-full bg-red-500/10 text-red-500 py-3 rounded-xl text-[10px] font-black uppercase border border-red-500/20 mt-3">
                     Meine Fahrt stornieren
                 </button>
             )}
         </div>
     );
-}
+};
+
+        // --- NEU: KABINEN GLÜCKSRAD ---
+        const KabinenGluecksrad = ({ theme }) => {
+            const options = [
+                { label: 'Kuchen backen 🍰', color: '#FF007F' },
+                { label: 'Kiste Kaltgetränke 🍻', color: '#8b5cf6' },
+                { label: 'Trikots waschen 👕', color: '#3b82f6' },
+                { label: '10€ Teamkasse 💸', color: '#ec4899' },
+                { label: 'Bälle aufpumpen 🏀', color: '#10b981' },
+                { label: 'Glück gehabt! 🍀', color: '#f59e0b' }
+            ];
+
+            const [rotation, setRotation] = useState(0);
+            const [isSpinning, setIsSpinning] = useState(false);
+            const [winner, setWinner] = useState(null);
+
+            const sliceAngle = 360 / options.length;
+
+            const spinWheel = () => {
+                if (isSpinning) return;
+                setIsSpinning(true);
+                setWinner(null);
+
+                const winningIndex = Math.floor(Math.random() * options.length);
+                const centerAngle = (winningIndex * sliceAngle) + (sliceAngle / 2);
+                const targetRotation = 360 - centerAngle;
+                
+                const currentMod = rotation % 360;
+                const extraSpins = 360 * 5; 
+                
+                let addedRotation = targetRotation - currentMod;
+                if (addedRotation < 0) addedRotation += 360; 
+                
+                const finalRotation = rotation + extraSpins + addedRotation;
+                setRotation(finalRotation);
+
+                setTimeout(() => {
+                    setIsSpinning(false);
+                    setWinner(options[winningIndex].label);
+                    if (window.confetti && options[winningIndex].label.includes('Glück')) {
+                        window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#ffffff'] });
+                    } else if (window.confetti) {
+                        window.confetti({ particleCount: 100, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] });
+                    }
+                }, 4000);
+            };
+
+            const gradientStops = options.map((opt, i) => `${opt.color} ${i * sliceAngle}deg ${(i + 1) * sliceAngle}deg`).join(', ');
+
+            return (
+                <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-2xl text-center mb-8 animate-slide-up">
+                    <h3 className="rebel-font font-black italic text-xl uppercase mb-1 text-white">Das Glücksrad 🎡</h3>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-8">Strafe oder Glück?</p>
+                    
+                    <div className="relative w-64 h-64 mx-auto mb-8">
+                        {/* Zeiger */}
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[24px] border-t-white z-20 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"></div>
+                        
+                        {/* Rad */}
+                        <div 
+                            className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-[0_0_30px_rgba(255,0,127,0.4)] relative"
+                            style={{ 
+                                background: `conic-gradient(${gradientStops})`,
+                                transform: `rotate(${rotation}deg)`, 
+                                transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' 
+                            }}
+                        >
+                            {options.map((opt, i) => (
+                                <div key={i} className="absolute top-0 left-0 w-full h-full" style={{ transform: `rotate(${i * sliceAngle}deg)` }}>
+                                    <div 
+                                        className="absolute top-4 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase text-white drop-shadow-md flex flex-col items-center justify-start h-[112px] w-16"
+                                        style={{ transform: `rotate(${sliceAngle / 2}deg)`, transformOrigin: 'bottom center' }}
+                                    >
+                                        {opt.label.split(' ').map((word, idx) => <span key={idx} className="leading-tight">{word}</span>)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Mittelpunkt */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-inner border-2 border-zinc-200 z-10 flex items-center justify-center"><div className="w-3 h-3 bg-[#FF007F] rounded-full"></div></div>
+                    </div>
+
+                    {winner && (
+                        <div className="animate-slide-up mb-6 bg-black/40 p-4 rounded-2xl border border-[#FF007F]/30">
+                            <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Das Urteil lautet:</p>
+                            <p className="text-xl font-black italic text-[#FF007F]">{winner}</p>
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={spinWheel} 
+                        disabled={isSpinning}
+                        className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                    >
+                        {isSpinning ? 'Rad dreht...' : 'Rad Drehen!'}
+                    </button>
+                </div>
+            );
+        };
+
+        // --- NEU: REBEL CAM (Team-Galerie) ---
+        const RebelCam = ({ photos, onUpload, onDelete, me, isAdmin }) => {
+            const fileInputRef = useRef(null);
+            // NEU: State für das aktuell ausgewählte Bild (Vollbild)
+            const [selectedPhoto, setSelectedPhoto] = useState(null); 
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        const base64 = canvas.toDataURL('image/jpeg', 0.7); 
+                        onUpload(base64);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <>
+                    <div className="glass-card p-6 rounded-3xl border border-[#FF007F]/20 shadow-2xl mb-8 animate-slide-up">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="rebel-font font-black italic text-xl uppercase text-white">Rebel Cam 📸</h3>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Kabinen-Galerie</p>
+                            </div>
+                            <label className="bg-[#FF007F] text-white p-3 w-12 h-12 flex items-center justify-center rounded-2xl shadow-[0_0_15px_rgba(255,0,127,0.4)] cursor-pointer active:scale-95 transition-transform">
+                                <RebelIcon name="camera" size={24} />
+                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} ref={fileInputRef} />
+                            </label>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            {photos.map(photo => (
+                                <div 
+                                    key={photo.id} 
+                                    className="relative aspect-square rounded-2xl overflow-hidden group border border-white/10 shadow-lg cursor-pointer"
+                                    onClick={() => setSelectedPhoto(photo)} // BILD ANKLICKEN -> VOLLBILD
+                                >
+                                    {/* Kleiner Hover-Zoom für das Thumbnail */}
+                                    <img src={photo.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Kabinen Foto" />
+                                    
+                                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-2 pt-8">
+                                        <p className="text-[9px] font-black text-white uppercase tracking-widest truncate">{photo.userName}</p>
+                                        <p className="text-[7px] text-zinc-400">{photo.timestamp ? new Date(photo.timestamp.seconds * 1000).toLocaleDateString() : 'Gerade eben'}</p>
+                                    </div>
+
+                                    {(isAdmin || photo.userId === me.id) && (
+                                        <button 
+                                            // stopPropagation verhindert, dass der Klick auf Löschen auch das Bild öffnet
+                                            onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} 
+                                            className="absolute top-2 right-2 bg-red-500/80 text-white p-2 rounded-xl opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity backdrop-blur-md z-10"
+                                        >
+                                            <RebelIcon name="trash-2" size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {photos.length === 0 && <p className="text-xs text-zinc-500 italic col-span-2 text-center py-6 bg-black/20 rounded-2xl border border-white/5">Noch keine Fotos hochgeladen. Knips das erste Kabinen-Selfie!</p>}
+                        </div>
+                    </div>
+
+                    {/* MODAL FÜR BILDVERGRÖSSERUNG */}
+                    {selectedPhoto && (
+                        <div 
+                            className="fixed inset-0 z-[150] flex flex-col items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-slide-up"
+                            onClick={() => setSelectedPhoto(null)}
+                        >
+                            <button 
+                                className="absolute top-6 right-6 text-zinc-400 hover:text-white bg-black/50 p-3 rounded-full z-10 transition-colors" 
+                                onClick={() => setSelectedPhoto(null)}
+                            >
+                                <RebelIcon name="x" size={28} />
+                            </button>
+                            
+                            <img 
+                                src={selectedPhoto.url} 
+                                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-[0_0_40px_rgba(255,0,127,0.3)]" 
+                                alt="Fullscreen" 
+                                onClick={(e) => e.stopPropagation()} 
+                            />
+                            
+                            <div className="mt-8 text-center bg-black/50 p-4 rounded-2xl border border-white/5" onClick={(e) => e.stopPropagation()}>
+                                <p className="text-white font-black italic text-xl uppercase tracking-widest">{selectedPhoto.userName}</p>
+                                <p className="text-[#FF007F] text-xs font-bold mt-1">
+                                    {selectedPhoto.timestamp ? new Date(selectedPhoto.timestamp.seconds * 1000).toLocaleString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) + ' Uhr' : 'Gerade eben'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </>
+            );
+        };
         
-        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db }) => {
-            const [newShout, setNewShout] = useState('');
+        const DashboardView = ({ me, schedule, shoutbox, onPostShout, profiles, isAdmin, goals, announcement, votesData, onVote, openVotesCount, setActiveTab, triggerHype, db, allCarpools, fines, transactions, treasuryGoal, tickets }) => {            
+                const [newShout, setNewShout] = useState('');
             const nextEvent = useMemo(() => {
                 const now = new Date();
                 return (schedule || []).filter(e => new Date(e.date + 'T' + (e.time||'00:00')) >= now).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             }, [schedule]);
+
+            // NEU: Kassen-Berechnung inkl. Tickets fürs Dashboard
+            const currentBalance = useMemo(() => {
+                const pFines = (fines||[]).filter(f => f.paid).reduce((sum, f) => sum + (f.amount || 0), 0);
+                const oInc = (transactions||[]).filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                const exp = (transactions||[]).filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                const pTickets = (tickets||[]).filter(t => t.paid).reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                return (pFines + oInc + pTickets) - exp;
+            }, [fines, transactions, tickets]);
+            const goalPercent = Math.min(100, Math.round((currentBalance / (treasuryGoal?.target || 1)) * 100));
 
             return (
                 <div className="space-y-8 pb-10">
@@ -1058,6 +1533,24 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                             <button onClick={() => setActiveTab('votes')} className="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">PLANER</button>
                         </div>
                     )}
+
+                    {/* NEU: Kassen-Ziel Anzeige */}
+                    <div className="glass-card p-5 rounded-3xl border border-[#FF007F]/30 shadow-[0_0_20px_rgba(255,0,127,0.15)] animate-slide-up">
+                        <div className="flex justify-between items-end mb-3">
+                            <div>
+                                <p className="text-[9px] font-black uppercase text-[#FF007F] tracking-widest mb-1 flex items-center gap-1"><RebelIcon name="target" size={12}/> Team-Ziel</p>
+                                <p className="text-sm font-bold text-white uppercase italic">{treasuryGoal?.label || 'Saison-Ziel'}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-black text-white leading-none mb-1">{currentBalance.toFixed(2)} €</p>
+                                <p className="text-[9px] text-zinc-500 uppercase font-bold">von {treasuryGoal?.target || 500} €</p>
+                            </div>
+                        </div>
+                        <div className="h-4 w-full bg-black/60 rounded-full overflow-hidden border border-white/10 relative">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600 to-[#FF007F] shadow-[0_0_15px_#FF007F] transition-all duration-1000 ease-out" style={{width: `${goalPercent}%`}}></div>
+                            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white drop-shadow-md z-10">{goalPercent}%</span>
+                        </div>
+                    </div>
                     
                     {announcement && (<div className="bg-[#FF007F]/10 border-l-4 border-[#FF007F] p-4 rounded-r-2xl text-white flex gap-3 shadow-lg"><RebelIcon name="megaphone" size={20}/><p className="text-sm font-bold">{announcement}</p></div>)}
 
@@ -1071,11 +1564,22 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                                     <button key={opt} onClick={() => onVote(nextEvent.id, opt)} className={`py-3 rounded-xl text-xs font-black uppercase border transition-all ${votesData[`event_${nextEvent.id}`]?.[me.id] === opt ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-lg scale-105' : 'bg-black/50 text-white border-white/10'}`}>{opt}</button>
                                 ))}
                             </div>
+                            
+                            {/* NEU: Das Coach-Board Widget */}
+                            {nextEvent.tactic && (
+                                <div className="mt-5 bg-black/50 p-4 rounded-2xl border border-[#FF007F]/30 text-left animate-slide-up shadow-inner">
+                                    <div className="flex items-center gap-2 mb-2 text-[#FF007F]">
+                                        <RebelIcon name="clipboard-list" size={16} />
+                                        <h5 className="text-[10px] font-black uppercase tracking-widest">Coach-Board</h5>
+                                    </div>
+                                    <p className="text-xs text-zinc-300 font-bold whitespace-pre-wrap">{nextEvent.tactic}</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* NEU: Das smarte Taxi Plugin */}
-                    <SmartRebelTaxi event={nextEvent} me={me} profiles={profiles} db={db} />
+                    <SmartRebelTaxi schedule={schedule} me={me} profiles={profiles} db={db} allCarpools={allCarpools} />
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="glass-card p-5 rounded-3xl text-center text-white"><p className="text-[10px] uppercase font-black text-zinc-500 mb-1 tracking-widest">Team Tore</p><p className="text-3xl font-black italic text-[#FF007F] leading-none">{Object.values(goals).reduce((a, b) => a + b, 0)}</p></div>
@@ -1110,15 +1614,30 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
             );
         };
 
-        const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme, isAdmin, onAddFine, triggerHype }) => {
+        const LongTermVotes = ({ schedule, votesData, userId, onVote, health, profiles, theme, isAdmin, onAddFine, triggerHype, allCarpools, onUpdateEvent }) => {
             const upcoming = (schedule || []).filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
             return (
                 <div className="space-y-6 pb-10">
                     <header><h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Planer</h2><p className="text-sm text-zinc-500 uppercase tracking-widest">Wer ist dabei?</p></header>
                     {upcoming.map(event => {
                         const eventVotes = votesData[`event_${event.id}`] || {};
+                        const eventCarpools = allCarpools ? (allCarpools[event.id] || {}) : {};
+                        
+                        // Check, ob die Spielerin in DIESEM Event ein Auto hat (Fahrerin oder Beifahrerin)
+                        const hasCarInThisEvent = (uid) => {
+                            if (eventCarpools[uid]) return true; // Ist Fahrerin
+                            for (const dId in eventCarpools) {
+                                if (eventCarpools[dId].passengers.includes(uid)) return true; // Ist Beifahrerin
+                            }
+                            return false;
+                        };
+
                         const grouped = { 'Dabei': [], 'Nein': [], 'Maybe': [] };
-                        Object.entries(eventVotes).forEach(([uid, val]) => { const name = SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin'; grouped[val]?.push({ name, h: health[uid] || 'Fit', car: profiles[uid]?.carpool }); });
+                        Object.entries(eventVotes).forEach(([uid, val]) => { 
+                            const name = SQUAD_DATA.find(s => s.id === uid)?.name || 'Rebellin'; 
+                            grouped[val]?.push({ name, h: health[uid] || 'Fit', car: hasCarInThisEvent(uid) }); 
+                        });
+
                         return (
                             <div key={event.id} className="glass-card p-6 rounded-3xl border border-white/5 shadow-xl space-y-5 animate-slide-up">
                                 <div className="flex justify-between items-start">
@@ -1214,8 +1733,41 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                 if (!newEvent.label || !newEvent.date) return alert("Bitte mindestens Titel und Datum ausfüllen!");
                 const { collection, addDoc } = window.FB;
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), newEvent);
-                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true});
+                setNewEvent({type:'training', date:'', time:'', endTime:'', label:'', location:'', meetingTime:'', meetingLocation:'', jerseyColor: '', isHome:true, tactic:''});
                 alert("Event gespeichert!");
+            };
+
+            const handleEnablePush = async () => {
+                if (!window.FCM) return alert("Push-Dienst lädt noch...");
+                if (!('serviceWorker' in navigator)) return alert("Dein Browser unterstützt keine Service Worker.");
+
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        const { getToken } = window.FB;
+                        
+                        // 1. Wir registrieren den Service Worker manuell mit relativem Pfad ('./'), 
+                        // das verhindert Fehler auf GitHub Pages!
+                        const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                        
+                        // 2. Wir übergeben die Registrierung an Firebase
+                        const token = await getToken(window.FCM, { 
+                            vapidKey: "BNUAPIDhl2t7_2JsBGK8QTWg9yMC_1qmin0V7kJp0HEu3xQ5ttB3rs995PgMIewz5JwrsCDbC0K7e0FVvKbE2hw",
+                            serviceWorkerRegistration: registration 
+                        });
+                        
+                        if (token) {
+                            await onSave({ fcmToken: token }, me.id);
+                            alert("🔔 BING! Push-Benachrichtigungen sind erfolgreich aktiviert!");
+                        }
+                    } else {
+                        alert("Schade! Du hast die Benachrichtigungen blockiert.");
+                    }
+                } catch (e) {
+                    console.error("Push Fehler:", e);
+                    // Wir geben den exakten Fehler aus, falls es nochmal hakt!
+                    alert("Fehler beim Aktivieren: " + e.message); 
+                }
             };
 
             const myHealth = health ? health[me.id] : 'Fit';
@@ -1236,6 +1788,14 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                         <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4 text-white">
                             <div className="flex items-center gap-3"><label className="switch"><input type="checkbox" checked={local.carpool} onChange={e => setLocal({...local, carpool: e.target.checked})} /><span className="slider"></span></label><span className="text-[10px] font-black uppercase tracking-widest">Rebel Taxi (Mitfahrgelegenheit)</span></div>
                             {local.carpool && <input type="text" placeholder="Ab welchem Ort?" className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white" value={local.carpoolLocation} onChange={e => setLocal({...local, carpoolLocation: e.target.value})} />}
+                        </div>
+                        <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-3 mb-4 text-center">
+                            <div className="flex items-center justify-center gap-2 text-[#FF007F] mb-1">
+                                <RebelIcon name="bell" size={20} />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Push-Mitteilungen</h4>
+                            </div>
+                            <button onClick={handleEnablePush} className="w-full bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/50 py-3 rounded-xl text-[10px] font-black uppercase active:scale-95 transition-transform shadow-[0_0_10px_rgba(255,0,127,0.2)]">Jetzt Aktivieren 🔔</button>
+                            <p className="text-[8px] text-zinc-500">Erlaubt dem Hub, dir News aufs Handy zu schicken (App muss auf dem Homescreen liegen).</p>
                         </div>
                         <button onClick={handleSaveProfile} className="w-full bg-[#FF007F] text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">Speichern</button>
                     </section>
@@ -1381,6 +1941,7 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                                         </div>
                                         <input type="text" placeholder="Event Titel" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.label} onChange={e => setNewEvent({...newEvent, label: e.target.value})} />
                                         <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F]" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} />
+                                        <textarea placeholder="Coach Notes / Taktik (optional)" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none focus:border-[#FF007F] min-h-[60px]" value={newEvent.tactic || ''} onChange={e => setNewEvent({...newEvent, tactic: e.target.value})}></textarea>
                                         <div className="grid grid-cols-3 gap-2 text-white text-white text-white">
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} /></div>
                                             <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white outline-none" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
@@ -1426,6 +1987,7 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                                 <div className="bg-[#111] p-6 rounded-3xl border border-white/10 space-y-4">
                                     <input type="text" placeholder="Titel" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.label} onChange={e => setEditingEvent({...editingEvent, label: e.target.value})} />
                                     <input type="text" placeholder="Veranstaltungsort" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white" value={editingEvent.location} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} />
+                                    <textarea placeholder="Coach Notes / Taktik (Fokus, Gegner-Infos...)" className="w-full bg-black border border-white/5 rounded-lg p-4 text-sm text-white outline-none focus:border-[#FF007F] min-h-[80px]" value={editingEvent.tactic || ''} onChange={e => setEditingEvent({...editingEvent, tactic: e.target.value})}></textarea>
                                     <div className="grid grid-cols-3 gap-4 text-white text-white">
                                         <div><label className="text-[7px] uppercase font-bold text-zinc-500 block mb-1">Datum</label><input type="date" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} /></div>
                                         <div><label className="text-[7px] uppercase font-bold text-zinc-500 block ml-1 mb-1">Start</label><input type="time" className="w-full bg-black border border-white/5 rounded-lg p-3 text-xs text-white" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} /></div>
@@ -1485,6 +2047,10 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
             const [isCartOpen, setIsCartOpen] = useState(false);
             const [showDebugInfo, setShowDebugInfo] = useState(false);
             const [mvpVotes, setMvpVotes] = useState({});
+            const [allCarpools, setAllCarpools] = useState({});
+            const [rebelCamPhotos, setRebelCamPhotos] = useState([]);
+            const [treasuryGoal, setTreasuryGoal] = useState({ label: 'Mannschaftsfahrt', target: 1000 });
+            const [tickets, setTickets] = useState([]);
 
             useEffect(() => {
                 const startApp = async () => {
@@ -1492,11 +2058,20 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                     while (!window.FB && attempts < 20) { await new Promise(r => setTimeout(r, 100)); attempts++; }
                     if (!window.FB) { setLoading(false); return; }
                     try {
-                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FB;
+                        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, getMessaging, onMessage } = window.FB;
                         const app = initializeApp(firebaseConfig);
                         const auth = getAuth(app);
                         const firestore = getFirestore(app);
+                        
+                        // NEU: Messaging initialisieren und global verfügbar machen
+                        window.FCM = getMessaging(app);
                         setDb(firestore);
+
+                        // NEU: Wenn die App gerade GEÖFFNET ist und eine Push reinkommt
+                        onMessage(window.FCM, (payload) => {
+                            alert(`🚨 REBEL NEWS: ${payload.notification.title}\n\n${payload.notification.body}`);
+                        });
+
                         await signInAnonymously(auth);
                         onAuthStateChanged(auth, (u) => {
                             if (u) {
@@ -1526,8 +2101,12 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                 const unsubMvp = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'mvp_votes'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setMvpVotes(d); });
                 const unsubNews = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), snap => { if(snap.exists()) setAnnouncement(snap.data().text || ""); });
                 const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), snap => { if(snap.exists()) setTicketPrices(snap.data()); });
+                const unsubCarpools = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'carpools'), snap => { const d = {}; snap.forEach(doc => d[doc.id] = doc.data()); setAllCarpools(d); });
+                const unsubCam = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rebel_cam'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); setRebelCamPhotos(list.slice(0, 20)); });
+                const unsubGoal = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), snap => { if(snap.exists()) setTreasuryGoal(snap.data()); });
+                const unsubTickets = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'tickets'), snap => { const list = []; snap.forEach(doc => list.push({ id: doc.id, ...doc.data() })); setTickets(list); });
                 
-                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); };
+                return () => { unsubVotes(); unsubShout(); unsubProfiles(); unsubSchedule(); unsubHealth(); unsubFines(); unsubTrans(); unsubHistory(); unsubMvp(); unsubNews(); unsubPrices(); unsubCarpools(); unsubCam(); unsubGoal(); unsubTickets(); };
             }, [db]);
 
             const handleLogin = (e) => { e.preventDefault(); const found = SQUAD_DATA.find(m => m.id === loginData.id); if (found && found.pw === loginData.pw) { setUser(found); localStorage.setItem('rebel_hub_user_id', found.id); } else { setLoginError('Passwort ungültig.'); } };
@@ -1592,13 +2171,37 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                 triggerHype();
             };
 
+            const handleUploadPhoto = async (base64) => {
+             if(!db) return;
+             const { collection, addDoc, serverTimestamp } = window.FB;
+             try {
+                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rebel_cam'), { url: base64, userId: user.id, userName: user.name, timestamp: serverTimestamp() });
+                 if (window.confetti) window.confetti({ particleCount: 80, colors: ['#FF007F', '#ffffff'] });
+             } catch (e) { alert("Fehler beim Hochladen."); }
+             };
+
+             const handleDeletePhoto = async (id) => {
+                 if(window.confirm('Foto wirklich löschen?')) {
+                 const { doc, deleteDoc } = window.FB;
+                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rebel_cam', id));
+             }
+             };
+
             const triggerHype = () => { if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#ffffff'] }); };
             const triggerBalloons = () => { if (!window.confetti) return; const end = Date.now() + 3000; const frame = () => { window.confetti({ particleCount: 5, origin: { x: Math.random(), y: 0.8 }, colors: ['#FF007F', '#ffffff'] }); if (Date.now() < end) requestAnimationFrame(frame); }; frame(); };
             
             const addToCart = (product, size) => { setCart([...cart, { ...product, cartId: Date.now(), selectedSize: size }]); triggerHype(); };
             const removeFromCart = (cartId) => { setCart(cart.filter(item => item.cartId !== cartId)); };
-            const handleCheckout = () => { const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('%0A'); const total = cart.reduce((sum, i) => sum + i.price, 0); const msg = `Hey Kai, ich (${user.name}) würde gerne im Rebel Shop bestellen:%0A%0A${itemsList}%0A%0AGesamt: ${total}€%0A%0ABitte bestätigen!`; window.open(`https://wa.me/4917600000000?text=${msg}`, '_blank'); setCart([]); setIsCartOpen(false); };
-
+            
+            const handleCheckout = () => { 
+                const itemsList = cart.map(i => `- ${i.name} (${i.selectedSize})`).join('\n'); 
+                const total = cart.reduce((sum, i) => sum + i.price, 0); 
+                const rawMsg = "Hey Kai, ich (" + user.name + ") würde gerne im Rebel Shop bestellen:\n\n" + itemsList + "\n\nGesamt: " + total + "€\n\nBitte bestätigen! \uD83D\uDECD\uFE0F"; 
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawMsg)}`, '_blank'); 
+                setCart([]); 
+                setIsCartOpen(false); 
+            };
+            
             const attendanceData = useMemo(() => {
                 const map = {};
                 SQUAD_DATA.forEach(p => {
@@ -1680,14 +2283,25 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                         <div className="flex items-center gap-2"><button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="text-zinc-500 p-2"><RebelIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18}/></button><button onClick={triggerHype} className="text-[#FF007F] p-2"><RebelIcon name="sparkles" size={18}/></button><button onClick={() => { setUser(null); localStorage.removeItem('rebel_hub_user_id'); }} className="text-zinc-500 p-2"><RebelIcon name="log-out" size={18}/></button></div>
                     </header>
                     <main className="p-6 max-w-4xl mx-auto animate-slide-up">
-                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} />}
-                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} />}
-                        {activeTab === 'poll' && <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />}
-                        {activeTab === 'shop' && <FanShopView theme={theme} products={SHOP_PRODUCTS} onAddToCart={addToCart} cartCount={cart.length} onOpenCart={() => setIsCartOpen(true)} />}
+                        {activeTab === 'dashboard' && <DashboardView db={db} me={user} schedule={schedule} shoutbox={shoutbox} profiles={profiles} onPostShout={async (t, a) => { const { collection, addDoc, serverTimestamp } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'shoutbox'), { userId: a ? 'anon' : user.id, userName: a ? 'Geheimagentin 🕵️‍♀️' : user.name, text: t, timestamp: serverTimestamp() }); if (t.match(/sieg|hype|rebel/i)) triggerHype(); }} triggerBalloons={triggerBalloons} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} votesData={votesData} isAdmin={isAdmin} goals={squadGoals} theme={theme} announcement={announcement} onDeleteShout={async (id) => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shoutbox', id)); }} openVotesCount={openVotesCount} setActiveTab={setActiveTab} allCarpools={allCarpools} fines={fines} transactions={transactions} treasuryGoal={treasuryGoal} tickets={tickets} />}
+                        {activeTab === 'votes' && <LongTermVotes schedule={schedule} votesData={votesData} userId={user.id} onVote={(id,val) => { const { doc, setDoc, addDoc, collection, serverTimestamp } = window.FB; const ev = schedule.find(e => e.id === id); setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', `event_${id}`), { [user.id]: val }, { merge: true }); addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'vote_history'), { userId: user.id, userName: user.name, eventLabel: ev?.label || 'Planung', voteValue: val, timestamp: serverTimestamp() }); }} health={health['current'] || {}} profiles={profiles} theme={theme} isAdmin={isAdmin} onAddFine={handleAddFine} triggerHype={triggerHype} allCarpools={allCarpools} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} />}
+                        {activeTab === 'kabine' && (
+                            <div className="space-y-4 pb-10">
+                                <header>
+                                    <h2 className={`text-2xl rebel-font font-black italic uppercase ${theme==='light'?'text-black':'text-white'}`}>Die Kabine</h2>
+                                    <p className="text-sm text-zinc-500 uppercase tracking-widest">Team-Life & Fun</p>
+                                </header>
+                                <KabinenGluecksrad theme={theme} />
+                                <RebelCam photos={rebelCamPhotos} onUpload={handleUploadPhoto} onDelete={handleDeletePhoto} me={user} isAdmin={isAdmin} />
+                                {/* NEUER DIENSTPLAN */}
+                                <TeamDutiesWidget schedule={schedule} votesData={votesData} userId={user.id} isAdmin={isAdmin} triggerHype={triggerHype} theme={theme} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} />
+                                <GeneralPollsView votesData={votesData} userId={user.id} onVote={async (id, val) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_votes', id), { [user.id]: val }, { merge: true }); }} isAdmin={isAdmin} theme={theme} schedule={schedule} mvpVotes={mvpVotes} onVoteMvp={handleVoteMvp} />
+                            </div>
+                        )}
                         {activeTab === 'squad' && <SquadView myId={user.id} profiles={profiles} health={health['current'] || {}} goals={squadGoals} theme={theme} attendance={attendanceData} mvpWins={mvpWins} />}
                         {activeTab === 'base' && <BaseView theme={theme} />}
-                        {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} />}
-                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} />}
+                        {activeTab === 'scanner' && isAdmin && <TicketScannerView db={db} theme={theme} tickets={tickets} schedule={schedule} />}
+                        {activeTab === 'treasury' && isAdmin && <TreasuryView theme={theme} fines={fines} transactions={transactions} tickets={tickets} isAdmin={isAdmin} onAddTransaction={handleAddTransaction} onDeleteTransaction={handleDeleteTransaction} onUnpayFine={handleUnpayFine} myId={user.id} treasuryGoal={treasuryGoal} onUpdateGoal={async (g) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'treasury_goal'), g); }} />}
                         {activeTab === 'fines' && <FinesView theme={theme} fines={fines} myId={user.id} isAdmin={isAdmin} onAddFine={handleAddFine} onPayFine={handlePayFine} onDeleteFine={handleDeleteFine} onIncreaseFine={handleIncreaseFine} />}
                         {activeTab === 'profil' && <ProfileManagement me={user} db={db} profile={profiles[user.id] || {}} profiles={profiles} health={health['current'] || {}} schedule={schedule} voteHistory={voteHistory} ticketPrices={ticketPrices} theme={theme} onSave={async (d, targetId) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', targetId || user.id), d, { merge: true }); alert('Profil erfolgreich gespeichert! 💾'); }} onHealthUpdate={async s => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'health', 'current'), { [user.id]: s }, { merge: true }); }} onAddEvent={async (e) => { const { collection, addDoc } = window.FB; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schedule'), e); }} onDeleteEvent={async id => { const { doc, deleteDoc } = window.FB; await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id)); }} onUpdateEvent={async (id,d) => { const { doc, updateDoc } = window.FB; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), d); }} onSaveStats={async (id,s) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', id), { stats: s }, { merge: true }); }} onUpdateNews={async (t) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'news'), { text: t }); }} onUpdateTicketPrices={async (p) => { const { doc, setDoc } = window.FB; await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'globals', 'ticket_prices'), p); }} announcement={announcement} squadGoals={squadGoals} voteHistory={voteHistory} votesData={votesData} />}
                     </main>
@@ -1726,7 +2340,7 @@ const SmartRebelTaxi = ({ event, me, profiles, db }) => { // HIER db hinzugefüg
                     <nav className={`fixed bottom-0 left-0 w-full backdrop-blur-xl border-t border-white/5 flex justify-around p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] z-50 overflow-x-auto no-scrollbar shadow-2xl ${theme === 'light' ? 'bg-white/95' : 'bg-black/95'}`}>
                         <NavButton icon="zap" label="Rebel" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                         <NavButton icon="calendar-check" label="Plan" active={activeTab === 'votes'} onClick={() => setActiveTab('votes')} badgeCount={openVotesCount} />
-                        <NavButton icon="clipboard-check" label="Votings" active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} />
+                        <NavButton icon="dices" label="Kabine" active={activeTab === 'kabine' || activeTab === 'poll'} onClick={() => setActiveTab('kabine')} />
                         <NavButton icon="users" label="Squad" active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} />
                         <NavButton icon="clipboard-list" label="Strafen" active={activeTab === 'fines'} onClick={() => setActiveTab('fines')} />
                         {isAdmin && <NavButton icon="qr-code" label="Scanner" active={activeTab === 'scanner'} onClick={() => setActiveTab('scanner')} />}
