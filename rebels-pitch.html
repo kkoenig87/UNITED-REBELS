@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projekt Ersatzbau | United Rebels</title>
+    <style>
+        /* Ultra-Premium Setup */
+        :root {
+            --bg-dark: #000000;
+            --text-dark: #f5f5f7;
+            --bg-light: #f5f5f7;
+            --text-light: #1d1d1f;
+            --accent: #ff107a; /* Rebels Neonpink */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ambient Background Blobs */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 {
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(255,16,122,0.25) 0%, rgba(0,0,0,0) 70%);
+            top: -10%;
+            left: -10%;
+        }
+
+        .orb-2 {
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(40,40,50,0.8) 0%, rgba(0,0,0,0) 70%);
+            bottom: -20%;
+            right: -10%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10vw, 15vh) scale(1.2); }
+        }
+
+        /* Sektionen */
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+        }
+
+        .light-theme {
+            background-color: rgba(245, 245, 247, 0.95);
+            color: var(--text-light);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Typografie */
+        h1 {
+            font-size: clamp(3.5rem, 8vw, 7rem);
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 1rem;
+            line-height: 1.05;
+            background: linear-gradient(135deg, #fff 0%, #a5a5a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .light-theme h2 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #1d1d1f 0%, #86868b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dark-theme h2 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+
+        p {
+            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+            font-weight: 400;
+            max-width: 850px;
+            line-height: 1.5;
+            color: #a1a1a6;
+            margin: 0 auto 2.5rem auto;
+            letter-spacing: -0.01em;
+        }
+
+        .light-theme p {
+            color: #515154;
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+            -webkit-text-fill-color: var(--accent);
+            text-shadow: 0 0 15px rgba(255,16,122,0.4); 
+        }
+
+        .team-name {
+            font-weight: 800;
+            font-style: italic;
+        }
+
+        .bold-text {
+            font-weight: 600;
+            color: inherit;
+        }
+
+        /* Buttons */
+        .btn-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 18px 36px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--bg-dark);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .light-theme .btn-primary {
+            background-color: var(--text-light);
+            color: var(--bg-light);
+        }
+
+        .btn-primary:hover, .light-theme .btn-primary:hover {
+            transform: scale(1.05);
+            background-color: var(--accent);
+            color: #ffffff;
+            box-shadow: 0 0 0 1px rgba(255,16,122,0.5), 0 15px 30px rgba(255,16,122,0.4);
+        }
+
+        .btn-outline {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-dark);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .light-theme .btn-outline {
+            color: var(--text-light);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            background-color: transparent;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .light-theme .btn-outline:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Glassmorphism Ultra - Die Karten */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin-top: 3rem;
+            width: 100%;
+        }
+
+        .glass-card {
+            padding: 3.5rem 2.5rem;
+            border-radius: 32px;
+            text-align: left;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dark-theme .glass-card {
+            background: rgba(30, 30, 32, 0.4);
+            backdrop-filter: blur(40px) saturate(150%);
+            -webkit-backdrop-filter: blur(40px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02), 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .light-theme .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(40px) saturate(150%);
+            -webkit-backdrop-filter: blur(40px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5), 0 20px 40px rgba(0,0,0,0.05);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+
+        .glass-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1.2rem;
+            font-weight: 600;
+        }
+
+        .glass-card p {
+            font-size: 1.15rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .emoji-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .big-number {
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-top: 1rem;
+            display: block;
+            color: var(--text-dark);
+        }
+
+        /* --- HÜTTEN-ANIMATION CSS --- */
+        .hut-showcase {
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem auto;
+            border-radius: 32px;
+            padding: 1rem;
+            background: rgba(20, 20, 22, 0.5);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: center;
+        }
+
+        .hut-svg {
+            width: 100%;
+            height: auto;
+            max-height: 450px;
+            display: block;
+        }
+
+        .hut-path {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.15); 
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .hut-fill {
+            fill: rgba(255, 255, 255, 0); 
+        }
+
+        .highlight-line {
+            stroke: var(--accent);
+            stroke-width: 3;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000; 
+        }
+
+        @keyframes drawLines { to { stroke: rgba(255, 255, 255, 0.5); } }
+        @keyframes drawHighlights { to { stroke-dashoffset: 0; } }
+        @keyframes fadeInFill { to { fill: rgba(255, 255, 255, 0.03); } }
+        @keyframes pulseHighlights { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); } 50% { opacity: 0.6; filter: none; } }
+
+        .reveal-container.is-visible .hut-svg .hut-path { animation: drawLines 1.5s ease-out 0.3s forwards; }
+        .reveal-container.is-visible .hut-svg .hut-fill { animation: fadeInFill 1.5s ease-out 0.8s forwards; }
+        .reveal-container.is-visible .hut-svg .highlight-line { animation: drawHighlights 2s ease-out 1.2s forwards, pulseHighlights 3s infinite ease-in-out 3s; }
+
+        /* Scroll Indikator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2.5s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0.5;
+            color: #fff;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-20px) translateX(-50%); }
+            60% { transform: translateY(-10px) translateX(-50%); }
+        }
+
+        /* Blur-Reveal-Animationen */
+        .reveal-container .reveal-item {
+            opacity: 0;
+            transform: translateY(80px) scale(0.95);
+            filter: blur(20px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        filter 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal-container.is-visible .reveal-item {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+
+        .delay-1 { transition-delay: 0.1s !important; }
+        .delay-2 { transition-delay: 0.2s !important; }
+        .delay-3 { transition-delay: 0.3s !important; }
+        .delay-4 { transition-delay: 0.4s !important; }
+        .delay-5 { transition-delay: 0.5s !important; }
+        .delay-6 { transition-delay: 0.6s !important; }
+        .delay-7 { transition-delay: 0.7s !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <section id="start" class="dark-theme reveal-container">
+        <h1 class="reveal-item delay-1">Ein neues Fundament<br>für die Zukunft.</h1>
+        <p class="reveal-item delay-2">Projekt "Ersatzbau". Initiiert und finanziert von den <span class="highlight team-name">UNITED REBELS</span>.<br>Für die TuS Rüsselsheim.</p>
+        <div class="btn-container reveal-item delay-3">
+            <a href="#problem" class="btn btn-primary">Konzept entdecken</a>
+        </div>
+        
+        <svg class="scroll-indicator reveal-item delay-5" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+    </section>
+
+    <section id="problem" class="light-theme reveal-container">
+        <h2 class="reveal-item delay-1">Der Zahn der Zeit nagt.<br>Und das Baurecht wackelt.</h2>
+        <p class="reveal-item delay-2">Auf dem Gelände der TuS steht eine 70 m² große Holzhütte. Sie ist baufällig, ungenutzt und wird zum Sicherheitsrisiko. Irgendwann muss sie weichen.</p>
+        <p class="bold-text reveal-item delay-3" style="font-size: 1.5rem; color: #1d1d1f;">Fällt die Hütte zusammen oder wird sie ersatzlos abgerissen, verliert die TuS Rüsselsheim unwiderruflich das wertvolle Baurecht für diese 70 m².</p>
+    </section>
+
+    <section id="loesung" class="dark-theme reveal-container" style="padding-top: 6rem;">
+        <h2 class="reveal-item delay-1">Die Lösung: Der Ersatzbau.</h2>
+        <p class="reveal-item delay-2">Wir ersetzen den Schandfleck durch ein modernes Gebäude auf dem exakt gleichen Fußabdruck. Ein neues Zuhause für die Rebels, ein neues Asset für den Gesamtverein.</p>
+        
+        <div class="hut-showcase reveal-item delay-3">
+            <svg class="hut-svg" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+                <path class="hut-path hut-fill" d="M100 200 L400 50 L700 200 L700 550 L100 550 Z" />
+                <path class="hut-path hut-fill" d="M350 100 L450 100 L450 150 L350 150 Z" />
+                
+                <path class="hut-path highlight-line" d="M100 200 L400 50 L700 200" />
+                <path class="hut-path highlight-line" d="M700 200 L700 550" />
+                <path class="hut-path highlight-line" d="M100 550 L700 550" />
+                <path class="hut-path highlight-line" d="M100 200 L100 550" />
+                
+                <line class="hut-path" x1="150" y1="175" x2="150" y2="200" />
+                <line class="hut-path" x1="200" y1="150" x2="200" y2="200" />
+                <line class="hut-path" x1="250" y1="125" x2="250" y2="200" />
+                <line class="hut-path" x1="300" y1="100" x2="300" y2="200" />
+                <line class="hut-path" x1="350" y1="75" x2="350" y2="200" />
+                <line class="hut-path" x1="450" y1="75" x2="450" y2="200" />
+                <line class="hut-path" x1="500" y1="100" x2="500" y2="200" />
+                <line class="hut-path" x1="550" y1="125" x2="550" y2="200" />
+                <line class="hut-path" x1="600" y1="150" x2="600" y2="200" />
+                <line class="hut-path" x1="650" y1="175" x2="650" y2="200" />
+                <line class="hut-path" x1="250" y1="200" x2="250" y2="550" />
+                <line class="hut-path" x1="550" y1="200" x2="550" y2="550" />
+                <line class="hut-path" x1="100" y1="375" x2="700" y2="375" />
+                
+                <rect class="hut-path hut-fill" x="250" y="375" width="300" height="175" />
+                <line class="hut-path" x1="325" y1="375" x2="325" y2="550" />
+                <line class="hut-path" x1="400" y1="375" x2="400" y2="550" />
+                <line class="hut-path" x1="475" y1="375" x2="475" y2="550" />
+                <rect class="hut-path hut-fill" x="150" y="250" width="75" height="75" />
+                <line class="hut-path" x1="187.5" y1="250" x2="187.5" y2="325" />
+                <line class="hut-path" x1="150" y1="287.5" x2="225" y2="287.5" />
+                <rect class="hut-path hut-fill" x="575" y="250" width="75" height="75" />
+                <line class="hut-path" x1="612.5" y1="250" x2="612.5" y2="325" />
+                <line class="hut-path" x1="575" y1="287.5" x2="650" y2="287.5" />
+                
+                <text x="327" y="290" fill="var(--accent)" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="40" font-weight="800" font-style="italic" letter-spacing="-0.02em" style="text-shadow: 0 0 10px rgba(255,16,122,0.5);">UNITED</text>
+                <text x="327" y="325" fill="var(--accent)" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="40" font-weight="800" font-style="italic" letter-spacing="-0.02em" style="text-shadow: 0 0 10px rgba(255,16,122,0.5);">REBELS</text>
+            </svg>
+        </div>
+
+        <div class="grid-3" style="margin-top: 2rem;">
+            <div class="glass-card reveal-item delay-4">
+                <h3>🛡️ Bestandsschutz</h3>
+                <p>Das wertvolle Baurecht bleibt der TuS Rüsselsheim durch nahtlosen Übergang erhalten.</p>
+            </div>
+            <div class="glass-card reveal-item delay-5">
+                <h3>⚖️ 100% Legal</h3>
+                <p>Volle Sicherheit für den Vorstand: Jeder Schritt passiert in enger, offizieller Abstimmung mit dem Bauamt.</p>
+            </div>
+            <div class="glass-card reveal-item delay-6">
+                <h3>🛠️ Schlüsselfertig</h3>
+                <p>Die gesamte Planung, Organisation und Umsetzung wird von der Mannschaft übernommen.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="nutzung" class="light-theme reveal-container">
+        <h2 class="reveal-item delay-1">Mehr als nur ein Raum.<br>Ein neues Herzstück.</h2>
+        <p class="reveal-item delay-2">Die <span class="highlight team-name">UNITED REBELS</span> bauen nicht nur für sich. Wir schaffen eine multifunktionale Begegnungsstätte, die das Vereinsleben der gesamten TuS auf ein neues Level hebt.</p>
+        
+        <div class="grid-3">
+            <div class="glass-card reveal-item delay-3">
+                <span class="emoji-icon">📺</span>
+                <h3>Taktik & Teambuilding</h3>
+                <p>Ein moderner, wetterfester Raum für Videostudien, Taktik-Besprechungen und Team-Events aller TuS-Mannschaften.</p>
+            </div>
+            <div class="glass-card reveal-item delay-4">
+                <span class="emoji-icon">🌭</span>
+                <h3>Vereinsfeste & Rasen-Events</h3>
+                <p>Die perfekte, zentrale Anlaufstelle als Verkaufskiosk, Grillstation oder Catering-Bereich bei großen Veranstaltungen auf dem Rasenplatz.</p>
+            </div>
+            <div class="glass-card reveal-item delay-5">
+                <span class="emoji-icon">🤝</span>
+                <h3>Sponsoren & Repräsentation</h3>
+                <p>Ein professionelles, exklusives Ambiente für erfolgreiche Gespräche mit zukünftigen Förderern und Partnern.</p>
+            </div>
+            <div class="glass-card reveal-item delay-6">
+                <span class="emoji-icon">🌱</span>
+                <h3>Jugendarbeit & Vereinsleben</h3>
+                <p>Ein sicherer Social-Hub für unsere Jugendabteilungen und ein Treffpunkt, der den vereinsinternen Zusammenhalt stärkt.</p>
+            </div>
+            <div class="glass-card reveal-item delay-7">
+                <span class="emoji-icon">🎓</span>
+                <h3 class="highlight">Offizieller HHV-Stützpunkt</h3>
+                <p>Die neue Hütte bietet die perfekte Location für Schiedsrichter- und Trainerweiterbildungen des Hessischen Handball-Verbands. Das sorgt für ein starkes Image der TuS auf Verbandsebene und generiert durch den Getränke- und Speisenverkauf lukrative, neue Umsätze.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="fakten" class="dark-theme reveal-container">
+        <h2 class="reveal-item delay-1">Null Risiko.<br>Maximaler Mehrwert.</h2>
+        <p class="reveal-item delay-2">Die Fakten für den Vorstand auf einen Blick:</p>
+        
+        <div class="grid-3">
+            <div class="glass-card reveal-item delay-3">
+                <h3>Baukosten für die TuS</h3>
+                <span class="big-number highlight">0,00 €</span>
+            </div>
+            <div class="glass-card reveal-item delay-4">
+                <h3>Finanzierung</h3>
+                <p>Zu 100% getragen durch die <span class="highlight team-name" style="font-size: 1.15rem;">UNITED REBELS</span>. Wir akquirieren Sponsoren, Spenden und erbringen massiv Eigenleistung.</p>
+            </div>
+            <div class="glass-card reveal-item delay-5">
+                <h3>Besitzverhältnisse</h3>
+                <p>Das neue Gebäude geht nach Fertigstellung als Sachspende direkt in den uneingeschränkten Besitz der TuS über.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="cta" class="light-theme reveal-container" style="min-height: 80vh;">
+        <h2 class="reveal-item delay-1">Bereit für den Spatenstich?</h2>
+        <p class="reveal-item delay-2">Wir haben das Team, die Motivation und die Mittel. Was wir jetzt noch brauchen, ist Ihr formelles "Go" für die Bauvoranfrage.</p>
+        <div class="btn-container reveal-item delay-3">
+            <a href="#" class="btn btn-primary" onclick="alert('Fantastisch! Wir bereiten die offiziellen Unterlagen vor.')">Vorstandsbeschluss fassen</a>
+            <a href="mailto:vorstand@tus-ruesselsheim.example" class="btn btn-outline">Rückfragen klären</a>
+        </div>
+    </section>
+
+    <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15 
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, observerOptions);
+
+            const sections = document.querySelectorAll('.reveal-container');
+            sections.forEach(sec => observer.observe(sec));
+            
+            setTimeout(() => {
+                document.getElementById('start').classList.add('is-visible');
+            }, 50);
+        });
+    </script>
+</body>
+</html>
